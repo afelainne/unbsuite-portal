@@ -1,0 +1,5 @@
+{
+  "name": "UNBSCOLOR: Color Tools",
+  "description": "A minimalist, professional tool to convert HEX values to reference ink systems, CMYK, and other formats using industry-standard color matching logic. Features AI-powered color analysis and advanced print guides.",
+  "requestFramePermissions": []
+}

@@ -48,6 +48,10 @@
 
     --shadow-floating: 0 4px 12px -2px rgba(0, 0, 0, 0.08);
 
+    --canvas: 0 0% 15%;
+    --surface: 0 0% 100%;
+    --surface-hover: 0 0% 95%;
+
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 13%;
     --sidebar-primary: 0 0% 13%;
@@ -98,6 +102,10 @@
     --surface-tertiary: 0 0% 10%;
 
     --shadow-floating: 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+
+    --canvas: 0 0% 10%;
+    --surface: 0 0% 18%;
+    --surface-hover: 0 0% 22%;
 
     --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 0 0% 95%;
