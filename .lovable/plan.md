@@ -1,42 +1,94 @@
 
 
-# UNBSTOOLS — Hub de Ferramentas Criativas
+# Redesign do Hub UNBSTOOLS -- Layout Inspirado na Referencia
 
-## Visão Geral
-Criar o hub central da UNBSTOOLS (unbstools.com), uma suite de aplicações criativas da UNBSERVED. O hub será o ponto de acesso autenticado para todas as ferramentas, com visual fiel ao estilo UNBSERVED (fundo bege/creme, tipografia bold, design minimalista).
+## Objetivo
+Recriar a pagina principal (`/`) com um layout inspirado na imagem de referencia: um visual tipo "dispositivo/e-reader" industrial com moldura arredondada, area de destaque em amarelo-limao (#CCFF00), tipografia bold/blackletter, e elementos decorativos nos cantos. O logo SVG fornecido ("UNBSTOOLS") sera integrado no header.
 
 ---
 
-## 1. Autenticação (Supabase existente)
-- Tela de login/registro com Email + Senha e Google OAuth
-- Conexão com o banco de dados Supabase já existente (compartilhado com o site principal UNBSERVED)
-- Verificação de assinatura/plano do usuário via tabela existente no Supabase
-- Rotas protegidas — apenas usuários autenticados acessam as ferramentas
+## Estrutura Visual (baseada na referencia)
 
-## 2. Layout Principal do Hub
-- **Header** com logo UNBSTOOLS (SVG fornecido), navegação e avatar do usuário
-- **Dashboard/Home** com grid de cards das ferramentas disponíveis:
-  - **UNBSCOLOR** — Ferramenta de cores
-  - **UNBSGRID** — Ferramenta de grid para logos
-  - Cards com ícone, nome, descrição curta e status (ativo/em breve)
-- Cards com indicação visual se o usuário tem acesso (baseado no plano)
-- Design minimalista no estilo UNBSERVED: fundo bege `#f0ede6`, texto escuro, bordas suaves
+A pagina tera uma estetica de "dispositivo" com:
 
-## 3. Estrutura de Rotas para Ferramentas
-- `/` — Dashboard com lista de ferramentas
-- `/login` — Tela de autenticação
-- `/unbscolor` — Placeholder da ferramenta UNBSCOLOR (pronto para receber o app Vite)
-- `/unbsgrid` — Placeholder da ferramenta UNBSGRID (pronto para receber o app Vite)
-- Cada rota de ferramenta terá um layout wrapper com header e navegação de volta ao hub
-- Estrutura modular para facilitar a adição de novas ferramentas no futuro
+1. **Moldura externa** -- borda arredondada com cantos decorativos (icones de "+" nos 4 cantos)
+2. **Header** -- logo "UNBSTOOLS" SVG centralizado no topo, dentro da moldura
+3. **Area principal amarelo-limao (#CCFF00)** -- bloco de destaque grande ocupando a maior parte da tela, com:
+   - Emblema/icone no canto superior esquerdo
+   - Texto vertical rotacionado na lateral esquerda (nome da ferramenta em destaque)
+   - Botoes/labels "FEATURED" e "PROJECT" com bordas finas
+   - Nome do autor/usuario na parte inferior
+4. **Barra de status** -- faixa fina abaixo da area amarela com barcode visual e indicadores
+5. **Cards de informacao** -- dois cards retangulares na parte inferior com texto monospace (links e logs curadoria)
 
-## 4. Perfil do Usuário
-- Menu dropdown no avatar com opções: Perfil, Configurações, Logout
-- Página de perfil mostrando informações do usuário e plano atual
-- Link para gerenciar assinatura (redirecionamento para o site principal)
+---
 
-## 5. Preparação para Integração dos Apps
-- Cada ferramenta terá sua própria pasta/módulo dentro do projeto
-- Estrutura pensada para que os apps Vite (UNBSCOLOR, UNBSGRID) sejam clonados e integrados como componentes/páginas
-- Componentes compartilhados (header, sidebar, auth context) prontos para serem reutilizados por todas as ferramentas
+## Mudancas Tecnicas
+
+### 1. Criar componente `UnbsToolsLogo` (`src/components/UnbsToolsLogo.tsx`)
+- Componente SVG inline com o logo fornecido pelo usuario
+- Props para tamanho e cor
+
+### 2. Redesenhar `src/pages/Index.tsx`
+- Substituir o layout atual por um layout tipo "dispositivo"
+- Moldura externa com `border-2 border-foreground rounded-3xl` e cantos decorativos
+- Header com logo SVG centralizado
+- Area de destaque amarelo-limao com featured content
+- Texto vertical rotacionado na esquerda
+- Barra de status simulada
+- Cards informativos na base
+- Grid de ferramentas (UNBSCOLOR, UNBSGRID) exibidas como botoes/labels dentro da area de destaque
+
+### 3. Atualizar `src/components/Header.tsx`
+- Integrar o logo SVG no lugar do texto "UNBSERVED."
+- Manter controles do lado direito (search, bell, avatar, mobile menu)
+
+### 4. Atualizar `src/components/ToolCard.tsx`
+- Adaptar visual para caber no estilo industrial: bordas finas, fundo transparente, texto uppercase bold
+- Estilo de botoes com borda preta fina similar aos labels "FEATURED" / "PROJECT" da referencia
+
+### 5. Atualizar `src/index.css`
+- Adicionar cor customizada para o amarelo-limao: `--accent-lime: 72 100% 50%` (approx #CCFF00)
+- Adicionar utilidades para texto vertical rotacionado
+- Font face ou import para tipografia blackletter/gothic (para o logo area) se necessario
+
+### 6. Atualizar `tailwind.config.ts`
+- Adicionar a cor `lime` / `highlight` ao tema extendido
+
+---
+
+## Secao Tecnica -- Detalhes de Implementacao
+
+### Layout da pagina principal (Index.tsx)
+```text
++--[rounded frame]-------------------------------+
+|  (+)              UNBSTOOLS SVG            (+)  |
+|  +--[yellow-lime area]---------------------+    |
+|  |  [emblem]                               |    |
+|  |                                         |    |
+|  |  P                                      |    |
+|  |  O                                      |    |
+|  |  P     +----------+ +----------+        |    |
+|  |  U     | UNBSCOLOR| | UNBSGRID |        |    |
+|  |  L     +----------+ +----------+        |    |
+|  |  A                                      |    |
+|  |  R              YAGO FERREIRA           |    |
+|  +--[status bar]---------------------------+    |
+|  +--[info card]--+ +--[info card]----------+    |
+|  | UNBS//LINK    | | UNBS-17//FEATURED     |    |
+|  +---------------+ +----------------------+    |
+|  (+)                                       (+)  |
++-------------------------------------------------+
+```
+
+### Cores
+- Fundo da moldura: branco (`--background`)
+- Area destaque: `#CCFF00` (amarelo-limao)
+- Bordas/texto: `#232323` (quase preto)
+- Barra de status: fundo escuro com elementos claros
+
+### Tipografia
+- Logo: SVG fornecido (blackletter)
+- Titulos de ferramenta: Inter bold uppercase
+- Info cards: monospace/mono
 
