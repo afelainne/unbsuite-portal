@@ -1,94 +1,100 @@
 
 
-# Redesign do Hub UNBSTOOLS -- Layout Inspirado na Referencia
+# Preparar o Hub para Receber os Clones dos Repositorios
 
-## Objetivo
-Recriar a pagina principal (`/`) com um layout inspirado na imagem de referencia: um visual tipo "dispositivo/e-reader" industrial com moldura arredondada, area de destaque em amarelo-limao (#CCFF00), tipografia bold/blackletter, e elementos decorativos nos cantos. O logo SVG fornecido ("UNBSTOOLS") sera integrado no header.
+## Contexto
+Os repositorios UNBSCOLOR e UNBSGRID sao apps Vite/React independentes. Precisamos criar uma estrutura de pastas modular onde cada app clonado tenha seu proprio espaco, com seus componentes, hooks, utils, e paginas -- tudo integrado ao roteamento e layout do hub.
 
----
+## Estrutura de Pastas Proposta
 
-## Estrutura Visual (baseada na referencia)
-
-A pagina tera uma estetica de "dispositivo" com:
-
-1. **Moldura externa** -- borda arredondada com cantos decorativos (icones de "+" nos 4 cantos)
-2. **Header** -- logo "UNBSTOOLS" SVG centralizado no topo, dentro da moldura
-3. **Area principal amarelo-limao (#CCFF00)** -- bloco de destaque grande ocupando a maior parte da tela, com:
-   - Emblema/icone no canto superior esquerdo
-   - Texto vertical rotacionado na lateral esquerda (nome da ferramenta em destaque)
-   - Botoes/labels "FEATURED" e "PROJECT" com bordas finas
-   - Nome do autor/usuario na parte inferior
-4. **Barra de status** -- faixa fina abaixo da area amarela com barcode visual e indicadores
-5. **Cards de informacao** -- dois cards retangulares na parte inferior com texto monospace (links e logs curadoria)
-
----
-
-## Mudancas Tecnicas
-
-### 1. Criar componente `UnbsToolsLogo` (`src/components/UnbsToolsLogo.tsx`)
-- Componente SVG inline com o logo fornecido pelo usuario
-- Props para tamanho e cor
-
-### 2. Redesenhar `src/pages/Index.tsx`
-- Substituir o layout atual por um layout tipo "dispositivo"
-- Moldura externa com `border-2 border-foreground rounded-3xl` e cantos decorativos
-- Header com logo SVG centralizado
-- Area de destaque amarelo-limao com featured content
-- Texto vertical rotacionado na esquerda
-- Barra de status simulada
-- Cards informativos na base
-- Grid de ferramentas (UNBSCOLOR, UNBSGRID) exibidas como botoes/labels dentro da area de destaque
-
-### 3. Atualizar `src/components/Header.tsx`
-- Integrar o logo SVG no lugar do texto "UNBSERVED."
-- Manter controles do lado direito (search, bell, avatar, mobile menu)
-
-### 4. Atualizar `src/components/ToolCard.tsx`
-- Adaptar visual para caber no estilo industrial: bordas finas, fundo transparente, texto uppercase bold
-- Estilo de botoes com borda preta fina similar aos labels "FEATURED" / "PROJECT" da referencia
-
-### 5. Atualizar `src/index.css`
-- Adicionar cor customizada para o amarelo-limao: `--accent-lime: 72 100% 50%` (approx #CCFF00)
-- Adicionar utilidades para texto vertical rotacionado
-- Font face ou import para tipografia blackletter/gothic (para o logo area) se necessario
-
-### 6. Atualizar `tailwind.config.ts`
-- Adicionar a cor `lime` / `highlight` ao tema extendido
-
----
-
-## Secao Tecnica -- Detalhes de Implementacao
-
-### Layout da pagina principal (Index.tsx)
 ```text
-+--[rounded frame]-------------------------------+
-|  (+)              UNBSTOOLS SVG            (+)  |
-|  +--[yellow-lime area]---------------------+    |
-|  |  [emblem]                               |    |
-|  |                                         |    |
-|  |  P                                      |    |
-|  |  O                                      |    |
-|  |  P     +----------+ +----------+        |    |
-|  |  U     | UNBSCOLOR| | UNBSGRID |        |    |
-|  |  L     +----------+ +----------+        |    |
-|  |  A                                      |    |
-|  |  R              YAGO FERREIRA           |    |
-|  +--[status bar]---------------------------+    |
-|  +--[info card]--+ +--[info card]----------+    |
-|  | UNBS//LINK    | | UNBS-17//FEATURED     |    |
-|  +---------------+ +----------------------+    |
-|  (+)                                       (+)  |
-+-------------------------------------------------+
+src/
+  tools/
+    unbscolor/
+      components/       <-- componentes do app clonado
+      hooks/            <-- hooks do app clonado
+      lib/              <-- utils do app clonado
+      pages/            <-- paginas internas do app (se houver)
+      index.tsx         <-- entry point / componente raiz do app
+      README.md         <-- instrucoes de como clonar e integrar
+    unbsgrid/
+      components/
+      hooks/
+      lib/
+      pages/
+      index.tsx
+      README.md
 ```
 
-### Cores
-- Fundo da moldura: branco (`--background`)
-- Area destaque: `#CCFF00` (amarelo-limao)
-- Bordas/texto: `#232323` (quase preto)
-- Barra de status: fundo escuro com elementos claros
+## Mudancas
 
-### Tipografia
-- Logo: SVG fornecido (blackletter)
-- Titulos de ferramenta: Inter bold uppercase
-- Info cards: monospace/mono
+### 1. Criar a pasta `src/tools/` com subpastas para cada ferramenta
+- `src/tools/unbscolor/` com `index.tsx` placeholder e `README.md`
+- `src/tools/unbsgrid/` com `index.tsx` placeholder e `README.md`
+- Cada `index.tsx` exporta o componente raiz da ferramenta
+- Cada `README.md` documenta como clonar o repo para dentro da pasta
+
+### 2. Atualizar as paginas `UnbsColor.tsx` e `UnbsGrid.tsx`
+- Importar o componente raiz de `@/tools/unbscolor` e `@/tools/unbsgrid`
+- Manter o `ToolLayout` como wrapper (header + back button)
+- As paginas passam a ser "conectores" entre o hub e o app clonado
+
+### 3. Atualizar rotas para subrotas (wildcard)
+- Mudar `/unbscolor` para `/unbscolor/*` e `/unbsgrid/*` no App.tsx
+- Isso permite que cada app clonado tenha navegacao interna propria (ex: `/unbscolor/palettes`, `/unbscolor/settings`)
+
+### 4. Criar arquivo de contexto compartilhado (`src/tools/shared.ts`)
+- Exportar recursos compartilhados que os apps clonados podem usar:
+  - Cliente do banco de dados (`supabase`)
+  - Hook de autenticacao (quando implementado)
+  - Componentes UI compartilhados do hub
+- Isso evita duplicacao e permite que os apps acessem a infra do hub
+
+---
+
+## Secao Tecnica
+
+### `src/tools/unbscolor/index.tsx` (placeholder)
+```tsx
+const UnbsColorApp = () => {
+  return (
+    <div>
+      <p>UNBSCOLOR app carregado. Substitua este arquivo pelo conteudo do repositorio clonado.</p>
+    </div>
+  );
+};
+export default UnbsColorApp;
+```
+
+### `src/pages/UnbsColor.tsx` (conector)
+```tsx
+import ToolLayout from "@/components/ToolLayout";
+import UnbsColorApp from "@/tools/unbscolor";
+
+const UnbsColor = () => (
+  <ToolLayout title="UNBSCOLOR">
+    <UnbsColorApp />
+  </ToolLayout>
+);
+```
+
+### `src/App.tsx` (rotas wildcard)
+```tsx
+<Route path="/unbscolor/*" element={<UnbsColor />} />
+<Route path="/unbsgrid/*" element={<UnbsGrid />} />
+```
+
+### `src/tools/shared.ts`
+```tsx
+export { supabase } from "@/integrations/supabase/client";
+// export { useAuth } from "@/hooks/useAuth"; // quando disponivel
+```
+
+### `src/tools/unbscolor/README.md`
+Documentacao com instrucoes:
+1. Clone o repo UNBSCOLOR
+2. Copie o conteudo de `src/` para `src/tools/unbscolor/`
+3. Renomeie o entry point para `index.tsx`
+4. Ajuste imports relativos e remova duplicatas (router, supabase client)
+5. Use `@/tools/shared` para acessar recursos do hub
 
