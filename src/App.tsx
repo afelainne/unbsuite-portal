@@ -20,8 +20,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/unbscolor" element={<UnbsColor />} />
-          <Route path="/unbsgrid" element={<UnbsGrid />} />
+          <Route path="/unbscolor/*" element={<UnbsColor />} />
+          <Route path="/unbsgrid/*" element={<UnbsGrid />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
