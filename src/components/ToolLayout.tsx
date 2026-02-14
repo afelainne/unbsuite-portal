@@ -10,7 +10,7 @@ const ToolLayout = ({ title, children }: ToolLayoutProps) => {
   return (
     <div className="min-h-screen bg-background">
       <Header showBack title={title} />
-      <main className="container py-8">
+      <main className="container py-6">
         {children}
       </main>
     </div>
