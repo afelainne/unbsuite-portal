@@ -1,100 +1,85 @@
 
 
-# Preparar o Hub para Receber os Clones dos Repositorios
+# Correcao de Erros de Build -- UNBSCOLOR
 
-## Contexto
-Os repositorios UNBSCOLOR e UNBSGRID sao apps Vite/React independentes. Precisamos criar uma estrutura de pastas modular onde cada app clonado tenha seu proprio espaco, com seus componentes, hooks, utils, e paginas -- tudo integrado ao roteamento e layout do hub.
+## Problema
+Ha 3 categorias de erros de TypeScript impedindo o build:
 
-## Estrutura de Pastas Proposta
+1. **`colorAnalysis.ts`**: ~70 entradas usam strings simples em portugues em vez do formato multilingue `{en, pt, es}` exigido pelo tipo `AnalysisResult`
+2. **`InfoGrid.tsx`**: Renderiza `analysis.psychology` e `analysis.description` como ReactNode, mas eles sao objetos `{en, pt, es}`. Tambem chama `.map()` em `analysis.usageTips` que e um objeto, nao array
+3. **`LibraryManager.tsx`**: Usa a variavel `isStandard` sem defini-la
 
-```text
-src/
-  tools/
-    unbscolor/
-      components/       <-- componentes do app clonado
-      hooks/            <-- hooks do app clonado
-      lib/              <-- utils do app clonado
-      pages/            <-- paginas internas do app (se houver)
-      index.tsx         <-- entry point / componente raiz do app
-      README.md         <-- instrucoes de como clonar e integrar
-    unbsgrid/
-      components/
-      hooks/
-      lib/
-      pages/
-      index.tsx
-      README.md
-```
-
-## Mudancas
-
-### 1. Criar a pasta `src/tools/` com subpastas para cada ferramenta
-- `src/tools/unbscolor/` com `index.tsx` placeholder e `README.md`
-- `src/tools/unbsgrid/` com `index.tsx` placeholder e `README.md`
-- Cada `index.tsx` exporta o componente raiz da ferramenta
-- Cada `README.md` documenta como clonar o repo para dentro da pasta
-
-### 2. Atualizar as paginas `UnbsColor.tsx` e `UnbsGrid.tsx`
-- Importar o componente raiz de `@/tools/unbscolor` e `@/tools/unbsgrid`
-- Manter o `ToolLayout` como wrapper (header + back button)
-- As paginas passam a ser "conectores" entre o hub e o app clonado
-
-### 3. Atualizar rotas para subrotas (wildcard)
-- Mudar `/unbscolor` para `/unbscolor/*` e `/unbsgrid/*` no App.tsx
-- Isso permite que cada app clonado tenha navegacao interna propria (ex: `/unbscolor/palettes`, `/unbscolor/settings`)
-
-### 4. Criar arquivo de contexto compartilhado (`src/tools/shared.ts`)
-- Exportar recursos compartilhados que os apps clonados podem usar:
-  - Cliente do banco de dados (`supabase`)
-  - Hook de autenticacao (quando implementado)
-  - Componentes UI compartilhados do hub
-- Isso evita duplicacao e permite que os apps acessem a infra do hub
+## Causa Raiz
+O codigo foi parcialmente migrado para i18n multilingue. Algumas entradas no banco de dados de analises ficaram no formato antigo (string pura em PT), e os componentes que consomem esses dados nao foram atualizados para resolver o idioma correto.
 
 ---
 
-## Secao Tecnica
+## Solucao
 
-### `src/tools/unbscolor/index.tsx` (placeholder)
-```tsx
-const UnbsColorApp = () => {
-  return (
-    <div>
-      <p>UNBSCOLOR app carregado. Substitua este arquivo pelo conteudo do repositorio clonado.</p>
-    </div>
-  );
-};
-export default UnbsColorApp;
+### 1. `colorAnalysis.ts` -- Converter entradas legadas para formato multilingue
+Cada entrada que usa `description: 'string'` precisa virar `description: { en: '...', pt: '...', es: '...' }`. Como as strings existentes sao em portugues, elas serao usadas para `pt`, e traducoes em `en` e `es` serao derivadas/adaptadas.
+
+Sao aproximadamente 70 entradas espalhadas pelo arquivo (linhas 1079-1920+). Cada uma segue o mesmo padrao:
+
+Antes:
+```ts
+'2597': {
+    description: 'Roxo profundo como vinho do Porto...',
+    usageTips: ['Vinhos e destilados', 'Clubes privados', 'Arte e cultura'],
+    psychology: 'Sugere profundidade, mistério e sofisticação.'
+}
 ```
 
-### `src/pages/UnbsColor.tsx` (conector)
-```tsx
-import ToolLayout from "@/components/ToolLayout";
-import UnbsColorApp from "@/tools/unbscolor";
-
-const UnbsColor = () => (
-  <ToolLayout title="UNBSCOLOR">
-    <UnbsColorApp />
-  </ToolLayout>
-);
+Depois:
+```ts
+'2597': {
+    description: {
+        en: 'Deep purple like port wine, complexity in every nuance.',
+        pt: 'Roxo profundo como vinho do Porto, complexidade em cada nuance.',
+        es: 'Purpura profundo como vino de Oporto, complejidad en cada matiz.'
+    },
+    usageTips: {
+        en: ['Wines and spirits', 'Private clubs', 'Art and culture'],
+        pt: ['Vinhos e destilados', 'Clubes privados', 'Arte e cultura'],
+        es: ['Vinos y destilados', 'Clubes privados', 'Arte y cultura']
+    },
+    psychology: {
+        en: 'Suggests depth, mystery and sophistication.',
+        pt: 'Sugere profundidade, mistério e sofisticação.',
+        es: 'Sugiere profundidad, misterio y sofisticación.'
+    }
+}
 ```
 
-### `src/App.tsx` (rotas wildcard)
-```tsx
-<Route path="/unbscolor/*" element={<UnbsColor />} />
-<Route path="/unbsgrid/*" element={<UnbsGrid />} />
+### 2. `InfoGrid.tsx` -- Resolver idioma antes de renderizar
+O componente `InfoGrid` recebe `analysis` com tipo `AnalysisResult` (que tem objetos multilingues), mas o estado em `App.tsx` (linha 84) ja resolve para strings simples via `analysisService.ts`. Portanto a correcao e:
+
+- Atualizar o tipo de `analysis` na prop de `InfoGrid` para `{ description: string; usageTips: string[]; psychology: string }` (que e o tipo ja resolvido pelo service)
+- Ou, alternativamente, usar `useLanguage()` dentro do InfoGrid para resolver `analysis.description[language]`
+
+Como o `App.tsx` ja resolve via `analysisService`, a melhor abordagem e ajustar o tipo da prop no InfoGrid para aceitar o formato ja resolvido.
+
+### 3. `LibraryManager.tsx` -- Definir `isStandard`
+Adicionar a derivacao da variavel apos as declaracoes existentes:
+
+```ts
+const isStandard = currentLibraryName === t.standardLibrary;
 ```
 
-### `src/tools/shared.ts`
-```tsx
-export { supabase } from "@/integrations/supabase/client";
-// export { useAuth } from "@/hooks/useAuth"; // quando disponivel
-```
+Isso determina se a biblioteca selecionada e a padrao (nao pode ser exportada/deletada).
 
-### `src/tools/unbscolor/README.md`
-Documentacao com instrucoes:
-1. Clone o repo UNBSCOLOR
-2. Copie o conteudo de `src/` para `src/tools/unbscolor/`
-3. Renomeie o entry point para `index.tsx`
-4. Ajuste imports relativos e remova duplicatas (router, supabase client)
-5. Use `@/tools/shared` para acessar recursos do hub
+---
+
+## Secao Tecnica -- Arquivos e Mudancas
+
+| Arquivo | Mudanca |
+|---|---|
+| `src/tools/unbscolor/data/colorAnalysis.ts` | Converter ~70 entradas de string simples para formato `{en, pt, es}` |
+| `src/tools/unbscolor/components/InfoGrid.tsx` | Atualizar tipo de `analysis` na interface para `{ description: string; usageTips: string[]; psychology: string } | null` |
+| `src/tools/unbscolor/components/LibraryManager.tsx` | Adicionar `const isStandard = currentLibraryName === t.standardLibrary;` apos linha 30 |
+
+### Impacto
+- Zero impacto na funcionalidade existente -- os dados continuam iguais, apenas tipados corretamente
+- O `analysisService.ts` ja faz a resolucao de idioma, entao o fluxo end-to-end nao muda
+- A variavel `isStandard` restaura a logica de mostrar/esconder botoes de gerenciamento de biblioteca
 
