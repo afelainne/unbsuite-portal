@@ -28,6 +28,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
   // Helper to check for corrupted colors (all black)
   const currentLib = customLibraries.find(l => l.name === currentLibraryName);
   const hasInvalidColors = currentLib && currentLib.colors.length > 0 && currentLib.colors.every(c => c.hex === '#000000');
+  const isStandard = currentLibraryName === t.standardLibrary;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
