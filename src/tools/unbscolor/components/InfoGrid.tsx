@@ -1,12 +1,12 @@
 import React from 'react';
-import { RGB, CMYK, HSL, AnalysisResult } from '../types';
+import { RGB, CMYK, HSL } from '../types';
 import { useLanguage } from '../i18n';
 
 interface InfoGridProps {
   rgb: RGB;
   cmyk: CMYK;
   hsl: HSL;
-  analysis: AnalysisResult | null;
+  analysis: { description: string; usageTips: string[]; psychology: string } | null;
   onCmykChange: (channel: keyof CMYK, value: number) => void;
   onHslChange: (channel: keyof HSL, value: number) => void;
   onRgbChange: (channel: keyof RGB, value: number) => void;

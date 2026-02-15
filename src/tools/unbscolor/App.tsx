@@ -959,7 +959,7 @@ const App: React.FC = () => {
                                 rgb={rgb}
                                 cmyk={cmyk}
                                 hsl={hsl}
-                                analysis={null as AnalysisResult | null}
+                                analysis={analysis}
                                 onCmykChange={handleCmykChange}
                                 onHslChange={handleHslChange}
                                 onRgbChange={handleRgbChange}

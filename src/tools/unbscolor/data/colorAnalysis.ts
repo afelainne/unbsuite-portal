@@ -1077,24 +1077,24 @@ const pantoneAnalysis: Record<string, AnalysisResult> = {
     }
   },
   '2597': {
-    description: 'Roxo profundo como vinho do Porto, complexidade em cada nuance.',
-    usageTips: ['Vinhos e destilados', 'Clubes privados', 'Arte e cultura'],
-    psychology: 'Sugere profundidade, mistério e sofisticação.'
+    description: { en: 'Deep purple like port wine, complexity in every nuance.', pt: 'Roxo profundo como vinho do Porto, complexidade em cada nuance.', es: 'Púrpura profundo como vino de Oporto, complejidad en cada matiz.' },
+    usageTips: { en: ['Wines and spirits', 'Private clubs', 'Art and culture'], pt: ['Vinhos e destilados', 'Clubes privados', 'Arte e cultura'], es: ['Vinos y destilados', 'Clubes privados', 'Arte y cultura'] },
+    psychology: { en: 'Suggests depth, mystery and sophistication.', pt: 'Sugere profundidade, mistério e sofisticação.', es: 'Sugiere profundidad, misterio y sofisticación.' }
   },
   '2607': {
-    description: 'Beringela madura, natureza e sofisticação em união perfeita.',
-    usageTips: ['Gastronomia gourmet', 'Moda inverno', 'Interiores elegantes'],
-    psychology: 'Evoca riqueza natural, elegância e maturidade.'
+    description: { en: 'Ripe eggplant, nature and sophistication in perfect union.', pt: 'Beringela madura, natureza e sofisticação em união perfeita.', es: 'Berenjena madura, naturaleza y sofisticación en unión perfecta.' },
+    usageTips: { en: ['Gourmet gastronomy', 'Winter fashion', 'Elegant interiors'], pt: ['Gastronomia gourmet', 'Moda inverno', 'Interiores elegantes'], es: ['Gastronomía gourmet', 'Moda invierno', 'Interiores elegantes'] },
+    psychology: { en: 'Evokes natural richness, elegance and maturity.', pt: 'Evoca riqueza natural, elegância e maturidade.', es: 'Evoca riqueza natural, elegancia y madurez.' }
   },
   '2617': {
-    description: 'Ameixa escura, doçura contida em profundidade enigmática.',
-    usageTips: ['Chocolates finos', 'Moda de luxo', 'Perfumaria'],
-    psychology: 'Transmite sensualidade, mistério e refinamento.'
+    description: { en: 'Dark plum, contained sweetness in enigmatic depth.', pt: 'Ameixa escura, doçura contida em profundidade enigmática.', es: 'Ciruela oscura, dulzura contenida en profundidad enigmática.' },
+    usageTips: { en: ['Fine chocolates', 'Luxury fashion', 'Perfumery'], pt: ['Chocolates finos', 'Moda de luxo', 'Perfumaria'], es: ['Chocolates finos', 'Moda de lujo', 'Perfumería'] },
+    psychology: { en: 'Conveys sensuality, mystery and refinement.', pt: 'Transmite sensualidade, mistério e refinamento.', es: 'Transmite sensualidad, misterio y refinamiento.' }
   },
   '2627': {
-    description: 'Violeta noturno, a cor das estrelas distantes e sonhos profundos.',
-    usageTips: ['Astronomia e ciência', 'Produtos noturnos', 'Tech futurista'],
-    psychology: 'Inspira curiosidade, exploração e imaginação.'
+    description: { en: 'Night violet, the color of distant stars and deep dreams.', pt: 'Violeta noturno, a cor das estrelas distantes e sonhos profundos.', es: 'Violeta nocturno, el color de estrellas distantes y sueños profundos.' },
+    usageTips: { en: ['Astronomy and science', 'Nighttime products', 'Futuristic tech'], pt: ['Astronomia e ciência', 'Produtos noturnos', 'Tech futurista'], es: ['Astronomía y ciencia', 'Productos nocturnos', 'Tech futurista'] },
+    psychology: { en: 'Inspires curiosity, exploration and imagination.', pt: 'Inspira curiosidade, exploração e imaginação.', es: 'Inspira curiosidad, exploración e imaginación.' }
   },
   
   // AZUIS
@@ -1150,39 +1150,39 @@ const pantoneAnalysis: Record<string, AnalysisResult> = {
     }
   },
   '279': {
-    description: 'Azul céu de verão, otimismo em sua expressão mais refrescante.',
-    usageTips: ['Viagens e turismo', 'Produtos de verão', 'Branding positivo'],
-    psychology: 'Sugere liberdade, possibilidades e frescor.'
+    description: { en: 'Summer sky blue, optimism in its most refreshing expression.', pt: 'Azul céu de verão, otimismo em sua expressão mais refrescante.', es: 'Azul cielo de verano, optimismo en su expresión más refrescante.' },
+    usageTips: { en: ['Travel and tourism', 'Summer products', 'Positive branding'], pt: ['Viagens e turismo', 'Produtos de verão', 'Branding positivo'], es: ['Viajes y turismo', 'Productos de verano', 'Branding positivo'] },
+    psychology: { en: 'Suggests freedom, possibilities and freshness.', pt: 'Sugere liberdade, possibilidades e frescor.', es: 'Sugiere libertad, posibilidades y frescura.' }
   },
   '280': {
-    description: 'Azul marinho clássico, elegância atemporal que nunca decepciona.',
-    usageTips: ['Moda clássica', 'Náutico', 'Corporativo tradicional'],
-    psychology: 'Transmite seriedade, confiabilidade e tradição.'
+    description: { en: 'Classic navy blue, timeless elegance that never disappoints.', pt: 'Azul marinho clássico, elegância atemporal que nunca decepciona.', es: 'Azul marino clásico, elegancia atemporal que nunca decepciona.' },
+    usageTips: { en: ['Classic fashion', 'Nautical', 'Traditional corporate'], pt: ['Moda clássica', 'Náutico', 'Corporativo tradicional'], es: ['Moda clásica', 'Náutico', 'Corporativo tradicional'] },
+    psychology: { en: 'Conveys seriousness, reliability and tradition.', pt: 'Transmite seriedade, confiabilidade e tradição.', es: 'Transmite seriedad, confiabilidad y tradición.' }
   },
   '281': {
-    description: 'Navy profundo como o oceano à meia-noite, mistério aquático.',
-    usageTips: ['Luxo masculino', 'Esportes náuticos', 'Uniformes premium'],
-    psychology: 'Evoca profundidade, estabilidade e força silenciosa.'
+    description: { en: 'Deep navy like the midnight ocean, aquatic mystery.', pt: 'Navy profundo como o oceano à meia-noite, mistério aquático.', es: 'Azul naval profundo como el océano a medianoche, misterio acuático.' },
+    usageTips: { en: ['Men\'s luxury', 'Nautical sports', 'Premium uniforms'], pt: ['Luxo masculino', 'Esportes náuticos', 'Uniformes premium'], es: ['Lujo masculino', 'Deportes náuticos', 'Uniformes premium'] },
+    psychology: { en: 'Evokes depth, stability and quiet strength.', pt: 'Evoca profundidade, estabilidade e força silenciosa.', es: 'Evoca profundidad, estabilidad y fuerza silenciosa.' }
   },
   '282': {
-    description: 'Azul noturno, quase preto, sofisticação em sua forma mais discreta.',
-    usageTips: ['Moda formal', 'Tecnologia premium', 'Design minimalista'],
-    psychology: 'Comunica elegância, discrição e poder.'
+    description: { en: 'Night blue, almost black, sophistication in its most discreet form.', pt: 'Azul noturno, quase preto, sofisticação em sua forma mais discreta.', es: 'Azul nocturno, casi negro, sofisticación en su forma más discreta.' },
+    usageTips: { en: ['Formal fashion', 'Premium technology', 'Minimalist design'], pt: ['Moda formal', 'Tecnologia premium', 'Design minimalista'], es: ['Moda formal', 'Tecnología premium', 'Diseño minimalista'] },
+    psychology: { en: 'Communicates elegance, discretion and power.', pt: 'Comunica elegância, discrição e poder.', es: 'Comunica elegancia, discreción y poder.' }
   },
   '283': {
-    description: 'Azul bebê sereno, calma que acalenta e reconforta.',
-    usageTips: ['Produtos infantis', 'Healthcare', 'Bem-estar'],
-    psychology: 'Sugere paz, proteção e cuidado.'
+    description: { en: 'Serene baby blue, calming warmth that comforts.', pt: 'Azul bebê sereno, calma que acalenta e reconforta.', es: 'Azul bebé sereno, calma que reconforta y consuela.' },
+    usageTips: { en: ['Children\'s products', 'Healthcare', 'Wellness'], pt: ['Produtos infantis', 'Healthcare', 'Bem-estar'], es: ['Productos infantiles', 'Healthcare', 'Bienestar'] },
+    psychology: { en: 'Suggests peace, protection and care.', pt: 'Sugere paz, proteção e cuidado.', es: 'Sugiere paz, protección y cuidado.' }
   },
   '284': {
-    description: 'Azul piscina tropical, convite irresistível para mergulhar.',
-    usageTips: ['Resorts e spas', 'Produtos de limpeza', 'Verão e praia'],
-    psychology: 'Evoca refrescância, limpeza e pureza.'
+    description: { en: 'Tropical pool blue, irresistible invitation to dive in.', pt: 'Azul piscina tropical, convite irresistível para mergulhar.', es: 'Azul piscina tropical, invitación irresistible a sumergirse.' },
+    usageTips: { en: ['Resorts and spas', 'Cleaning products', 'Summer and beach'], pt: ['Resorts e spas', 'Produtos de limpeza', 'Verão e praia'], es: ['Resorts y spas', 'Productos de limpieza', 'Verano y playa'] },
+    psychology: { en: 'Evokes refreshment, cleanliness and purity.', pt: 'Evoca refrescância, limpeza e pureza.', es: 'Evoca frescura, limpieza y pureza.' }
   },
   '285': {
-    description: 'Azul corporate moderno, LinkedIn em forma de Pantone.',
-    usageTips: ['Tech companies', 'Finanças', 'Consultoria'],
-    psychology: 'Transmite inovação, confiança e profissionalismo.'
+    description: { en: 'Modern corporate blue, LinkedIn in Pantone form.', pt: 'Azul corporate moderno, LinkedIn em forma de Pantone.', es: 'Azul corporativo moderno, LinkedIn en forma de Pantone.' },
+    usageTips: { en: ['Tech companies', 'Finance', 'Consulting'], pt: ['Tech companies', 'Finanças', 'Consultoria'], es: ['Empresas tech', 'Finanzas', 'Consultoría'] },
+    psychology: { en: 'Conveys innovation, trust and professionalism.', pt: 'Transmite inovação, confiança e profissionalismo.', es: 'Transmite innovación, confianza y profesionalismo.' }
   },
   '286': {
     description: {
@@ -1355,19 +1355,19 @@ const pantoneAnalysis: Record<string, AnalysisResult> = {
     }
   },
   '302': {
-    description: 'Teal profundo, onde azul encontra verde em mistério aquático.',
-    usageTips: ['Decoração de interiores', 'Moda inverno', 'Design premium'],
-    psychology: 'Sugere equilíbrio, sofisticação e unicidade.'
+    description: { en: 'Deep teal, where blue meets green in aquatic mystery.', pt: 'Teal profundo, onde azul encontra verde em mistério aquático.', es: 'Teal profundo, donde azul encuentra verde en misterio acuático.' },
+    usageTips: { en: ['Interior decoration', 'Winter fashion', 'Premium design'], pt: ['Decoração de interiores', 'Moda inverno', 'Design premium'], es: ['Decoración de interiores', 'Moda invierno', 'Diseño premium'] },
+    psychology: { en: 'Suggests balance, sophistication and uniqueness.', pt: 'Sugere equilíbrio, sofisticação e unicidade.', es: 'Sugiere equilibrio, sofisticación y unicidad.' }
   },
   '3005': {
-    description: 'Azure vibrante, digitalização do próprio conceito de azul.',
-    usageTips: ['UI/UX design', 'Apps e software', 'Startups tech'],
-    psychology: 'Transmite inovação, acessibilidade e modernidade.'
+    description: { en: 'Vibrant azure, digitization of the very concept of blue.', pt: 'Azure vibrante, digitalização do próprio conceito de azul.', es: 'Azur vibrante, digitalización del propio concepto de azul.' },
+    usageTips: { en: ['UI/UX design', 'Apps and software', 'Tech startups'], pt: ['UI/UX design', 'Apps e software', 'Startups tech'], es: ['Diseño UI/UX', 'Apps y software', 'Startups tech'] },
+    psychology: { en: 'Conveys innovation, accessibility and modernity.', pt: 'Transmite inovação, acessibilidade e modernidade.', es: 'Transmite innovación, accesibilidad y modernidad.' }
   },
   '3015': {
-    description: 'Azul oceano Atlântico, vastidão contida em matiz único.',
-    usageTips: ['Turismo costeiro', 'Frutos do mar', 'Esportes aquáticos'],
-    psychology: 'Evoca aventura, liberdade e conexão com natureza.'
+    description: { en: 'Atlantic ocean blue, vastness contained in a single hue.', pt: 'Azul oceano Atlântico, vastidão contida em matiz único.', es: 'Azul océano Atlántico, vastedad contenida en un solo matiz.' },
+    usageTips: { en: ['Coastal tourism', 'Seafood', 'Water sports'], pt: ['Turismo costeiro', 'Frutos do mar', 'Esportes aquáticos'], es: ['Turismo costero', 'Frutos del mar', 'Deportes acuáticos'] },
+    psychology: { en: 'Evokes adventure, freedom and connection with nature.', pt: 'Evoca aventura, liberdade e conexão com natureza.', es: 'Evoca aventura, libertad y conexión con la naturaleza.' }
   },
   
   // VERDES
@@ -1884,148 +1884,148 @@ const pantoneAnalysis: Record<string, AnalysisResult> = {
     }
   },
   '412': {
-    description: 'Espresso intenso, café em sua forma mais concentrada.',
-    usageTips: ['Cafeterias', 'Chocolates', 'Design gourmet'],
-    psychology: 'Sugere intensidade, energia e sofisticação.'
+    description: { en: 'Intense espresso, coffee in its most concentrated form.', pt: 'Espresso intenso, café em sua forma mais concentrada.', es: 'Espresso intenso, café en su forma más concentrada.' },
+    usageTips: { en: ['Coffee shops', 'Chocolates', 'Gourmet design'], pt: ['Cafeterias', 'Chocolates', 'Design gourmet'], es: ['Cafeterías', 'Chocolates', 'Diseño gourmet'] },
+    psychology: { en: 'Suggests intensity, energy and sophistication.', pt: 'Sugere intensidade, energia e sofisticação.', es: 'Sugiere intensidad, energía y sofisticación.' }
   },
   '4625': {
-    description: 'Chocolate amargo premium, indulgência para paladares refinados.',
-    usageTips: ['Confeitaria de luxo', 'Moda inverno', 'Interiores acolhedores'],
-    psychology: 'Transmite conforto, indulgência e calor.'
+    description: { en: 'Premium dark chocolate, indulgence for refined palates.', pt: 'Chocolate amargo premium, indulgência para paladares refinados.', es: 'Chocolate amargo premium, indulgencia para paladares refinados.' },
+    usageTips: { en: ['Luxury confectionery', 'Winter fashion', 'Cozy interiors'], pt: ['Confeitaria de luxo', 'Moda inverno', 'Interiores acolhedores'], es: ['Confitería de lujo', 'Moda invierno', 'Interiores acogedores'] },
+    psychology: { en: 'Conveys comfort, indulgence and warmth.', pt: 'Transmite conforto, indulgência e calor.', es: 'Transmite confort, indulgencia y calidez.' }
   },
   '4635': {
-    description: 'Caramelo dourado, doçura visual que aquece o olhar.',
-    usageTips: ['Sobremesas', 'Moda outono', 'Design acolhedor'],
-    psychology: 'Evoca doçura, nostalgia e aconchego.'
+    description: { en: 'Golden caramel, visual sweetness that warms the gaze.', pt: 'Caramelo dourado, doçura visual que aquece o olhar.', es: 'Caramelo dorado, dulzura visual que calienta la mirada.' },
+    usageTips: { en: ['Desserts', 'Autumn fashion', 'Cozy design'], pt: ['Sobremesas', 'Moda outono', 'Design acolhedor'], es: ['Postres', 'Moda otoño', 'Diseño acogedor'] },
+    psychology: { en: 'Evokes sweetness, nostalgia and coziness.', pt: 'Evoca doçura, nostalgia e aconchego.', es: 'Evoca dulzura, nostalgia y calidez.' }
   },
   '4645': {
-    description: 'Terracota ancestral, terra moldada por mãos artesãs.',
-    usageTips: ['Artesanato', 'Decoração rústica', 'Produtos naturais'],
-    psychology: 'Comunica autenticidade, tradição e conexão com terra.'
+    description: { en: 'Ancestral terracotta, earth shaped by artisan hands.', pt: 'Terracota ancestral, terra moldada por mãos artesãs.', es: 'Terracota ancestral, tierra moldeada por manos artesanas.' },
+    usageTips: { en: ['Crafts', 'Rustic decoration', 'Natural products'], pt: ['Artesanato', 'Decoração rústica', 'Produtos naturais'], es: ['Artesanía', 'Decoración rústica', 'Productos naturales'] },
+    psychology: { en: 'Communicates authenticity, tradition and earth connection.', pt: 'Comunica autenticidade, tradição e conexão com terra.', es: 'Comunica autenticidad, tradición y conexión con la tierra.' }
   },
   '4655': {
-    description: 'Canela aromática, especiaria traduzida em experiência visual.',
-    usageTips: ['Padarias artesanais', 'Outono e inverno', 'Produtos aromáticos'],
-    psychology: 'Sugere calor, aconchego e sabores tradicionais.'
+    description: { en: 'Aromatic cinnamon, spice translated into visual experience.', pt: 'Canela aromática, especiaria traduzida em experiência visual.', es: 'Canela aromática, especia traducida en experiencia visual.' },
+    usageTips: { en: ['Artisan bakeries', 'Autumn and winter', 'Aromatic products'], pt: ['Padarias artesanais', 'Outono e inverno', 'Produtos aromáticos'], es: ['Panaderías artesanales', 'Otoño e invierno', 'Productos aromáticos'] },
+    psychology: { en: 'Suggests warmth, coziness and traditional flavors.', pt: 'Sugere calor, aconchego e sabores tradicionais.', es: 'Sugiere calidez, acogimiento y sabores tradicionales.' }
   },
   '4665': {
-    description: 'Bege areia quente, praia deserta ao pôr do sol.',
-    usageTips: ['Resorts de praia', 'Moda natural', 'Cosméticos nude'],
-    psychology: 'Transmite relaxamento, naturalidade e paz.'
+    description: { en: 'Warm sand beige, deserted beach at sunset.', pt: 'Bege areia quente, praia deserta ao pôr do sol.', es: 'Beige arena cálida, playa desierta al atardecer.' },
+    usageTips: { en: ['Beach resorts', 'Natural fashion', 'Nude cosmetics'], pt: ['Resorts de praia', 'Moda natural', 'Cosméticos nude'], es: ['Resorts de playa', 'Moda natural', 'Cosméticos nude'] },
+    psychology: { en: 'Conveys relaxation, naturalness and peace.', pt: 'Transmite relaxamento, naturalidade e paz.', es: 'Transmite relajación, naturalidad y paz.' }
   },
   '4675': {
-    description: 'Nude universal, a cor da pele humana em sua diversidade.',
-    usageTips: ['Moda íntima', 'Cosméticos inclusivos', 'Design humano'],
-    psychology: 'Evoca humanidade, inclusão e naturalidade.'
+    description: { en: 'Universal nude, the color of human skin in its diversity.', pt: 'Nude universal, a cor da pele humana em sua diversidade.', es: 'Nude universal, el color de la piel humana en su diversidad.' },
+    usageTips: { en: ['Intimate fashion', 'Inclusive cosmetics', 'Human design'], pt: ['Moda íntima', 'Cosméticos inclusivos', 'Design humano'], es: ['Moda íntima', 'Cosméticos inclusivos', 'Diseño humano'] },
+    psychology: { en: 'Evokes humanity, inclusion and naturalness.', pt: 'Evoca humanidade, inclusão e naturalidade.', es: 'Evoca humanidad, inclusión y naturalidad.' }
   },
   '4685': {
-    description: 'Pêssego suave, delicadeza frutada em tom sereno.',
-    usageTips: ['Skincare', 'Moda feminina', 'Design delicado'],
-    psychology: 'Comunica suavidade, cuidado e feminilidade.'
+    description: { en: 'Soft peach, fruity delicacy in a serene tone.', pt: 'Pêssego suave, delicadeza frutada em tom sereno.', es: 'Melocotón suave, delicadeza frutal en tono sereno.' },
+    usageTips: { en: ['Skincare', 'Women\'s fashion', 'Delicate design'], pt: ['Skincare', 'Moda feminina', 'Design delicado'], es: ['Skincare', 'Moda femenina', 'Diseño delicado'] },
+    psychology: { en: 'Communicates softness, care and femininity.', pt: 'Comunica suavidade, cuidado e feminilidade.', es: 'Comunica suavidad, cuidado y feminidad.' }
   },
   '4695': {
-    description: 'Salmon rosado, frescor do oceano em matiz acolhedor.',
-    usageTips: ['Gastronomia', 'Moda verão', 'Design costeiro'],
-    psychology: 'Sugere frescor, vitalidade e elegância natural.'
+    description: { en: 'Rosy salmon, ocean freshness in a warm hue.', pt: 'Salmon rosado, frescor do oceano em matiz acolhedor.', es: 'Salmón rosado, frescura del océano en matiz acogedor.' },
+    usageTips: { en: ['Gastronomy', 'Summer fashion', 'Coastal design'], pt: ['Gastronomia', 'Moda verão', 'Design costeiro'], es: ['Gastronomía', 'Moda verano', 'Diseño costero'] },
+    psychology: { en: 'Suggests freshness, vitality and natural elegance.', pt: 'Sugere frescor, vitalidade e elegância natural.', es: 'Sugiere frescura, vitalidad y elegancia natural.' }
   },
   '4705': {
-    description: 'Rose gold contemporâneo, luxo millennial em forma de cor.',
-    usageTips: ['Tech accessories', 'Joalheria moderna', 'Design instagramável'],
-    psychology: 'Transmite modernidade, luxo acessível e feminilidade.'
+    description: { en: 'Contemporary rose gold, millennial luxury in color form.', pt: 'Rose gold contemporâneo, luxo millennial em forma de cor.', es: 'Rose gold contemporáneo, lujo millennial en forma de color.' },
+    usageTips: { en: ['Tech accessories', 'Modern jewelry', 'Instagram-worthy design'], pt: ['Tech accessories', 'Joalheria moderna', 'Design instagramável'], es: ['Accesorios tech', 'Joyería moderna', 'Diseño instagrameable'] },
+    psychology: { en: 'Conveys modernity, accessible luxury and femininity.', pt: 'Transmite modernidade, luxo acessível e feminilidade.', es: 'Transmite modernidad, lujo accesible y feminidad.' }
   },
   '4715': {
-    description: 'Copper metalizado, industrial encontra artesanal.',
-    usageTips: ['Cervejarias artesanais', 'Design industrial', 'Interiores modernos'],
-    psychology: 'Evoca autenticidade, craft e qualidade artesanal.'
+    description: { en: 'Metallic copper, industrial meets artisanal.', pt: 'Copper metalizado, industrial encontra artesanal.', es: 'Cobre metalizado, lo industrial encuentra lo artesanal.' },
+    usageTips: { en: ['Craft breweries', 'Industrial design', 'Modern interiors'], pt: ['Cervejarias artesanais', 'Design industrial', 'Interiores modernos'], es: ['Cervecerías artesanales', 'Diseño industrial', 'Interiores modernos'] },
+    psychology: { en: 'Evokes authenticity, craft and artisanal quality.', pt: 'Evoca autenticidade, craft e qualidade artesanal.', es: 'Evoca autenticidad, craft y calidad artesanal.' }
   },
   '4725': {
-    description: 'Bronze antigo, metal que conta histórias de eras passadas.',
-    usageTips: ['Museus e história', 'Troféus e prêmios', 'Design clássico'],
-    psychology: 'Comunica tradição, conquista e valor duradouro.'
+    description: { en: 'Ancient bronze, metal that tells stories of past eras.', pt: 'Bronze antigo, metal que conta histórias de eras passadas.', es: 'Bronce antiguo, metal que cuenta historias de eras pasadas.' },
+    usageTips: { en: ['Museums and history', 'Trophies and awards', 'Classic design'], pt: ['Museus e história', 'Troféus e prêmios', 'Design clássico'], es: ['Museos e historia', 'Trofeos y premios', 'Diseño clásico'] },
+    psychology: { en: 'Communicates tradition, achievement and lasting value.', pt: 'Comunica tradição, conquista e valor duradouro.', es: 'Comunica tradición, logro y valor duradero.' }
   },
   
   // BRANCOS E OFF-WHITES
   'White': {
-    description: 'Pureza absoluta, tela em branco para todas as possibilidades.',
-    usageTips: ['Minimalismo', 'Saúde e higiene', 'Espaços negativos'],
-    psychology: 'Transmite pureza, clareza e infinitas possibilidades.'
+    description: { en: 'Absolute purity, blank canvas for all possibilities.', pt: 'Pureza absoluta, tela em branco para todas as possibilidades.', es: 'Pureza absoluta, lienzo en blanco para todas las posibilidades.' },
+    usageTips: { en: ['Minimalism', 'Health and hygiene', 'Negative spaces'], pt: ['Minimalismo', 'Saúde e higiene', 'Espaços negativos'], es: ['Minimalismo', 'Salud e higiene', 'Espacios negativos'] },
+    psychology: { en: 'Conveys purity, clarity and infinite possibilities.', pt: 'Transmite pureza, clareza e infinitas possibilidades.', es: 'Transmite pureza, claridad e infinitas posibilidades.' }
   },
   '7527': {
-    description: 'Off-white acolhedor, branco que abraça em vez de ofuscar.',
-    usageTips: ['Interiores', 'Papelaria premium', 'Moda clean'],
-    psychology: 'Sugere calma, sofisticação e conforto visual.'
+    description: { en: 'Warm off-white, white that embraces rather than dazzles.', pt: 'Off-white acolhedor, branco que abraça em vez de ofuscar.', es: 'Blanco cálido, blanco que abraza en vez de deslumbrar.' },
+    usageTips: { en: ['Interiors', 'Premium stationery', 'Clean fashion'], pt: ['Interiores', 'Papelaria premium', 'Moda clean'], es: ['Interiores', 'Papelería premium', 'Moda clean'] },
+    psychology: { en: 'Suggests calm, sophistication and visual comfort.', pt: 'Sugere calma, sofisticação e conforto visual.', es: 'Sugiere calma, sofisticación y confort visual.' }
   },
   '7528': {
-    description: 'Marfim nobre, elegância orgânica em tom atemporal.',
-    usageTips: ['Convites de casamento', 'Moda nupcial', 'Design clássico'],
-    psychology: 'Evoca elegância, tradição e pureza refinada.'
+    description: { en: 'Noble ivory, organic elegance in a timeless tone.', pt: 'Marfim nobre, elegância orgânica em tom atemporal.', es: 'Marfil noble, elegancia orgánica en tono atemporal.' },
+    usageTips: { en: ['Wedding invitations', 'Bridal fashion', 'Classic design'], pt: ['Convites de casamento', 'Moda nupcial', 'Design clássico'], es: ['Invitaciones de boda', 'Moda nupcial', 'Diseño clásico'] },
+    psychology: { en: 'Evokes elegance, tradition and refined purity.', pt: 'Evoca elegância, tradição e pureza refinada.', es: 'Evoca elegancia, tradición y pureza refinada.' }
   },
   '7529': {
-    description: 'Creme suave, doçura visual que acolhe sem esforço.',
-    usageTips: ['Cosméticos', 'Confeitaria', 'Design feminino'],
-    psychology: 'Comunica suavidade, nutrição e cuidado.'
+    description: { en: 'Soft cream, visual sweetness that welcomes effortlessly.', pt: 'Creme suave, doçura visual que acolhe sem esforço.', es: 'Crema suave, dulzura visual que acoge sin esfuerzo.' },
+    usageTips: { en: ['Cosmetics', 'Confectionery', 'Feminine design'], pt: ['Cosméticos', 'Confeitaria', 'Design feminino'], es: ['Cosméticos', 'Confitería', 'Diseño femenino'] },
+    psychology: { en: 'Communicates softness, nourishment and care.', pt: 'Comunica suavidade, nutrição e cuidado.', es: 'Comunica suavidad, nutrición y cuidado.' }
   },
   '7530': {
-    description: 'Linho natural, textura traduzida em cor orgânica.',
-    usageTips: ['Têxteis naturais', 'Decoração rústica', 'Produtos eco'],
-    psychology: 'Transmite naturalidade, sustentabilidade e autenticidade.'
+    description: { en: 'Natural linen, texture translated into organic color.', pt: 'Linho natural, textura traduzida em cor orgânica.', es: 'Lino natural, textura traducida en color orgánico.' },
+    usageTips: { en: ['Natural textiles', 'Rustic decoration', 'Eco products'], pt: ['Têxteis naturais', 'Decoração rústica', 'Produtos eco'], es: ['Textiles naturales', 'Decoración rústica', 'Productos eco'] },
+    psychology: { en: 'Conveys naturalness, sustainability and authenticity.', pt: 'Transmite naturalidade, sustentabilidade e autenticidade.', es: 'Transmite naturalidad, sostenibilidad y autenticidad.' }
   },
   '7531': {
-    description: 'Pérola luminoso, luxo do mar capturado em superfície.',
-    usageTips: ['Joalheria', 'Moda de luxo', 'Cosméticos premium'],
-    psychology: 'Sugere preciosidade, elegância e refinamento.'
+    description: { en: 'Luminous pearl, sea luxury captured on surface.', pt: 'Pérola luminoso, luxo do mar capturado em superfície.', es: 'Perla luminosa, lujo del mar capturado en superficie.' },
+    usageTips: { en: ['Jewelry', 'Luxury fashion', 'Premium cosmetics'], pt: ['Joalheria', 'Moda de luxo', 'Cosméticos premium'], es: ['Joyería', 'Moda de lujo', 'Cosméticos premium'] },
+    psychology: { en: 'Suggests preciousness, elegance and refinement.', pt: 'Sugere preciosidade, elegância e refinamento.', es: 'Sugiere preciosidad, elegancia y refinamiento.' }
   },
   
   // CINZAS
   '421': {
-    description: 'Cinza prata moderno, tecnologia em forma neutra.',
-    usageTips: ['Tech products', 'Automóveis', 'Design futurista'],
-    psychology: 'Comunica modernidade, inovação e sofisticação.'
+    description: { en: 'Modern silver gray, technology in neutral form.', pt: 'Cinza prata moderno, tecnologia em forma neutra.', es: 'Gris plata moderno, tecnología en forma neutra.' },
+    usageTips: { en: ['Tech products', 'Automobiles', 'Futuristic design'], pt: ['Tech products', 'Automóveis', 'Design futurista'], es: ['Productos tech', 'Automóviles', 'Diseño futurista'] },
+    psychology: { en: 'Communicates modernity, innovation and sophistication.', pt: 'Comunica modernidade, inovação e sofisticação.', es: 'Comunica modernidad, innovación y sofisticación.' }
   },
   '422': {
-    description: 'Cinza médio equilibrado, neutralidade em perfeita harmonia.',
-    usageTips: ['Backgrounds', 'UI design', 'Textos secundários'],
-    psychology: 'Transmite equilíbrio, profissionalismo e versatilidade.'
+    description: { en: 'Balanced medium gray, neutrality in perfect harmony.', pt: 'Cinza médio equilibrado, neutralidade em perfeita harmonia.', es: 'Gris medio equilibrado, neutralidad en perfecta armonía.' },
+    usageTips: { en: ['Backgrounds', 'UI design', 'Secondary text'], pt: ['Backgrounds', 'UI design', 'Textos secundários'], es: ['Fondos', 'Diseño UI', 'Textos secundarios'] },
+    psychology: { en: 'Conveys balance, professionalism and versatility.', pt: 'Transmite equilíbrio, profissionalismo e versatilidade.', es: 'Transmite equilibrio, profesionalismo y versatilidad.' }
   },
   '423': {
-    description: 'Cinza grafite sofisticado, carvão refinado em matiz elegante.',
-    usageTips: ['Moda masculina', 'Design editorial', 'Arquitetura'],
-    psychology: 'Evoca seriedade, estabilidade e força silenciosa.'
+    description: { en: 'Sophisticated graphite gray, refined charcoal in elegant hue.', pt: 'Cinza grafite sofisticado, carvão refinado em matiz elegante.', es: 'Gris grafito sofisticado, carbón refinado en matiz elegante.' },
+    usageTips: { en: ['Men\'s fashion', 'Editorial design', 'Architecture'], pt: ['Moda masculina', 'Design editorial', 'Arquitetura'], es: ['Moda masculina', 'Diseño editorial', 'Arquitectura'] },
+    psychology: { en: 'Evokes seriousness, stability and quiet strength.', pt: 'Evoca seriedade, estabilidade e força silenciosa.', es: 'Evoca seriedad, estabilidad y fuerza silenciosa.' }
   },
   '424': {
-    description: 'Cinza tempestade dramático, tensão atmosférica em cor.',
-    usageTips: ['Design dramático', 'Fotografia', 'Moda dark'],
-    psychology: 'Sugere drama, intensidade e profundidade.'
+    description: { en: 'Dramatic storm gray, atmospheric tension in color.', pt: 'Cinza tempestade dramático, tensão atmosférica em cor.', es: 'Gris tormenta dramático, tensión atmosférica en color.' },
+    usageTips: { en: ['Dramatic design', 'Photography', 'Dark fashion'], pt: ['Design dramático', 'Fotografia', 'Moda dark'], es: ['Diseño dramático', 'Fotografía', 'Moda dark'] },
+    psychology: { en: 'Suggests drama, intensity and depth.', pt: 'Sugere drama, intensidade e profundidade.', es: 'Sugiere drama, intensidad y profundidad.' }
   },
   '425': {
-    description: 'Cinza chumbo industrial, força bruta refinada em matiz.',
-    usageTips: ['Indústria', 'Design masculino', 'Arquitetura urbana'],
-    psychology: 'Comunica força, durabilidade e solidez.'
+    description: { en: 'Industrial lead gray, brute force refined into hue.', pt: 'Cinza chumbo industrial, força bruta refinada em matiz.', es: 'Gris plomo industrial, fuerza bruta refinada en matiz.' },
+    usageTips: { en: ['Industry', 'Masculine design', 'Urban architecture'], pt: ['Indústria', 'Design masculino', 'Arquitetura urbana'], es: ['Industria', 'Diseño masculino', 'Arquitectura urbana'] },
+    psychology: { en: 'Communicates strength, durability and solidity.', pt: 'Comunica força, durabilidade e solidez.', es: 'Comunica fuerza, durabilidad y solidez.' }
   },
   '426': {
-    description: 'Antracite profundo, quase preto mas com alma de cinza.',
-    usageTips: ['Moda formal', 'Tecnologia premium', 'Design minimalista'],
-    psychology: 'Transmite elegância, mistério e sofisticação.'
+    description: { en: 'Deep anthracite, almost black but with a gray soul.', pt: 'Antracite profundo, quase preto mas com alma de cinza.', es: 'Antracita profundo, casi negro pero con alma de gris.' },
+    usageTips: { en: ['Formal fashion', 'Premium technology', 'Minimalist design'], pt: ['Moda formal', 'Tecnologia premium', 'Design minimalista'], es: ['Moda formal', 'Tecnología premium', 'Diseño minimalista'] },
+    psychology: { en: 'Conveys elegance, mystery and sophistication.', pt: 'Transmite elegância, mistério e sofisticação.', es: 'Transmite elegancia, misterio y sofisticación.' }
   },
   '427': {
-    description: 'Cinza claro aéreo, névoa matinal em forma de cor.',
-    usageTips: ['Backgrounds suaves', 'Design clean', 'Wellness'],
-    psychology: 'Evoca leveza, serenidade e abertura.'
+    description: { en: 'Airy light gray, morning mist in color form.', pt: 'Cinza claro aéreo, névoa matinal em forma de cor.', es: 'Gris claro aéreo, neblina matinal en forma de color.' },
+    usageTips: { en: ['Soft backgrounds', 'Clean design', 'Wellness'], pt: ['Backgrounds suaves', 'Design clean', 'Wellness'], es: ['Fondos suaves', 'Diseño clean', 'Wellness'] },
+    psychology: { en: 'Evokes lightness, serenity and openness.', pt: 'Evoca leveza, serenidade e abertura.', es: 'Evoca ligereza, serenidad y apertura.' }
   },
   '428': {
-    description: 'Prata lunar, reflexo de luar em superfície metálica.',
-    usageTips: ['Joalheria', 'Cosméticos', 'Design noturno'],
-    psychology: 'Sugere mistério, feminilidade e elegância noturna.'
+    description: { en: 'Lunar silver, moonlight reflection on metallic surface.', pt: 'Prata lunar, reflexo de luar em superfície metálica.', es: 'Plata lunar, reflejo de luna en superficie metálica.' },
+    usageTips: { en: ['Jewelry', 'Cosmetics', 'Night design'], pt: ['Joalheria', 'Cosméticos', 'Design noturno'], es: ['Joyería', 'Cosméticos', 'Diseño nocturno'] },
+    psychology: { en: 'Suggests mystery, femininity and nocturnal elegance.', pt: 'Sugere mistério, feminilidade e elegância noturna.', es: 'Sugiere misterio, feminidad y elegancia nocturna.' }
   },
   '429': {
-    description: 'Cinza névoa suave, paisagem onírica em tom silencioso.',
-    usageTips: ['Arte e fotografia', 'Design meditativo', 'Wellness'],
-    psychology: 'Comunica introspecção, calma e contemplação.'
+    description: { en: 'Soft mist gray, dreamlike landscape in a quiet tone.', pt: 'Cinza névoa suave, paisagem onírica em tom silencioso.', es: 'Gris neblina suave, paisaje onírico en tono silencioso.' },
+    usageTips: { en: ['Art and photography', 'Meditative design', 'Wellness'], pt: ['Arte e fotografia', 'Design meditativo', 'Wellness'], es: ['Arte y fotografía', 'Diseño meditativo', 'Wellness'] },
+    psychology: { en: 'Communicates introspection, calm and contemplation.', pt: 'Comunica introspecção, calma e contemplação.', es: 'Comunica introspección, calma y contemplación.' }
   },
   '430': {
-    description: 'Cinza concreto urbano, arquitetura da cidade em matiz.',
-    usageTips: ['Real estate', 'Arquitetura', 'Design urbano'],
-    psychology: 'Transmite solidez, modernidade e urbanidade.'
+    description: { en: 'Urban concrete gray, city architecture in hue.', pt: 'Cinza concreto urbano, arquitetura da cidade em matiz.', es: 'Gris concreto urbano, arquitectura de la ciudad en matiz.' },
+    usageTips: { en: ['Real estate', 'Architecture', 'Urban design'], pt: ['Real estate', 'Arquitetura', 'Design urbano'], es: ['Bienes raíces', 'Arquitectura', 'Diseño urbano'] },
+    psychology: { en: 'Conveys solidity, modernity and urbanity.', pt: 'Transmite solidez, modernidade e urbanidade.', es: 'Transmite solidez, modernidad y urbanidad.' }
   },
   
   // PRETOS ESPECIAIS (mantidos em seção anterior)
