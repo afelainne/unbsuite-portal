@@ -35,98 +35,99 @@ const tools = [
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 md:p-8" style={{ backgroundColor: '#F0FF00' }}>
-      {/* Device Frame */}
-      <div className="relative w-full max-w-4xl border-2 rounded-3xl overflow-hidden" style={{ borderColor: '#232323', backgroundColor: '#FFFFFF' }}>
-        {/* Corner decorations */}
-        <div className="absolute top-3 left-3" style={{ color: 'rgba(35,35,35,0.3)' }}>
-          <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FFFFFF' }}>
+      {/* Hero */}
+      <div
+        className="flex-1 flex flex-col items-center justify-center relative px-6 py-16"
+        style={{ backgroundColor: '#F0FF00', minHeight: '85vh' }}
+      >
+        {/* Corner marks */}
+        <div className="absolute top-5 left-5" style={{ color: 'rgba(35,35,35,0.25)' }}>
+          <Plus className="h-4 w-4" strokeWidth={1.5} />
         </div>
-        <div className="absolute top-3 right-3" style={{ color: 'rgba(35,35,35,0.3)' }}>
-          <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+        <div className="absolute top-5 right-5" style={{ color: 'rgba(35,35,35,0.25)' }}>
+          <Plus className="h-4 w-4" strokeWidth={1.5} />
         </div>
-        <div className="absolute bottom-3 left-3" style={{ color: 'rgba(35,35,35,0.3)' }}>
-          <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+        <div className="absolute bottom-5 left-5" style={{ color: 'rgba(35,35,35,0.25)' }}>
+          <Plus className="h-4 w-4" strokeWidth={1.5} />
         </div>
-        <div className="absolute bottom-3 right-3" style={{ color: 'rgba(35,35,35,0.3)' }}>
-          <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
-        </div>
-
-        {/* Header with logo */}
-        <div className="flex items-center justify-center py-5 px-6">
-          <UnbsToolsLogo height={28} color="#232323" />
+        <div className="absolute bottom-5 right-5" style={{ color: 'rgba(35,35,35,0.25)' }}>
+          <Plus className="h-4 w-4" strokeWidth={1.5} />
         </div>
 
-        {/* Main lime area */}
-        <div className="mx-5 mb-3 relative rounded-2xl overflow-hidden" style={{ minHeight: "420px", backgroundColor: '#F0FF00' }}>
-          {/* Emblem top-left */}
-          <div className="absolute top-4 left-4">
-            <Shield className="h-6 w-6" strokeWidth={1.5} style={{ color: 'rgba(35,35,35,0.4)' }} />
-          </div>
+        {/* Shield emblem */}
+        <div className="absolute top-14 left-6" style={{ color: 'rgba(35,35,35,0.3)' }}>
+          <Shield className="h-6 w-6" strokeWidth={1.5} />
+        </div>
 
-          {/* Center content */}
-          <div className="flex flex-col items-center justify-center h-full pt-16 pb-12 px-12">
-            {/* Tool buttons */}
-            <div className="flex flex-wrap items-center justify-center gap-3 mt-auto mb-auto">
-              {tools.map((tool) => (
-                <Link
-                  key={tool.name}
-                  to={tool.path}
-                  className="group flex items-center gap-2.5 border rounded-full px-5 py-2.5 transition-all duration-200"
-                  style={{ borderColor: 'rgba(35,35,35,0.8)', color: '#232323' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#232323'; e.currentTarget.style.color = '#F0FF00'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#232323'; }}
-                >
-                  <tool.Logo />
-                  <span className="text-[9px] font-medium uppercase tracking-wide opacity-60 border-l border-current pl-2.5">
-                    {tool.label}
-                  </span>
-                </Link>
+        {/* Logo */}
+        <div className="mb-12">
+          <UnbsToolsLogo height={40} color="#232323" />
+        </div>
+
+        {/* Tool buttons */}
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          {tools.map((tool) => (
+            <Link
+              key={tool.name}
+              to={tool.path}
+              className="group flex items-center gap-3 border rounded-full px-6 py-3 transition-all duration-200"
+              style={{ borderColor: 'rgba(35,35,35,0.8)', color: '#232323' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#232323'; e.currentTarget.style.color = '#F0FF00'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#232323'; }}
+            >
+              <tool.Logo />
+              <span className="text-[9px] font-medium uppercase tracking-wide opacity-60 border-l border-current pl-3">
+                {tool.label}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Bottom section */}
+      <div className="px-6 pb-6 pt-4" style={{ backgroundColor: '#FFFFFF' }}>
+        <div className="max-w-4xl mx-auto space-y-3">
+          {/* Status bar */}
+          <div className="flex items-center gap-2 rounded-lg px-4 py-2" style={{ backgroundColor: '#232323' }}>
+            <div className="flex items-end gap-[2px] h-4">
+              {[3,5,2,6,4,7,3,5,2,4,6,3,5,7,2,4,3,6,5,2,7,4,3,5,6,2,4,7,3,5].map((h, i) => (
+                <div
+                  key={i}
+                  className="w-[1.5px] rounded-full"
+                  style={{ height: `${h * 2}px`, backgroundColor: 'rgba(255,255,255,0.7)' }}
+                />
               ))}
             </div>
+            <div className="ml-auto flex items-center gap-4">
+              <span className="text-[9px] font-mono uppercase" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                SYS.ACTIVE
+              </span>
+              <span className="text-[9px] font-mono" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                2026.02
+              </span>
+              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#F0FF00' }} />
+            </div>
           </div>
-        </div>
 
-        {/* Status bar */}
-        <div className="mx-5 mb-3 flex items-center gap-2 rounded-lg px-4 py-2" style={{ backgroundColor: '#232323' }}>
-          {/* Barcode visual */}
-          <div className="flex items-end gap-[2px] h-4">
-            {[3,5,2,6,4,7,3,5,2,4,6,3,5,7,2,4,3,6,5,2,7,4,3,5,6,2,4,7,3,5].map((h, i) => (
-              <div
-                key={i}
-                className="w-[1.5px] rounded-full"
-                style={{ height: `${h * 2}px`, backgroundColor: 'rgba(255,255,255,0.7)' }}
-              />
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-4">
-            <span className="text-[9px] font-mono uppercase" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              SYS.ACTIVE
-            </span>
-            <span className="text-[9px] font-mono" style={{ color: 'rgba(255,255,255,0.5)' }}>
-              2026.02
-            </span>
-            <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: '#F0FF00' }} />
-          </div>
-        </div>
-
-        {/* Info cards */}
-        <div className="mx-5 mb-5 grid grid-cols-2 gap-3">
-          <div className="rounded-lg px-4 py-3" style={{ border: '1px solid rgba(35,35,35,0.2)' }}>
-            <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#888' }}>
-              UNBS // LINK_LOAD
-            </p>
-            <p className="text-[10px] font-mono" style={{ color: 'rgba(35,35,35,0.7)' }}>
-              unbserved.com/tools
-            </p>
-          </div>
-          <div className="rounded-lg px-4 py-3" style={{ border: '1px solid rgba(35,35,35,0.2)' }}>
-            <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#888' }}>
-              UNBS-17 // FEATURED
-            </p>
-            <p className="text-[10px] font-mono" style={{ color: 'rgba(35,35,35,0.7)' }}>
-              Curadoria criativa v2.0
-            </p>
+          {/* Info cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg px-4 py-3" style={{ border: '1px solid rgba(35,35,35,0.15)' }}>
+              <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#888' }}>
+                UNBS // LINK_LOAD
+              </p>
+              <p className="text-[10px] font-mono" style={{ color: 'rgba(35,35,35,0.7)' }}>
+                unbserved.com/tools
+              </p>
+            </div>
+            <div className="rounded-lg px-4 py-3" style={{ border: '1px solid rgba(35,35,35,0.15)' }}>
+              <p className="text-[9px] font-mono uppercase tracking-wider mb-1" style={{ color: '#888' }}>
+                UNBS-17 // FEATURED
+              </p>
+              <p className="text-[10px] font-mono" style={{ color: 'rgba(35,35,35,0.7)' }}>
+                Curadoria criativa v2.0
+              </p>
+            </div>
           </div>
         </div>
       </div>
