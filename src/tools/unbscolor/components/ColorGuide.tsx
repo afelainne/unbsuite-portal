@@ -17,7 +17,7 @@ const SectionHeader: React.FC<{ category: string; title: string }> = ({ category
 
 export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors = [] }) => {
     const { t } = useLanguage();
-    const safeHex = isValidHex(selectedHex) ? selectedHex : '#F7E043';
+    const safeHex = isValidHex(selectedHex) ? selectedHex : '#F0FF00';
     
     const [manualCmyk, setManualCmyk] = useState({ c: 0, m: 76, y: 73, k: 3 });
     const [bgHex, setBgHex] = useState('#000000');
@@ -890,7 +890,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                         { title: t.subtractiveTheory, icon: '🔬', desc: t.subtractiveDesc },
                         { title: t.offsetVsDigital, icon: '🖨️', desc: t.offsetVsDigitalDesc },
                         { title: t.dotGainTitle, icon: '📏', desc: t.dotGainDesc },
-                        { title: t.pantoneSpotColors, icon: '🎨', desc: t.pantoneSpotDesc },
+                        { title: t.spotRefColors, icon: '🎨', desc: t.spotRefDesc },
                         { title: t.metamerism, icon: '👁️', desc: t.metamerismDesc },
                         { title: t.varnishLamination, icon: '🛡️', desc: t.varnishLaminationDesc },
                         { title: t.coucheVsOffset, icon: '📜', desc: t.coucheVsOffsetDesc },
