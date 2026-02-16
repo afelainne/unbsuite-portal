@@ -1,97 +1,55 @@
 
-# Novos Presets, Presets Colapsavel, Logo UNBSGRID e Home Amarela
+# Redesign da Home -- Layout Full-Screen sem Device Frame
 
-## 1. Novos Presets Criativos para UNBSGRID
+## Problema
+A home atual tem um fundo amarelo `#F0FF00` ocupando a tela inteira com um "device frame" branco pequeno centralizado no meio. Isso cria muito espaco vazio amarelo e o conteudo fica apertado dentro de uma caixa pequena.
 
-Adicionar 6 novos presets criativos ao `src/tools/unbsgrid/lib/preset-engine.ts`:
+## Nova Abordagem
+Remover completamente o conceito de "device frame" e criar um layout full-screen com duas zonas visuais:
 
-- **Fluxo Dinamico**: parallelFlowLines, dominantDiagonals, skeletonCenterline, pathDirectionArrows -- para analise de movimento e direcao visual
-- **Circulos Construtivos**: circles, underlyingCircles, vesicaPiscis, anchoringPoints -- foco em geometria circular
-- **Minimalista**: boundingRects, centerLines, opticalCenter -- overlay super limpo, poucos elementos
-- **Contraste & Peso**: contrastGuide, visualWeightMap, ruleOfOdds, anchoringPoints -- analise de peso visual e equilibrio
-- **Diagonal & Perspectiva**: diagonals, dominantDiagonals, thirdLines, goldenRatio -- linhas de forca e composicao
-- **Skeleton & Curvas**: skeletonCenterline, curvatureComb, bezierHandles, tangentIntersections, anchorPoints -- analise de forma e curvas
+### Layout
+- **Fundo**: branco `#FFFFFF` (corpo da pagina)
+- **Hero section**: ocupa a maior parte da tela, fundo `#F0FF00`, com o logo UNBSTOOLS grande centralizado e os botoes das ferramentas abaixo
+- **Footer bar**: barra escura `#232323` na parte inferior com o barcode visual e status
+- Sem bordas arredondadas de "device", sem `max-w-4xl`, sem margens externas
 
-## 2. Presets Colapsavel
+### Estrutura visual (de cima para baixo)
+1. **Zona hero amarela** (`#F0FF00`): ocupa `min-h-[85vh]`, centraliza verticalmente:
+   - Logo UNBSTOOLS grande (height ~40px) no topo
+   - Botoes UNBSCOLOR e UNBSGRID centralizados
+   - Detalhes decorativos sutis (corner marks, shield) mantidos mas reposicionados
+2. **Zona inferior branca**: contem a status bar escura e os info cards, colados ao fundo
 
-Tornar a secao de Presets no `PresetManager.tsx` colapsavel usando o `Collapsible` do Radix UI:
-- O header "Presets" vira um `CollapsibleTrigger` com chevron
-- O conteudo (botoes Load/Save, preset chips, revert) fica dentro do `CollapsibleContent`
-- Estado padrao: aberto
-- Importar `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` dos componentes UI locais
+### Detalhes tecnicos
 
-## 3. Restaurar Logo UNBSGRID na Sidebar
+**Arquivo**: `src/pages/Index.tsx`
 
-O logo UNBSGRID foi removido da sidebar (linha 416: "Compact header - no logo, just upload"). Restaurar o SVG do logo UNBSGRID (o SVG fornecido pelo usuario, com viewBox 0 0 1427 434) acima do SVGDropZone no `src/tools/unbsgrid/pages/Index.tsx`:
-- Adicionar o SVG inline compacto (altura ~32px) com `fill="#232323"` no topo do sidebar, antes do upload
-- Manter o estilo minimalista -- apenas o logo pequeno
-
-## 4. Logos nos Botoes da Home
-
-No `src/pages/Index.tsx`, substituir os icones Lucide (Palette, LayoutGrid) por SVGs inline dos logos reais:
-- **UNBSCOLOR**: usar o SVG do logo UNBSCOLOR (mesmas paths que o Logo.tsx do unbsgrid, que contem "UNBSGRID" -- na verdade o logo compartilhado e o "UNBS" com sufixo diferente). Como os logos sao SVGs grandes, criar versoes compactas inline com altura ~16px
-- **UNBSGRID**: usar o SVG fornecido pelo usuario (viewBox 0 0 1427 434)
-- Remover os icones Lucide `Palette` e `LayoutGrid` dos botoes
-
-## 5. Fundo da Home #F0FF00
-
-No `src/pages/Index.tsx`:
-- Trocar `bg-background` do container principal para `backgroundColor: '#F0FF00'`
-- Ajustar cores do device frame: borda `#232323`, fundo interno branco
-- O area lime interna ja e `bg-lime` -- pode manter ou ajustar para que nao conflite com o fundo amarelo exterior
-
----
-
-## Secao Tecnica
-
-### `src/tools/unbsgrid/lib/preset-engine.ts`
-Adicionar 6 novos presets ao array retornado por `getBuiltinPresets()`, antes do "Auditoria Completa":
-
-| Preset | Opcoes Ativas |
-|---|---|
-| Fluxo Dinamico | parallelFlowLines, dominantDiagonals, skeletonCenterline, pathDirectionArrows |
-| Circulos Construtivos | circles, underlyingCircles, vesicaPiscis, anchoringPoints |
-| Minimalista | boundingRects, centerLines, opticalCenter |
-| Contraste & Peso | contrastGuide, visualWeightMap, ruleOfOdds, anchoringPoints |
-| Diagonal & Perspectiva | diagonals, dominantDiagonals, thirdLines, goldenRatio |
-| Skeleton & Curvas | skeletonCenterline, curvatureComb, bezierHandles, tangentIntersections, anchorPoints |
-
-### `src/tools/unbsgrid/components/PresetManager.tsx`
-- Importar `Collapsible, CollapsibleTrigger, CollapsibleContent` de `./ui/collapsible`
-- Adicionar estado `open` (default true) via prop ou interno com `useState`
-- Envolver conteudo no Collapsible:
+Mudancas:
+- Remover o wrapper `flex items-center justify-center` com fundo amarelo
+- Remover o div "Device Frame" com `max-w-4xl border-2 rounded-3xl`
+- Estrutura nova:
 
 ```text
-<Collapsible defaultOpen>
-  <CollapsibleTrigger> [Chevron] Presets [InfoTooltip] </CollapsibleTrigger>
-  <CollapsibleContent>
-    ... botoes Load/Save, chips, revert ...
-  </CollapsibleContent>
-</Collapsible>
-```
+<div className="min-h-screen flex flex-col" style={{ backgroundColor: '#FFFFFF' }}>
+  {/* Hero */}
+  <div className="flex-1 flex flex-col items-center justify-center relative px-6 py-12"
+       style={{ backgroundColor: '#F0FF00' }}>
+    {/* Corner marks nos cantos do hero */}
+    {/* Logo UNBSTOOLS centralizado, maior */}
+    {/* Botoes das ferramentas */}
+  </div>
 
-### `src/tools/unbsgrid/pages/Index.tsx`
-Linha 417 (dentro do `<div className="px-3 pt-3 pb-2">`): adicionar logo SVG inline antes do SVGDropZone:
-
-```text
-<div className="mb-2 flex justify-center">
-  <svg width="120" height="auto" viewBox="0 0 1427 434" fill="none" ...>
-    [paths do logo UNBSGRID]
-  </svg>
+  {/* Bottom section */}
+  <div className="px-6 pb-6 pt-4" style={{ backgroundColor: '#FFFFFF' }}>
+    {/* Status bar escura */}
+    {/* Info cards */}
+  </div>
 </div>
 ```
 
-### `src/pages/Index.tsx`
-- Linha 24: trocar `bg-background` por estilo inline `backgroundColor: '#F0FF00'`
-- Linhas 59-71: dentro de cada `<Link>`, substituir `<tool.icon>` por SVG inline do logo correspondente (UNBSCOLOR ou UNBSGRID), com altura ~16px e `fill="currentColor"`
-- Remover imports de `Palette` e `LayoutGrid` do lucide-react
-- Remover a propriedade `icon` do array `tools`
-
-### Arquivos editados
-
-| Arquivo | Mudanca |
-|---|---|
-| `src/tools/unbsgrid/lib/preset-engine.ts` | 6 novos presets criativos |
-| `src/tools/unbsgrid/components/PresetManager.tsx` | Collapsible na secao Presets |
-| `src/tools/unbsgrid/pages/Index.tsx` | Restaurar logo UNBSGRID no topo da sidebar |
-| `src/pages/Index.tsx` | Fundo #F0FF00, logos SVG inline nos botoes |
+- Corner marks (`Plus` icons) reposicionados nos cantos do hero section (absolute)
+- Shield icon mantido no canto superior esquerdo do hero
+- Logo UNBSTOOLS com height maior (~40px)
+- Botoes das ferramentas com estilo pill mantido, mas com mais espaco e presenca
+- Status bar e info cards ficam na zona branca inferior, sem margens `mx-5` -- usam `max-w-4xl mx-auto` para manter proporcao agradavel
+- Remover `overflow-hidden` e `rounded-3xl` do layout
