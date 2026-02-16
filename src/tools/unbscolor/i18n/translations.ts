@@ -26,10 +26,10 @@ export interface Translations {
   hsbHsv: string;
   cieLabHighPrec: string;
   cmykProcess: string;
-  pantoneBridgeC: string;
-  pantoneBridgeU: string;
-  pantoneC: string;
-  pantoneU: string;
+  refBridgeC: string;
+  refBridgeU: string;
+  refSolidC: string;
+  refSolidU: string;
   mixedFormatSyntax: string;
   changesAppliedRealtime: string;
   
@@ -59,7 +59,7 @@ export interface Translations {
   downloadSlot: string;
   
   // Nearby Pantones
-  nearbyPantones: string;
+  nearbyRefs: string;
   
   // InfoGrid
   red: string;
@@ -83,7 +83,7 @@ export interface Translations {
   hueRotateTint: string;
   saturationShade: string;
   saturationTint: string;
-  usePantone: string;
+  useRefMatch: string;
   showBatchPalettes: string;
   selectBatchColor: string;
   baseColor: string;
@@ -123,7 +123,7 @@ export interface Translations {
   separationGuide: string;
   spotColor: string;
   processColor: string;
-  pantoneGuide: string;
+  refGuide: string;
   useSpotWhen: string;
   useProcessWhen: string;
   accessibleVariations: string;
@@ -279,8 +279,8 @@ export interface Translations {
   offsetVsDigitalDesc: string;
   dotGainTitle: string;
   dotGainDesc: string;
-  pantoneSpotColors: string;
-  pantoneSpotDesc: string;
+  spotRefColors: string;
+  spotRefDesc: string;
   metamerism: string;
   metamerismDesc: string;
   varnishLamination: string;
@@ -431,6 +431,28 @@ export interface Translations {
   backgroundBlack: string;
   backgroundWhite: string;
   backgroundGray: string;
+
+  // Palette Magic
+  paletteMagic: string;
+  contextBrand: string;
+  contextPoster: string;
+  contextUI: string;
+  contextEditorial: string;
+  contextPackaging: string;
+  contrastScore: string;
+  harmonyScore: string;
+  paletteScore: string;
+  trendPalettes: string;
+  userPalettes: string;
+  expandPalette: string;
+  generateMagic: string;
+  applyPalette: string;
+  harmonyPalettes: string;
+  allContexts: string;
+  wcagValidated: string;
+  copyPalette: string;
+  baseColors: string;
+  noBaseColors: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -460,10 +482,10 @@ export const translations: Record<Language, Translations> = {
     hsbHsv: 'HSB / HSV',
     cieLabHighPrec: 'CIE Lab (High Prec)',
     cmykProcess: 'CMYK (Process)',
-    pantoneBridgeC: 'System A (C)',
-    pantoneBridgeU: 'System A (U)',
-    pantoneC: 'System B (C)',
-    pantoneU: 'System B (U)',
+    refBridgeC: 'System A (C)',
+    refBridgeU: 'System A (U)',
+    refSolidC: 'System B (C)',
+    refSolidU: 'System B (U)',
     mixedFormatSyntax: 'Mixed Format Syntax',
     changesAppliedRealtime: 'Changes are applied in real-time to active sessions.',
     
@@ -493,7 +515,7 @@ export const translations: Record<Language, Translations> = {
     downloadSlot: 'Download slot',
     
     // Nearby Pantones
-    nearbyPantones: 'Nearby Matches (ΔE 00)',
+    nearbyRefs: 'Nearby Matches (ΔE 00)',
     
     // InfoGrid
     red: 'Red',
@@ -517,7 +539,7 @@ export const translations: Record<Language, Translations> = {
     hueRotateTint: 'Hue Rotate (Tint)',
     saturationShade: 'Saturation (Shade)',
     saturationTint: 'Saturation (Tint)',
-    usePantone: 'Use Reference Match',
+    useRefMatch: 'Use Reference Match',
     showBatchPalettes: 'Show Batch Palettes',
     selectBatchColor: 'Select batch color',
     baseColor: 'Base Color',
@@ -557,7 +579,7 @@ export const translations: Record<Language, Translations> = {
     separationGuide: 'Separation Guide',
     spotColor: 'Spot Color',
     processColor: 'Process Color',
-    pantoneGuide: 'Reference Guide',
+    refGuide: 'Reference Guide',
     useSpotWhen: 'Use spot colors when brand consistency is critical',
     useProcessWhen: 'Use process colors for complex images and gradients',
     accessibleVariations: 'Accessible Variations',
@@ -711,8 +733,8 @@ export const translations: Record<Language, Translations> = {
     offsetVsDigitalDesc: 'Offset uses metal plates and thick liquid inks, ideal for large runs and exact spot inks. Digital uses toner or inkjet, faster for small quantities but with limited gamut.',
     dotGainTitle: 'Dot Gain',
     dotGainDesc: 'Dot Gain occurs when ink drop expands hitting paper fibers. Porous papers (Offset/Newsprint) suffer more dot gain, which can darken the final image if not compensated.',
-    pantoneSpotColors: 'Spot (Reference Colors)',
-    pantoneSpotDesc: 'Pre-mixed colors by manufacturer. Unlike CMYK (which tries to match colors with 4 inks), a spot ink is a single pigment applied directly, guaranteeing logo fidelity.',
+    spotRefColors: 'Spot (Reference Colors)',
+    spotRefDesc: 'Pre-mixed colors by manufacturer. Unlike CMYK (which tries to match colors with 4 inks), a spot ink is a single pigment applied directly, guaranteeing logo fidelity.',
     metamerism: 'Metamerism',
     metamerismDesc: 'Phenomenon where two colors appear identical under one light (e.g., office) but different under another (e.g., sunlight). Always check physical proofs under real conditions.',
     varnishLamination: 'Varnish & Lamination',
@@ -865,6 +887,28 @@ export const translations: Record<Language, Translations> = {
     backgroundBlack: 'Black',
     backgroundWhite: 'White',
     backgroundGray: 'Gray',
+
+    // Palette Magic
+    paletteMagic: 'Palette Magic',
+    contextBrand: 'Brand Identity',
+    contextPoster: 'Poster',
+    contextUI: 'UI / Layout',
+    contextEditorial: 'Editorial',
+    contextPackaging: 'Packaging',
+    contrastScore: 'Contrast',
+    harmonyScore: 'Harmony',
+    paletteScore: 'Score',
+    trendPalettes: 'Trend Palettes',
+    userPalettes: 'Your Palettes',
+    expandPalette: 'Expand',
+    generateMagic: 'Generate',
+    applyPalette: 'Apply',
+    harmonyPalettes: 'Harmony Palettes',
+    allContexts: 'All',
+    wcagValidated: 'WCAG Validated',
+    copyPalette: 'Copy Palette',
+    baseColors: 'Base Colors',
+    noBaseColors: 'Add colors via SVG upload or hex input to generate palettes',
   },
   
   pt: {
@@ -893,10 +937,10 @@ export const translations: Record<Language, Translations> = {
     hsbHsv: 'HSB / HSV',
     cieLabHighPrec: 'CIE Lab (Alta Prec)',
     cmykProcess: 'CMYK (Processo)',
-    pantoneBridgeC: 'Sistema A (C)',
-    pantoneBridgeU: 'Sistema A (U)',
-    pantoneC: 'Sistema B (C)',
-    pantoneU: 'Sistema B (U)',
+    refBridgeC: 'Sistema A (C)',
+    refBridgeU: 'Sistema A (U)',
+    refSolidC: 'Sistema B (C)',
+    refSolidU: 'Sistema B (U)',
     mixedFormatSyntax: 'Sintaxe de Formato Misto',
     changesAppliedRealtime: 'As alterações são aplicadas em tempo real nas sessões ativas.',
     
@@ -926,7 +970,7 @@ export const translations: Record<Language, Translations> = {
     downloadSlot: 'Baixar slot',
     
     // Nearby Pantones
-    nearbyPantones: 'Referências Próximas (ΔE 00)',
+    nearbyRefs: 'Referências Próximas (ΔE 00)',
     
     // InfoGrid
     red: 'Vermelho',
@@ -950,7 +994,7 @@ export const translations: Record<Language, Translations> = {
     hueRotateTint: 'Rotação de Matiz (Claro)',
     saturationShade: 'Saturação (Escuro)',
     saturationTint: 'Saturação (Claro)',
-    usePantone: 'Usar Match de Referência',
+    useRefMatch: 'Usar Match de Referência',
     showBatchPalettes: 'Mostrar Paletas em Lote',
     selectBatchColor: 'Selecionar cor do lote',
     baseColor: 'Cor Base',
@@ -990,7 +1034,7 @@ export const translations: Record<Language, Translations> = {
     separationGuide: 'Guia de Separação',
     spotColor: 'Cor Spot',
     processColor: 'Cor Processo',
-    pantoneGuide: 'Guia de Referência',
+    refGuide: 'Guia de Referência',
     useSpotWhen: 'Use cores spot quando a consistência da marca é crítica',
     useProcessWhen: 'Use cores processo para imagens complexas e gradientes',
     accessibleVariations: 'Variações Acessíveis',
@@ -1144,8 +1188,8 @@ export const translations: Record<Language, Translations> = {
     offsetVsDigitalDesc: 'O Offset usa chapas metálicas e tintas líquidas pastosas, ideal para grandes tiragens e cores spot exatas. O Digital usa toner ou jato de tinta, sendo mais rápido para pequenas quantidades mas com gamut limitado.',
     dotGainTitle: 'Ganho de Ponto',
     dotGainDesc: 'Dot Gain ocorre quando a gota de tinta expande ao atingir as fibras do papel. Papéis porosos (Offset/Jornal) sofrem mais ganho de ponto, o que pode escurecer a imagem final se não compensado.',
-    pantoneSpotColors: 'Spot (Cores de Referência)',
-    pantoneSpotDesc: 'São cores pré-misturadas pelo fabricante. Diferente do CMYK (que usa 4 tintas), uma cor spot é uma tinta única aplicada diretamente, garantindo fidelidade total em logotipos.',
+    spotRefColors: 'Spot (Cores de Referência)',
+    spotRefDesc: 'São cores pré-misturadas pelo fabricante. Diferente do CMYK (que usa 4 tintas), uma cor spot é uma tinta única aplicada diretamente, garantindo fidelidade total em logotipos.',
     metamerism: 'Metamerismo',
     metamerismDesc: 'É o fenômeno onde duas cores parecem idênticas sob uma luz (ex: escritório) mas diferentes sob outra (ex: luz do sol). Sempre verifique provas físicas em condições reais de uso.',
     varnishLamination: 'Verniz e Laminação',
@@ -1298,6 +1342,28 @@ export const translations: Record<Language, Translations> = {
     backgroundBlack: 'Preto',
     backgroundWhite: 'Branco',
     backgroundGray: 'Cinza',
+
+    // Palette Magic
+    paletteMagic: 'Palette Magic',
+    contextBrand: 'Identidade de Marca',
+    contextPoster: 'Cartaz',
+    contextUI: 'UI / Layout',
+    contextEditorial: 'Editorial',
+    contextPackaging: 'Embalagem',
+    contrastScore: 'Contraste',
+    harmonyScore: 'Harmonia',
+    paletteScore: 'Pontuação',
+    trendPalettes: 'Paletas em Tendência',
+    userPalettes: 'Suas Paletas',
+    expandPalette: 'Expandir',
+    generateMagic: 'Gerar',
+    applyPalette: 'Aplicar',
+    harmonyPalettes: 'Paletas de Harmonia',
+    allContexts: 'Todos',
+    wcagValidated: 'Validado WCAG',
+    copyPalette: 'Copiar Paleta',
+    baseColors: 'Cores Base',
+    noBaseColors: 'Adicione cores via upload de SVG ou entrada hex para gerar paletas',
   },
   
   es: {
@@ -1326,10 +1392,10 @@ export const translations: Record<Language, Translations> = {
     hsbHsv: 'HSB / HSV',
     cieLabHighPrec: 'CIE Lab (Alta Prec)',
     cmykProcess: 'CMYK (Proceso)',
-    pantoneBridgeC: 'Sistema A (C)',
-    pantoneBridgeU: 'Sistema A (U)',
-    pantoneC: 'Sistema B (C)',
-    pantoneU: 'Sistema B (U)',
+    refBridgeC: 'Sistema A (C)',
+    refBridgeU: 'Sistema A (U)',
+    refSolidC: 'Sistema B (C)',
+    refSolidU: 'Sistema B (U)',
     mixedFormatSyntax: 'Sintaxis de Formato Mixto',
     changesAppliedRealtime: 'Los cambios se aplican en tiempo real a las sesiones activas.',
     
@@ -1359,7 +1425,7 @@ export const translations: Record<Language, Translations> = {
     downloadSlot: 'Descargar slot',
     
     // Nearby Pantones
-    nearbyPantones: 'Referencias Cercanas (ΔE 00)',
+    nearbyRefs: 'Referencias Cercanas (ΔE 00)',
     
     // InfoGrid
     red: 'Rojo',
@@ -1383,7 +1449,7 @@ export const translations: Record<Language, Translations> = {
     hueRotateTint: 'Rotación de Tono (Claro)',
     saturationShade: 'Saturación (Oscuro)',
     saturationTint: 'Saturación (Claro)',
-    usePantone: 'Usar Match de Referencia',
+    useRefMatch: 'Usar Match de Referencia',
     showBatchPalettes: 'Mostrar Paletas en Lote',
     selectBatchColor: 'Seleccionar color del lote',
     baseColor: 'Color Base',
@@ -1423,7 +1489,7 @@ export const translations: Record<Language, Translations> = {
     separationGuide: 'Guía de Separación',
     spotColor: 'Color Spot',
     processColor: 'Color Proceso',
-    pantoneGuide: 'Guía de Referencia',
+    refGuide: 'Guía de Referencia',
     useSpotWhen: 'Use colores spot cuando la consistencia de marca es crítica',
     useProcessWhen: 'Use colores proceso para imágenes complejas y gradientes',
     accessibleVariations: 'Variaciones Accesibles',
@@ -1577,8 +1643,8 @@ export const translations: Record<Language, Translations> = {
     offsetVsDigitalDesc: 'El Offset usa placas metálicas y tintas líquidas pastosas, ideal para grandes tiradas y tintas spot exactas. El Digital usa tóner o inyección de tinta, más rápido para pequeñas cantidades pero con gamut limitado.',
     dotGainTitle: 'Ganancia de Punto',
     dotGainDesc: 'La Ganancia de Punto ocurre cuando la gota de tinta se expande al tocar las fibras del papel. Papeles porosos (Offset/Periódico) sufren más ganancia, lo que puede oscurecer la imagen final si no se compensa.',
-    pantoneSpotColors: 'Spot (Colores de Referencia)',
-    pantoneSpotDesc: 'Son colores premezclados por el fabricante. A diferencia del CMYK (que usa 4 tintas), una tinta spot es un solo pigmento aplicado directamente, garantizando fidelidad total en logotipos.',
+    spotRefColors: 'Spot (Colores de Referencia)',
+    spotRefDesc: 'Son colores premezclados por el fabricante. A diferencia del CMYK (que usa 4 tintas), una tinta spot es un solo pigmento aplicado directamente, garantizando fidelidad total en logotipos.',
     metamerism: 'Metamerismo',
     metamerismDesc: 'Es el fenómeno donde dos colores parecen idénticos bajo una luz (ej: oficina) pero diferentes bajo otra (ej: luz del sol). Siempre verifique pruebas físicas en condiciones reales de uso.',
     varnishLamination: 'Barniz y Laminación',
@@ -1731,6 +1797,28 @@ export const translations: Record<Language, Translations> = {
     backgroundBlack: 'Negro',
     backgroundWhite: 'Blanco',
     backgroundGray: 'Gris',
+
+    // Palette Magic
+    paletteMagic: 'Palette Magic',
+    contextBrand: 'Identidad de Marca',
+    contextPoster: 'Cartel',
+    contextUI: 'UI / Layout',
+    contextEditorial: 'Editorial',
+    contextPackaging: 'Empaque',
+    contrastScore: 'Contraste',
+    harmonyScore: 'Armonía',
+    paletteScore: 'Puntuación',
+    trendPalettes: 'Paletas en Tendencia',
+    userPalettes: 'Tus Paletas',
+    expandPalette: 'Expandir',
+    generateMagic: 'Generar',
+    applyPalette: 'Aplicar',
+    harmonyPalettes: 'Paletas de Armonía',
+    allContexts: 'Todos',
+    wcagValidated: 'Validado WCAG',
+    copyPalette: 'Copiar Paleta',
+    baseColors: 'Colores Base',
+    noBaseColors: 'Agrega colores vía carga de SVG o entrada hex para generar paletas',
   },
 };
 

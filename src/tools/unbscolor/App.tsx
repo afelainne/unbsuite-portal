@@ -6,6 +6,7 @@ import { SimilarityGrid } from './components/SimilarityGrid';
 import { ColorGuide } from './components/ColorGuide';
 import { PaletteBuilder } from './components/PaletteBuilder';
 import { GeneratedPalettes } from './components/GeneratedPalettes';
+import { PaletteMagic } from './components/PaletteMagic';
 import { BatchAnalyzer } from './components/BatchAnalyzer';
 import { useLanguage, Language } from './i18n';
 import {
@@ -52,9 +53,9 @@ type SettingsState = {
 
 const App: React.FC = () => {
     const { language, setLanguage, t } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'matcher' | 'batch' | 'guide' | 'palette' | 'generated'>('matcher');
+    const [activeTab, setActiveTab] = useState<'matcher' | 'batch' | 'guide' | 'palette' | 'generated' | 'magic'>('matcher');
     const [showSettings, setShowSettings] = useState(false);
-    const [batchColors, setBatchColors] = useState<string[]>(['#F7E043', '#1A1A1A', '#FFFFFF', '#E5E5E5', '#333333']);
+    const [batchColors, setBatchColors] = useState<string[]>(['#F0FF00', '#1A1A1A', '#FFFFFF', '#E5E5E5', '#333333']);
 
     const [settings, setSettings] = useState<SettingsState>({
         showHex: true,
@@ -70,12 +71,12 @@ const App: React.FC = () => {
         mixFormat: 'rgb(80, 184, 72)'
     });
 
-    const [hex, setHex] = useState<string>('#F7E043');
-    const [rgb, setRgb] = useState<RGB>(() => hexToRgb('#F7E043'));
-    const [cmyk, setCmyk] = useState<CMYK>(() => rgbToCmyk(hexToRgb('#F7E043')));
-    const [hsl, setHsl] = useState<HSL>(() => rgbToHsl(hexToRgb('#F7E043')));
-    const [hsv, setHsv] = useState<HSV>(() => rgbToHsv(hexToRgb('#F7E043')));
-    const [lab, setLab] = useState<LAB>(() => hexToLab('#F7E043'));
+    const [hex, setHex] = useState<string>('#F0FF00');
+    const [rgb, setRgb] = useState<RGB>(() => hexToRgb('#F0FF00'));
+    const [cmyk, setCmyk] = useState<CMYK>(() => rgbToCmyk(hexToRgb('#F0FF00')));
+    const [hsl, setHsl] = useState<HSL>(() => rgbToHsl(hexToRgb('#F0FF00')));
+    const [hsv, setHsv] = useState<HSV>(() => rgbToHsv(hexToRgb('#F0FF00')));
+    const [lab, setLab] = useState<LAB>(() => hexToLab('#F0FF00'));
 
     const [libraryType, setLibraryType] = useState<string>(defaultLibraryId);
     const [library, setLibrary] = useState<ReferenceColor[]>(DEFAULT_LIBRARY);
@@ -265,7 +266,7 @@ const App: React.FC = () => {
 
         if (settings.showPmsC) {
             matchesList.push({
-                label: t.pantoneBridgeC,
+                label: t.refBridgeC,
                     code: matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : outOfGamutLabel,
                 swatch: matchC ? matchC.reference.hex : '#e5e7eb'
             });
@@ -273,7 +274,7 @@ const App: React.FC = () => {
 
         if (settings.showPmsU) {
             matchesList.push({
-                label: t.pantoneBridgeU,
+                label: t.refBridgeU,
                     code: matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : outOfGamutLabel,
                 swatch: matchU ? matchU.reference.hex : '#e5e7eb'
             });
@@ -281,7 +282,7 @@ const App: React.FC = () => {
 
         if (settings.showPmsSolidC) {
             matchesList.push({
-                label: t.pantoneC,
+                label: t.refSolidC,
                     code: matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : outOfGamutLabel,
                 swatch: matchSolidC ? matchSolidC.reference.hex : '#e5e7eb'
             });
@@ -289,7 +290,7 @@ const App: React.FC = () => {
 
         if (settings.showPmsSolidU) {
             matchesList.push({
-                label: t.pantoneU,
+                label: t.refSolidU,
                     code: matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : outOfGamutLabel,
                 swatch: matchSolidU ? matchSolidU.reference.hex : '#e5e7eb'
             });
@@ -645,10 +646,10 @@ const App: React.FC = () => {
                                 <div className="space-y-3">
                                     <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-gray-400">WEB REFERENCE SEARCH</p>
                                     {[
-                                        { key: 'showPmsC', label: t.pantoneBridgeC },
-                                        { key: 'showPmsU', label: t.pantoneBridgeU },
-                                        { key: 'showPmsSolidC', label: t.pantoneC },
-                                        { key: 'showPmsSolidU', label: t.pantoneU }
+                                        { key: 'showPmsC', label: t.refBridgeC },
+                                        { key: 'showPmsU', label: t.refBridgeU },
+                                        { key: 'showPmsSolidC', label: t.refSolidC },
+                                        { key: 'showPmsSolidU', label: t.refSolidU }
                                     ].map((opt) => (
                                         <div
                                             key={opt.key}
@@ -725,6 +726,7 @@ const App: React.FC = () => {
                                 <button onClick={() => setActiveTab('batch')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'batch' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'batch' ? { borderColor: '#F0FF00' } : {}}>{t.multiSlotMatchAnalysis}</button>
                                 <button onClick={() => setActiveTab('palette')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'palette' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'palette' ? { borderColor: '#F0FF00' } : {}}>{t.contrastPalette}</button>
                                 <button onClick={() => setActiveTab('generated')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'generated' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'generated' ? { borderColor: '#F0FF00' } : {}}>{t.generatedPalettes}</button>
+                                <button onClick={() => setActiveTab('magic')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'magic' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'magic' ? { borderColor: '#F0FF00' } : {}}>{t.paletteMagic}</button>
                                 <button onClick={() => setActiveTab('guide')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'guide' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'guide' ? { borderColor: '#F0FF00' } : {}}>{t.printGuide}</button>
                             </nav>
                         </div>
@@ -758,6 +760,8 @@ const App: React.FC = () => {
             <main className="max-w-[1600px] mx-auto px-8 pb-20 pt-8 w-full flex-grow">
                 {activeTab === 'guide' ? (
                     <ColorGuide selectedHex={hex} batchColors={batchColors} />
+                ) : activeTab === 'magic' ? (
+                    <PaletteMagic initialHex={hex} batchColors={batchColors} onHexChange={handleHexChange} onBatchColorsChange={setBatchColors} />
                 ) : activeTab === 'palette' ? (
                     <PaletteBuilder initialHex={hex} onHexChange={handleHexChange} batchColors={batchColors} onBatchColorsChange={setBatchColors} />
                 ) : activeTab === 'generated' ? (
@@ -883,25 +887,25 @@ const App: React.FC = () => {
 
                                                         {settings.showPmsC && (
                                                             <div className="mt-4 pt-3 border-t border-gray-50">
-                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.pantoneBridgeC}</span>
+                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.refBridgeC}</span>
                                                                 <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsU && (
                                                             <div className={`${!settings.showPmsC ? 'mt-4 pt-3 border-t border-gray-50' : 'mt-2'}`}>
-                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.pantoneBridgeU}</span>
+                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.refBridgeU}</span>
                                                                 <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsSolidC && (
                                                             <div className="mt-2 pt-3 border-t border-gray-50">
-                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.pantoneC}</span>
+                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.refSolidC}</span>
                                                                 <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsSolidC()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsSolidU && (
                                                             <div className="mt-2 pt-3 border-t border-gray-50">
-                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.pantoneU}</span>
+                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.refSolidU}</span>
                                                                 <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsSolidU()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
@@ -948,7 +952,7 @@ const App: React.FC = () => {
                         </div>
 
                         <div className="mb-12">
-                            <h3 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{t.nearbyPantones}</h3>
+                            <h3 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{t.nearbyRefs}</h3>
                             <SwatchStrip colors={stripColors} selectedHex={hex} onSelect={handleHexChange} showRefMatch={showRefMatch} />
                         </div>
 
