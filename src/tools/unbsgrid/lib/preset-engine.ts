@@ -241,6 +241,78 @@ export function getBuiltinPresets(): GeometryPreset[] {
       createdAt: 0,
     },
 
+    // --- Fluxo Dinâmico ---
+    {
+      id: 'builtin-flow',
+      name: 'Fluxo Dinâmico',
+      description: 'Análise de movimento, direção visual e linhas de fluxo',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, parallelFlowLines: true, dominantDiagonals: true, skeletonCenterline: true, pathDirectionArrows: true },
+      geometryStyles: { ...defaultStyles },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Círculos Construtivos ---
+    {
+      id: 'builtin-circles',
+      name: 'Círculos Construtivos',
+      description: 'Geometria circular: inscritos, subjacentes e vesica piscis',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, circles: true, underlyingCircles: true, vesicaPiscis: true, anchoringPoints: true },
+      geometryStyles: { ...defaultStyles },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Minimalista ---
+    {
+      id: 'builtin-minimal',
+      name: 'Minimalista',
+      description: 'Overlay super limpo com poucos elementos essenciais',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, boundingRects: true, centerLines: true, opticalCenter: true },
+      geometryStyles: { ...defaultStyles },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Contraste & Peso ---
+    {
+      id: 'builtin-contrast-weight',
+      name: 'Contraste & Peso',
+      description: 'Análise de peso visual, equilíbrio e distribuição',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, contrastGuide: true, visualWeightMap: true, ruleOfOdds: true, anchoringPoints: true },
+      geometryStyles: { ...defaultStyles },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Diagonal & Perspectiva ---
+    {
+      id: 'builtin-diagonal',
+      name: 'Diagonal & Perspectiva',
+      description: 'Linhas de força, diagonais dominantes e composição',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, diagonals: true, dominantDiagonals: true, thirdLines: true, goldenRatio: true },
+      geometryStyles: { ...defaultStyles },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Skeleton & Curvas ---
+    {
+      id: 'builtin-skeleton',
+      name: 'Skeleton & Curvas',
+      description: 'Análise de forma, curvatura e estrutura de curvas',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, skeletonCenterline: true, curvatureComb: true, bezierHandles: true, tangentIntersections: true, anchorPoints: true },
+      geometryStyles: { ...defaultStyles },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
     // --- Full audit: everything on ---
     {
       id: 'builtin-full-audit',
