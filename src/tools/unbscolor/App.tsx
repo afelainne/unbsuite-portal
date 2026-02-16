@@ -574,11 +574,11 @@ const App: React.FC = () => {
     const getPmsSolidU = () => findReferenceMatches(hex, solidUncoatedLibrary, 1)[0];
 
     return (
-        <div className="min-h-screen bg-white text-black font-sans selection:bg-black selection:text-white flex flex-col relative overflow-x-hidden">
+        <div className="min-h-screen font-sans flex flex-col relative overflow-x-hidden" style={{ backgroundColor: '#E8E8E3', color: '#232323' }}>
             {showSettings && (
                 <div className="fixed inset-0 z-[200] flex justify-end">
                     <div className="absolute inset-0 bg-white/20 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
-                    <div className="relative w-full max-w-[440px] bg-white border-l border-gray-100 p-12 shadow-[0_0_100px_rgba(0,0,0,0.05)] h-full animate-in slide-in-from-right duration-500 overflow-y-auto">
+                    <div className="relative w-full max-w-[440px] border-l p-12 shadow-[0_0_100px_rgba(0,0,0,0.05)] h-full animate-in slide-in-from-right duration-500 overflow-y-auto" style={{ backgroundColor: '#E8E8E3', borderColor: '#D0D0C8' }}>
                         <div className="flex justify-between items-center mb-16">
                             <div className="flex items-center gap-3">
                                 <h2 className="text-3xl font-normal tracking-tighter">{t.settings}</h2>
@@ -600,7 +600,8 @@ const App: React.FC = () => {
                                         <button
                                             key={lang.code}
                                             onClick={() => setLanguage(lang.code)}
-                                            className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${language === lang.code ? 'bg-black text-white border-black' : 'bg-gray-50/50 border-gray-100/50 hover:bg-white hover:shadow-sm'}`}
+                                            className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${language === lang.code ? 'border-transparent' : 'border-[#D0D0C8] hover:shadow-sm'}`}
+                                            style={language === lang.code ? { backgroundColor: '#F0FF00', color: '#232323', borderColor: '#F0FF00' } : { backgroundColor: 'rgba(255,255,255,0.5)' }}
                                         >
                                             <span className="text-2xl">{lang.flag}</span>
                                             <span className="text-[10px] font-bold uppercase tracking-wider">{lang.label}</span>
@@ -626,8 +627,8 @@ const App: React.FC = () => {
                                             onClick={() => setSettings((s) => ({ ...s, [opt.key]: !s[opt.key as keyof SettingsState] }))}
                                         >
                                             <span className="text-sm font-medium text-gray-700">{opt.label}</span>
-                                            <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'bg-black' : 'bg-gray-200'}`}>
-                                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1'}`}></div>
+                                             <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? '' : 'bg-gray-200'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: '#F0FF00' } : {}}>
+                                                 <div className={`absolute top-1 w-3 h-3 rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1 bg-white'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: '#232323' } : {}}></div>
                                             </div>
                                         </div>
                                     ))}
@@ -647,8 +648,8 @@ const App: React.FC = () => {
                                             onClick={() => setSettings((s) => ({ ...s, [opt.key]: !s[opt.key as keyof SettingsState] }))}
                                         >
                                             <span className="text-sm font-medium text-gray-700">{opt.label}</span>
-                                            <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'bg-emerald-600' : 'bg-gray-200'}`}>
-                                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1'}`}></div>
+                                             <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? '' : 'bg-gray-200'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: '#F0FF00' } : {}}>
+                                                 <div className={`absolute top-1 w-3 h-3 rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1 bg-white'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: '#232323' } : {}}></div>
                                             </div>
                                         </div>
                                     ))}
@@ -696,7 +697,7 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-gray-100 px-6 md:px-8 py-6">
+            <header className="sticky top-0 z-30 backdrop-blur border-b px-6 md:px-8 py-6" style={{ backgroundColor: 'rgba(232,232,227,0.95)', borderColor: '#D0D0C8' }}>
                 <div className="max-w-[1600px] mx-auto w-full space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-4 md:gap-6">
                         <div className="flex items-center gap-4 md:gap-6">
@@ -712,11 +713,11 @@ const App: React.FC = () => {
                             </button>
 
                             <nav className="flex items-center gap-4 text-xs md:text-sm font-bold uppercase">
-                                <button onClick={() => setActiveTab('matcher')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'matcher' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-black'}`}>{t.matcher}</button>
-                                <button onClick={() => setActiveTab('batch')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'batch' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-black'}`}>{t.multiSlotMatchAnalysis}</button>
-                                <button onClick={() => setActiveTab('palette')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'palette' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-black'}`}>{t.contrastPalette}</button>
-                                <button onClick={() => setActiveTab('generated')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'generated' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-black'}`}>{t.generatedPalettes}</button>
-                                <button onClick={() => setActiveTab('guide')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'guide' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-black'}`}>{t.printGuide}</button>
+                                <button onClick={() => setActiveTab('matcher')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'matcher' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'matcher' ? { borderColor: '#F0FF00' } : {}}>{t.matcher}</button>
+                                <button onClick={() => setActiveTab('batch')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'batch' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'batch' ? { borderColor: '#F0FF00' } : {}}>{t.multiSlotMatchAnalysis}</button>
+                                <button onClick={() => setActiveTab('palette')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'palette' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'palette' ? { borderColor: '#F0FF00' } : {}}>{t.contrastPalette}</button>
+                                <button onClick={() => setActiveTab('generated')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'generated' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'generated' ? { borderColor: '#F0FF00' } : {}}>{t.generatedPalettes}</button>
+                                <button onClick={() => setActiveTab('guide')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'guide' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'guide' ? { borderColor: '#F0FF00' } : {}}>{t.printGuide}</button>
                             </nav>
                         </div>
 
@@ -917,14 +918,14 @@ const App: React.FC = () => {
                                         <span className="font-mono text-xs text-gray-400 uppercase mb-4 tracking-widest">{t.actions}</span>
                                         <button
                                             onClick={() => handleHexChange(rgbToHex((Math.random() * 255) | 0, (Math.random() * 255) | 0, (Math.random() * 255) | 0))}
-                                            className="bg-gray-100 hover:bg-black hover:text-white px-6 py-4 text-left font-mono text-xs transition-colors"
-                                        >
-                                            {t.randomizeColor}
-                                        </button>
-                                        <button
-                                            onClick={triggerAiAnalysis}
-                                            disabled={loadingAi}
-                                            className="bg-gray-100 hover:bg-black hover:text-white px-6 py-4 text-left font-mono text-xs transition-colors"
+                                             className="px-6 py-4 text-left font-mono text-xs transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F0FF00'; e.currentTarget.style.color = '#232323'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}
+                                         >
+                                             {t.randomizeColor}
+                                         </button>
+                                         <button
+                                             onClick={triggerAiAnalysis}
+                                             disabled={loadingAi}
+                                             className="px-6 py-4 text-left font-mono text-xs transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F0FF00'; e.currentTarget.style.color = '#232323'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}
                                         >
                                             {loadingAi ? t.thinking : t.analyzeWithAi}
                                         </button>
@@ -971,7 +972,7 @@ const App: React.FC = () => {
                 )}
             </main>
 
-            <footer className="py-8 text-center border-t border-gray-100 mt-auto">
+            <footer className="py-8 text-center border-t mt-auto" style={{ borderColor: '#D0D0C8' }}>
                 <a
                     href="https://www.instagram.com/unbserved/"
                     target="_blank"

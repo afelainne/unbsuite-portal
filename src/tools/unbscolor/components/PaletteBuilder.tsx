@@ -137,7 +137,8 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
                         <h3 className="font-mono text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.batchPalette} ({batchColors.length} {t.colors})</h3>
                         <button 
                             onClick={() => setShowBatchPalettes(!showBatchPalettes)}
-                            className={`px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm ${showBatchPalettes ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-200 hover:border-black'}`}
+                             className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm"
+                             style={showBatchPalettes ? { backgroundColor: '#F0FF00', color: '#232323', borderColor: '#F0FF00' } : { backgroundColor: 'white', color: '#232323', borderColor: '#D0D0C8' }}
                         >
                             {showBatchPalettes ? t.hideBatch : t.showBatch}
                         </button>
@@ -190,8 +191,8 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
                             <button onClick={() => {
                                 const h = rgbToHex(Math.random()*255|0, Math.random()*255|0, Math.random()*255|0);
                                 setBaseHex(h); onHexChange(h);
-                            }} className="bg-gray-50 hover:bg-black hover:text-white px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold shadow-sm">{t.randomize}</button>
-                            <button onClick={() => setUseReference(!useReference)} className={`px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm ${useReference ? 'bg-black text-white border-black' : 'bg-white text-black border-gray-200 hover:border-black'}`}>{t.usePantone}</button>
+                             }} className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F0FF00'; e.currentTarget.style.color = '#232323'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}>{t.randomize}</button>
+                             <button onClick={() => setUseReference(!useReference)} className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm" style={useReference ? { backgroundColor: '#F0FF00', color: '#232323', borderColor: '#F0FF00' } : { backgroundColor: 'white', color: '#232323', borderColor: '#D0D0C8' }}>{t.usePantone}</button>
                          </div>
                     </div>
                 </div>
