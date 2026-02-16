@@ -17,7 +17,7 @@ const SectionHeader: React.FC<{ category: string; title: string }> = ({ category
 
 export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors = [] }) => {
     const { t } = useLanguage();
-    const safeHex = isValidHex(selectedHex) ? selectedHex : '#F0FF00';
+    const safeHex = isValidHex(selectedHex) ? selectedHex : '#F7E043';
     
     const [manualCmyk, setManualCmyk] = useState({ c: 0, m: 76, y: 73, k: 3 });
     const [bgHex, setBgHex] = useState('#000000');

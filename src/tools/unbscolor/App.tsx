@@ -55,7 +55,7 @@ const App: React.FC = () => {
     const { language, setLanguage, t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'matcher' | 'batch' | 'guide' | 'palette' | 'generated' | 'magic'>('matcher');
     const [showSettings, setShowSettings] = useState(false);
-    const [batchColors, setBatchColors] = useState<string[]>(['#F0FF00', '#1A1A1A', '#FFFFFF', '#E5E5E5', '#333333']);
+    const [batchColors, setBatchColors] = useState<string[]>(['#F7E043', '#1A1A1A', '#FFFFFF', '#E5E5E5', '#333333']);
 
     const [settings, setSettings] = useState<SettingsState>({
         showHex: true,
@@ -71,12 +71,12 @@ const App: React.FC = () => {
         mixFormat: 'rgb(80, 184, 72)'
     });
 
-    const [hex, setHex] = useState<string>('#F0FF00');
-    const [rgb, setRgb] = useState<RGB>(() => hexToRgb('#F0FF00'));
-    const [cmyk, setCmyk] = useState<CMYK>(() => rgbToCmyk(hexToRgb('#F0FF00')));
-    const [hsl, setHsl] = useState<HSL>(() => rgbToHsl(hexToRgb('#F0FF00')));
-    const [hsv, setHsv] = useState<HSV>(() => rgbToHsv(hexToRgb('#F0FF00')));
-    const [lab, setLab] = useState<LAB>(() => hexToLab('#F0FF00'));
+    const [hex, setHex] = useState<string>('#F7E043');
+    const [rgb, setRgb] = useState<RGB>(() => hexToRgb('#F7E043'));
+    const [cmyk, setCmyk] = useState<CMYK>(() => rgbToCmyk(hexToRgb('#F7E043')));
+    const [hsl, setHsl] = useState<HSL>(() => rgbToHsl(hexToRgb('#F7E043')));
+    const [hsv, setHsv] = useState<HSV>(() => rgbToHsv(hexToRgb('#F7E043')));
+    const [lab, setLab] = useState<LAB>(() => hexToLab('#F7E043'));
 
     const [libraryType, setLibraryType] = useState<string>(defaultLibraryId);
     const [library, setLibrary] = useState<ReferenceColor[]>(DEFAULT_LIBRARY);
