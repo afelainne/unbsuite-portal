@@ -234,7 +234,7 @@ const App: React.FC = () => {
         name: string;
         stats: string[];
         matches: { label: string; code: string; swatch: string }[];
-        strip: { hex: string; name: string }[];
+        strip: { hex: string; name: string; code?: string }[];
     }
 
     const buildCardExportData = (color: string, index: number): CardExportPayload | null => {
@@ -297,7 +297,8 @@ const App: React.FC = () => {
 
         const strip = findReferenceMatches(color, library, 6).map((m) => ({
             hex: m.reference.hex,
-            name: m.reference.name
+            name: m.reference.name,
+            code: normalizePantoneCode(m.reference.code)
         }));
 
         return {
@@ -359,16 +360,23 @@ const App: React.FC = () => {
                 const x = padding + idx * slotWidth;
                 const isFirst = idx === 0;
                 const isLast = idx === payload.strip.length - 1;
+                let rect = '';
                 if (isFirst) {
-                    return `<path d="M${x + 10},${stripY} h${slotWidth - 10} v40 h-${slotWidth - 10} q-10,0 -10,-10 v-20 q0,-10 10,-10 z" fill="${s.hex}" />`;
+                    rect = `<path d="M${x + 10},${stripY} h${slotWidth - 10} v40 h-${slotWidth - 10} q-10,0 -10,-10 v-20 q0,-10 10,-10 z" fill="${s.hex}" />`;
                 } else if (isLast) {
-                    return `<path d="M${x},${stripY} h${slotWidth - 10} q10,0 10,10 v20 q0,10 -10,10 h-${slotWidth - 10} v-40 z" fill="${s.hex}" />`;
+                    rect = `<path d="M${x},${stripY} h${slotWidth - 10} q10,0 10,10 v20 q0,10 -10,10 h-${slotWidth - 10} v-40 z" fill="${s.hex}" />`;
+                } else {
+                    rect = `<rect x="${x}" y="${stripY}" width="${slotWidth}" height="40" fill="${s.hex}" />`;
                 }
-                return `<rect x="${x}" y="${stripY}" width="${slotWidth}" height="40" fill="${s.hex}" />`;
+                // Add Pantone code below the swatch
+                if (s.code) {
+                    rect += `<text x="${x + slotWidth / 2}" y="${stripY + 54}" font-size="8" font-family="Arial, sans-serif" fill="#9ca3af" text-anchor="middle">${s.code}</text>`;
+                }
+                return rect;
             })
             .join('');
 
-        cursor += 60;
+        cursor += 74; // extra space for Pantone codes below strip
         const height = cursor + padding;
 
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${t.slotLabel} ${payload.index + 1} ${t.colorCardAria}" shape-rendering="geometricPrecision" text-rendering="optimizeLegibility">
