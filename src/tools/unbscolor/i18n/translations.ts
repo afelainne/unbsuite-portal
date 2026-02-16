@@ -1326,10 +1326,10 @@ export const translations: Record<Language, Translations> = {
     hsbHsv: 'HSB / HSV',
     cieLabHighPrec: 'CIE Lab (Alta Prec)',
     cmykProcess: 'CMYK (Proceso)',
-    pantoneBridgeC: 'Pantone Bridge C',
-    pantoneBridgeU: 'Pantone Bridge U',
-    pantoneC: 'Pantone C',
-    pantoneU: 'Pantone U',
+    pantoneBridgeC: 'Sistema A (C)',
+    pantoneBridgeU: 'Sistema A (U)',
+    pantoneC: 'Sistema B (C)',
+    pantoneU: 'Sistema B (U)',
     mixedFormatSyntax: 'Sintaxis de Formato Mixto',
     changesAppliedRealtime: 'Los cambios se aplican en tiempo real a las sesiones activas.',
     
@@ -1344,7 +1344,7 @@ export const translations: Record<Language, Translations> = {
     outOfGamut: 'FUERA DE GAMA',
     actions: 'Acciones',
     randomizeColor: 'Color Aleatorio',
-    analyzeWithAi: 'Buscar Pantone',
+    analyzeWithAi: 'Buscar Referencia',
     thinking: 'Buscando...',
     aiResult: 'Resultado de la búsqueda',
     mood: 'Estado',
@@ -1359,7 +1359,7 @@ export const translations: Record<Language, Translations> = {
     downloadSlot: 'Descargar slot',
     
     // Nearby Pantones
-    nearbyPantones: 'Pantones Cercanos (ΔE 00 Match)',
+    nearbyPantones: 'Referencias Cercanas (ΔE 00)',
     
     // InfoGrid
     red: 'Rojo',
@@ -1383,7 +1383,7 @@ export const translations: Record<Language, Translations> = {
     hueRotateTint: 'Rotación de Tono (Claro)',
     saturationShade: 'Saturación (Oscuro)',
     saturationTint: 'Saturación (Claro)',
-    usePantone: 'Usar Match Pantone',
+    usePantone: 'Usar Match de Referencia',
     showBatchPalettes: 'Mostrar Paletas en Lote',
     selectBatchColor: 'Seleccionar color del lote',
     baseColor: 'Color Base',

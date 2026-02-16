@@ -182,7 +182,7 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
                                             })}
                                             className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-widest border border-gray-200 bg-white rounded-lg hover:border-black hover:text-black transition-all"
                                         >
-                                            Buscar Pantone próximo na web
+                                            {t.analyzeWithAi}
                                         </button>
                                     )}
                                 </div>

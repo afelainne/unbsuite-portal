@@ -11,8 +11,8 @@ interface ColorAnalysisEntry {
   analysis: AnalysisResult;
 }
 
-// Análises específicas por código Pantone aproximado
-const pantoneAnalysis: Record<string, AnalysisResult> = {
+// Analysis entries by color code
+const codeAnalysis: Record<string, AnalysisResult> = {
   // AMARELOS - baseados em cores reais da biblioteca
   'Yellow': {
     description: {
@@ -1180,7 +1180,7 @@ const pantoneAnalysis: Record<string, AnalysisResult> = {
     psychology: { en: 'Evokes refreshment, cleanliness and purity.', pt: 'Evoca refrescância, limpeza e pureza.', es: 'Evoca frescura, limpieza y pureza.' }
   },
   '285': {
-    description: { en: 'Modern corporate blue, LinkedIn in Pantone form.', pt: 'Azul corporate moderno, LinkedIn em forma de Pantone.', es: 'Azul corporativo moderno, LinkedIn en forma de Pantone.' },
+    description: { en: 'Modern corporate blue, a defining shade in professional identity.', pt: 'Azul corporate moderno, uma tonalidade definidora em identidade profissional.', es: 'Azul corporativo moderno, un tono definidor en identidad profesional.' },
     usageTips: { en: ['Tech companies', 'Finance', 'Consulting'], pt: ['Tech companies', 'Finanças', 'Consultoria'], es: ['Empresas tech', 'Finanzas', 'Consultoría'] },
     psychology: { en: 'Conveys innovation, trust and professionalism.', pt: 'Transmite inovação, confiança e profissionalismo.', es: 'Transmite innovación, confianza y profesionalismo.' }
   },
@@ -1288,9 +1288,9 @@ const pantoneAnalysis: Record<string, AnalysisResult> = {
   },
   '300': {
     description: {
-      en: 'Cerulean Blue (#006DB4) - brilliant cerulean, the blue Pantone crowned millennium color.',
-      pt: 'Azul Cerulean (#006DB4) - cerulean brilhante, o azul que Pantone coroou cor do milênio.',
-      es: 'Azul Cerulean (#006DB4) - cerulean brillante, el azul que Pantone coronó color del milenio.'
+      en: 'Cerulean Blue (#006DB4) - brilliant cerulean, the blue crowned as the millennium color.',
+      pt: 'Azul Cerulean (#006DB4) - cerulean brilhante, o azul coroado como cor do milênio.',
+      es: 'Azul Cerulean (#006DB4) - cerulean brillante, el azul coronado como color del milenio.'
     },
     usageTips: {
       en: ['Contemporary design', 'Tech and innovation', 'Casual fashion'],
@@ -2031,7 +2031,7 @@ const pantoneAnalysis: Record<string, AnalysisResult> = {
   // PRETOS ESPECIAIS (mantidos em seção anterior)
 };
 
-// Análises baseadas em faixa de cores (fallback quando não há match Pantone)
+// HSL-based fallback analysis when no direct code match is found
 const hueBasedAnalysis: ColorAnalysisEntry[] = [
   // Vermelhos (0-15, 345-360)
   {
@@ -2356,16 +2356,18 @@ const hueBasedAnalysis: ColorAnalysisEntry[] = [
   }
 ];
 
-// Função auxiliar para extrair código Pantone do nome
-const extractPantoneCode = (pantoneName: string): string => {
-  // Remove prefixos e sufixos comuns
-  let code = pantoneName
-    .replace(/PANTONE\s*/gi, '')
-    .replace(/\s*(C|U|CP|UP|CVU|CVP|CVC|UVC|TCX|TPX|TPG|TN)$/gi, '')
-    .replace(/\s*(Coated|Uncoated|Bridge|Solid)$/gi, '')
+// Helper to extract color code from reference name
+const extractColorCode = (refName: string): string => {
+  let code = refName
+    .replace(/[A-Z]+\s*/gi, (m) => {
+      // Remove common prefixes/suffixes without revealing brand
+      const upper = m.trim().toUpperCase();
+      if (['C', 'U', 'CP', 'UP', 'CVU', 'CVP', 'CVC', 'UVC', 'TCX', 'TPX', 'TPG', 'TN', 'COATED', 'UNCOATED', 'BRIDGE', 'SOLID'].includes(upper)) return '';
+      return m;
+    })
     .trim();
-  
-  return code;
+  // If all was stripped, return as-is
+  return code || refName.trim();
 };
 
 // Função para converter hex para HSL
@@ -2398,30 +2400,30 @@ const hexToHSL = (hex: string): { h: number; s: number; l: number } => {
 };
 
 // Função principal de análise
-export const getColorAnalysis = (hex: string, pantoneName?: string): AnalysisResult => {
-  // Primeiro, tenta encontrar análise por código Pantone
-  if (pantoneName) {
-    const code = extractPantoneCode(pantoneName);
+export const getColorAnalysis = (hex: string, refName?: string): AnalysisResult => {
+  // Try to find analysis by color code
+  if (refName) {
+    const code = extractColorCode(refName);
     const analysisFromJson = getAnalysisFromLookup(code);
     if (analysisFromJson) {
       return analysisFromJson;
     }
-    // Busca parcial no JSON (ex.: "185" em "185 C")
+    // Partial match in JSON lookup
     for (const key of Object.keys(analysisLookupMap)) {
       if (code && (code.includes(key) || key.includes(code))) {
         return analysisLookupMap[key];
       }
     }
     
-    // Verifica matches diretos
-    if (pantoneAnalysis[code]) {
-      return pantoneAnalysis[code];
+    // Direct match in code analysis
+    if (codeAnalysis[code]) {
+      return codeAnalysis[code];
     }
     
-    // Verifica matches parciais (ex: "185" em "185 C")
-    for (const key of Object.keys(pantoneAnalysis)) {
+    // Partial match
+    for (const key of Object.keys(codeAnalysis)) {
       if (code.includes(key) || key.includes(code)) {
-        return pantoneAnalysis[key];
+        return codeAnalysis[key];
       }
     }
   }

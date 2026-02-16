@@ -84,7 +84,7 @@ const App: React.FC = () => {
     const [analysis, setAnalysis] = useState<{ description: string; usageTips: string[]; psychology: string } | null>(null);
     const [loadingAi, setLoadingAi] = useState(false);
     const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
-    const [showPantoneMatch, setShowPantoneMatch] = useState(false);
+    const [showRefMatch, setShowRefMatch] = useState(false);
 
     const bridgeCoatedLibrary = useMemo(() => {
         return (
@@ -124,7 +124,7 @@ const App: React.FC = () => {
         return `rgb(${r}, ${g}, ${b})`;
     };
 
-    const normalizePantoneCode = (code?: string) => {
+    const normalizeRefCode = (code?: string) => {
         if (!code) return '';
         const upper = code.toUpperCase();
         return upper.replace(/\s+CP\b/g, ' C').replace(/\s+UP\b/g, ' U');
@@ -266,7 +266,7 @@ const App: React.FC = () => {
         if (settings.showPmsC) {
             matchesList.push({
                 label: t.pantoneBridgeC,
-                    code: matchC && matchC.deltaE < 10 ? normalizePantoneCode(matchC.reference.code) : outOfGamutLabel,
+                    code: matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : outOfGamutLabel,
                 swatch: matchC ? matchC.reference.hex : '#e5e7eb'
             });
         }
@@ -274,7 +274,7 @@ const App: React.FC = () => {
         if (settings.showPmsU) {
             matchesList.push({
                 label: t.pantoneBridgeU,
-                    code: matchU && matchU.deltaE < 10 ? normalizePantoneCode(matchU.reference.code) : outOfGamutLabel,
+                    code: matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : outOfGamutLabel,
                 swatch: matchU ? matchU.reference.hex : '#e5e7eb'
             });
         }
@@ -282,7 +282,7 @@ const App: React.FC = () => {
         if (settings.showPmsSolidC) {
             matchesList.push({
                 label: t.pantoneC,
-                    code: matchSolidC && matchSolidC.deltaE < 10 ? normalizePantoneCode(matchSolidC.reference.code) : outOfGamutLabel,
+                    code: matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : outOfGamutLabel,
                 swatch: matchSolidC ? matchSolidC.reference.hex : '#e5e7eb'
             });
         }
@@ -290,7 +290,7 @@ const App: React.FC = () => {
         if (settings.showPmsSolidU) {
             matchesList.push({
                 label: t.pantoneU,
-                    code: matchSolidU && matchSolidU.deltaE < 10 ? normalizePantoneCode(matchSolidU.reference.code) : outOfGamutLabel,
+                    code: matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : outOfGamutLabel,
                 swatch: matchSolidU ? matchSolidU.reference.hex : '#e5e7eb'
             });
         }
@@ -298,7 +298,7 @@ const App: React.FC = () => {
         const strip = findReferenceMatches(color, library, 6).map((m) => ({
             hex: m.reference.hex,
             name: m.reference.name,
-            code: normalizePantoneCode(m.reference.code)
+            code: normalizeRefCode(m.reference.code)
         }));
 
         return {
@@ -368,7 +368,7 @@ const App: React.FC = () => {
                 } else {
                     rect = `<rect x="${x}" y="${stripY}" width="${slotWidth}" height="40" fill="${s.hex}" />`;
                 }
-                // Add Pantone code below the swatch
+                // Add reference code below the swatch
                 if (s.code) {
                     rect += `<text x="${x + slotWidth / 2}" y="${stripY + 54}" font-size="8" font-family="Arial, sans-serif" fill="#9ca3af" text-anchor="middle">${s.code}</text>`;
                 }
@@ -376,7 +376,7 @@ const App: React.FC = () => {
             })
             .join('');
 
-        cursor += 74; // extra space for Pantone codes below strip
+        cursor += 74; // extra space for codes below strip
         const height = cursor + padding;
 
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${t.slotLabel} ${payload.index + 1} ${t.colorCardAria}" shape-rendering="geometricPrecision" text-rendering="optimizeLegibility">
@@ -504,10 +504,10 @@ const App: React.FC = () => {
                 if (settings.showHsb) output.push(`hsb(${s.h}, ${s.s}, ${s.v})`);
                 if (settings.showHsl) output.push(`hsl(${h.h}, ${h.s}%, ${h.l}%)`);
                 if (settings.showLab) output.push(`lab(${Math.round(l.l)}, ${Math.round(l.a)}, ${Math.round(l.b)})`);
-                if (settings.showPmsC) output.push(matchC && matchC.deltaE < 10 ? normalizePantoneCode(matchC.reference.code) : `${t.outOfGamut} C`);
-                if (settings.showPmsU) output.push(matchU && matchU.deltaE < 10 ? normalizePantoneCode(matchU.reference.code) : `${t.outOfGamut} U`);
-                if (settings.showPmsSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizePantoneCode(matchSolidC.reference.code) : `${t.outOfGamut} C (SOLID)`);
-                if (settings.showPmsSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizePantoneCode(matchSolidU.reference.code) : `${t.outOfGamut} U (SOLID)`);
+                if (settings.showPmsC) output.push(matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : `${t.outOfGamut} C`);
+                if (settings.showPmsU) output.push(matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : `${t.outOfGamut} U`);
+                if (settings.showPmsSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : `${t.outOfGamut} C (SOLID)`);
+                if (settings.showPmsSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : `${t.outOfGamut} U (SOLID)`);
 
                 return output.join('\n');
             })
@@ -548,7 +548,7 @@ const App: React.FC = () => {
                 const similarForStrip = fetched.map((m) => ({
                     hex: m.reference.hex,
                     name: getClosestColorName(m.reference.hex),
-                    pantoneCode: normalizePantoneCode(m.reference.code),
+                    refCode: normalizeRefCode(m.reference.code),
                     type: `ΔE ${m.deltaE.toFixed(2)}`
                 }));
                 setStripColors(similarForStrip);
@@ -643,7 +643,7 @@ const App: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-gray-400">SEARCH WEB PANTONE</p>
+                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-gray-400">WEB REFERENCE SEARCH</p>
                                     {[
                                         { key: 'showPmsC', label: t.pantoneBridgeC },
                                         { key: 'showPmsU', label: t.pantoneBridgeU },
@@ -828,12 +828,12 @@ const App: React.FC = () => {
                             <div className="lg:col-span-7">
                                 <div className="flex items-center gap-3 mb-8 flex-wrap">
                                     <h2 className="font-mono text-sm font-medium">{t.matchCie2000}</h2>
-                                    {!showPantoneMatch && matches[0] && (
+                                    {!showRefMatch && matches[0] && (
                                         <button
-                                            onClick={() => setShowPantoneMatch(true)}
+                                            onClick={() => setShowRefMatch(true)}
                                             className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-widest border border-gray-200 bg-white rounded-lg hover:border-black hover:text-black transition-all"
                                         >
-                                            Buscar Pantone
+                                            {t.analyzeWithAi}
                                         </button>
                                     )}
                                 </div>
@@ -844,29 +844,29 @@ const App: React.FC = () => {
                                                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-inner" style={{ backgroundColor: hex }}></div>
                                                 <span className="font-mono text-xs text-gray-400">{getClosestColorName(hex)}</span>
                                             </div>
-                                            {showPantoneMatch && matches[0] ? (
+                                            {showRefMatch && matches[0] ? (
                                                 <>
                                                     <span className="text-gray-300 text-2xl">→</span>
                                                     <div className="flex flex-col items-center gap-3">
                                                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-inner" style={{ backgroundColor: matches[0].reference.hex }}></div>
-                                                        <span className="font-mono text-xs text-gray-400">{normalizePantoneCode(matches[0].reference.code)}</span>
+                                                        <span className="font-mono text-xs text-gray-400">{normalizeRefCode(matches[0].reference.code)}</span>
                                                     </div>
                                                 </>
                                             ) : (
                                                 <div className="flex flex-col items-center gap-3 text-gray-300">
                                                     <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-dashed border-gray-200 flex items-center justify-center text-[10px] font-mono uppercase tracking-[0.2em]">
-                                                        Pantone
+                                                        Reference
                                                     </div>
-                                                    <span className="font-mono text-[10px] uppercase tracking-[0.2em]">Busque para ver</span>
+                                                    <span className="font-mono text-[10px] uppercase tracking-[0.2em]">{t.analyzeWithAi}</span>
                                                 </div>
                                             )}
                                         </div>
                                         <div className="flex items-start gap-12 w-full mt-8">
                                             <div className="flex flex-col">
                                                 <span className="font-mono text-[10px] text-gray-400 uppercase tracking-[0.2em] mb-4">DELTA E 00</span>
-                                                <span className="text-6xl font-light tracking-tighter">{showPantoneMatch && matches[0] ? matches[0].deltaE.toFixed(2) : '--'}</span>
+                                                <span className="text-6xl font-light tracking-tighter">{showRefMatch && matches[0] ? matches[0].deltaE.toFixed(2) : '--'}</span>
                                             </div>
-                                            {showPantoneMatch && matches[0] && (
+                                            {showRefMatch && matches[0] && (
                                                 <div className="flex flex-col gap-1 border-l border-gray-100 pl-8">
                                                     <span className="font-bold text-sm mb-1">{getClosestColorName(matches[0].reference.hex)}</span>
                                                     <div className="font-mono text-[11px] text-gray-500 space-y-1.5">
@@ -884,25 +884,25 @@ const App: React.FC = () => {
                                                         {settings.showPmsC && (
                                                             <div className="mt-4 pt-3 border-t border-gray-50">
                                                                 <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.pantoneBridgeC}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizePantoneCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsU && (
                                                             <div className={`${!settings.showPmsC ? 'mt-4 pt-3 border-t border-gray-50' : 'mt-2'}`}>
                                                                 <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.pantoneBridgeU}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizePantoneCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsSolidC && (
                                                             <div className="mt-2 pt-3 border-t border-gray-50">
                                                                 <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.pantoneC}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizePantoneCode(getPmsSolidC()?.reference.code) || t.outOfGamut}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsSolidC()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsSolidU && (
                                                             <div className="mt-2 pt-3 border-t border-gray-50">
                                                                 <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.pantoneU}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizePantoneCode(getPmsSolidU()?.reference.code) || t.outOfGamut}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsSolidU()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -949,7 +949,7 @@ const App: React.FC = () => {
 
                         <div className="mb-12">
                             <h3 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{t.nearbyPantones}</h3>
-                            <SwatchStrip colors={stripColors} selectedHex={hex} onSelect={handleHexChange} showPantoneMatch={showPantoneMatch} />
+                            <SwatchStrip colors={stripColors} selectedHex={hex} onSelect={handleHexChange} showRefMatch={showRefMatch} />
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-y-12 gap-x-8 border-t border-gray-100 pt-12 mb-16">
@@ -964,7 +964,7 @@ const App: React.FC = () => {
                             />
                         </div>
 
-                        <SimilarityGrid matches={matches} selectedHex={hex} onSelect={handleHexChange} showPantoneMatch={showPantoneMatch} />
+                        <SimilarityGrid matches={matches} selectedHex={hex} onSelect={handleHexChange} showRefMatch={showRefMatch} />
                     </>
                 )}
             </main>
