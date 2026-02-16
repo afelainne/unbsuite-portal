@@ -1,163 +1,97 @@
 
-# Melhorias no UNBSCOLOR: Shuffle, Contraste, Multi-Slot e Header
+# Novos Presets, Presets Colapsavel, Logo UNBSGRID e Home Amarela
 
-## Resumo
-Quatro frentes de trabalho:
-1. Melhorar o shuffle do "2. ALBERS INTERACTION SQUARES" e "3. CUSTOM COMBINATIONS" para cobrir todos os slots e gerar sugestoes baseadas em contraste
-2. Adicionar botao "Full Contrast" que gera apenas combinacoes com contraste minimo aceitavel (WCAG AA 4.5:1)
-3. Corrigir Multi-Slot Match para baixar tambem alternativas Pantone quando ativadas
-4. Melhorar o header da plataforma geral e remover limites laterais
+## 1. Novos Presets Criativos para UNBSGRID
 
----
+Adicionar 6 novos presets criativos ao `src/tools/unbsgrid/lib/preset-engine.ts`:
 
-## 1. Shuffle Inteligente com Contraste
+- **Fluxo Dinamico**: parallelFlowLines, dominantDiagonals, skeletonCenterline, pathDirectionArrows -- para analise de movimento e direcao visual
+- **Circulos Construtivos**: circles, underlyingCircles, vesicaPiscis, anchoringPoints -- foco em geometria circular
+- **Minimalista**: boundingRects, centerLines, opticalCenter -- overlay super limpo, poucos elementos
+- **Contraste & Peso**: contrastGuide, visualWeightMap, ruleOfOdds, anchoringPoints -- analise de peso visual e equilibrio
+- **Diagonal & Perspectiva**: diagonals, dominantDiagonals, thirdLines, goldenRatio -- linhas de forca e composicao
+- **Skeleton & Curvas**: skeletonCenterline, curvatureComb, bezierHandles, tangentIntersections, anchorPoints -- analise de forma e curvas
 
-### Problema atual
-O `shuffleAlbers()` no `GeneratedPalettes.tsx` (linha 355-380) apenas incrementa o `albersSeed` ou embaralha posicoes desbloqueadas. O `albersGrid` (linha 229-270) gera combinacoes baseadas em peso, mas o shuffle nao garante diversidade nem prioriza contraste. O `suggestNewCombination()` (linha 539-556) gera cores aleatorias com harmonias, mas nao alimenta todos os slots.
+## 2. Presets Colapsavel
 
-### Solucao
-- **Novo estado**: `fullContrastMode` (boolean, default false)
-- **Novo botao**: "FULL CONTRAST" ao lado do "Shuffle" nas secoes 2 e 3
-- Quando `fullContrastMode` esta ativo:
-  - `albersGrid` filtra combinacoes para manter apenas aquelas onde `getContrastRatio(middle, inner) >= 4.5` (WCAG AA)
-  - O shuffle prioriza combinacoes com maior contraste entre camadas
-  - `suggestNewCombination()` gera cores garantindo que todas as combinacoes tenham contraste minimo AA
-- Quando desativado: comportamento aleatorio atual mantido
-- O shuffle deve cobrir TODOS os slots da paleta (nao apenas os primeiros), distribuindo as cores de forma que cada slot da paleta participe das combinacoes
+Tornar a secao de Presets no `PresetManager.tsx` colapsavel usando o `Collapsible` do Radix UI:
+- O header "Presets" vira um `CollapsibleTrigger` com chevron
+- O conteudo (botoes Load/Save, preset chips, revert) fica dentro do `CollapsibleContent`
+- Estado padrao: aberto
+- Importar `Collapsible`, `CollapsibleTrigger`, `CollapsibleContent` dos componentes UI locais
 
-### Arquivo: `src/tools/unbscolor/components/GeneratedPalettes.tsx`
-- Adicionar estado `fullContrastMode` (linha ~88)
-- Modificar `albersGrid` (useMemo, linha 229-270): quando fullContrastMode ativo, filtrar para `getContrastRatio(middle, inner) >= 4.5`
-- Modificar `suggestNewCombination()` (linha 539-556): gerar cores com garantia de contraste quando fullContrastMode ativo
-- Adicionar botao "FULL CONTRAST" toggle nos controles da secao 2 (linha ~1301) e secao 3 (linha ~1334)
-- Estilo do botao: quando ativo `bg-[#F0FF00] text-[#232323]`, quando inativo `bg-gray-100`
+## 3. Restaurar Logo UNBSGRID na Sidebar
 
----
+O logo UNBSGRID foi removido da sidebar (linha 416: "Compact header - no logo, just upload"). Restaurar o SVG do logo UNBSGRID (o SVG fornecido pelo usuario, com viewBox 0 0 1427 434) acima do SVGDropZone no `src/tools/unbsgrid/pages/Index.tsx`:
+- Adicionar o SVG inline compacto (altura ~32px) com `fill="#232323"` no topo do sidebar, antes do upload
+- Manter o estilo minimalista -- apenas o logo pequeno
 
-## 2. Multi-Slot Match: Download com Alternativas Pantone
+## 4. Logos nos Botoes da Home
 
-### Problema atual
-No `BatchAnalyzer.tsx`, a secao "Nearby Alternatives" (linha 173-198) mostra alternativas Pantone quando `showAlternatives` esta true, mas o download SVG/PNG do card (`onDownloadCard`) nao inclui essas alternativas no arquivo exportado. O `buildCardExportData` no `App.tsx` (linha 240-311) ja inclui um `strip` de 6 alternativas, mas apenas com hex e nome -- nao inclui o codigo Pantone.
+No `src/pages/Index.tsx`, substituir os icones Lucide (Palette, LayoutGrid) por SVGs inline dos logos reais:
+- **UNBSCOLOR**: usar o SVG do logo UNBSCOLOR (mesmas paths que o Logo.tsx do unbsgrid, que contem "UNBSGRID" -- na verdade o logo compartilhado e o "UNBS" com sufixo diferente). Como os logos sao SVGs grandes, criar versoes compactas inline com altura ~16px
+- **UNBSGRID**: usar o SVG fornecido pelo usuario (viewBox 0 0 1427 434)
+- Remover os icones Lucide `Palette` e `LayoutGrid` dos botoes
 
-### Solucao
-- Modificar `buildCardExportData` no `App.tsx` para incluir o `code` Pantone de cada alternativa no strip
-- Modificar `generateCardSvg` para renderizar os codigos Pantone abaixo de cada swatch do strip quando disponiveis
-- No `BatchAnalyzer.tsx`, mudar o estado `showAlternatives` para ser individual por slot (em vez de global) usando um `Set<number>`
+## 5. Fundo da Home #F0FF00
 
-### Arquivos:
-- `src/tools/unbscolor/App.tsx` linhas 240-395: adicionar `code` ao strip e renderiza-lo no SVG
-- `src/tools/unbscolor/components/BatchAnalyzer.tsx`: trocar `showAlternatives` boolean por `Set<number>` para controle por slot
+No `src/pages/Index.tsx`:
+- Trocar `bg-background` do container principal para `backgroundColor: '#F0FF00'`
+- Ajustar cores do device frame: borda `#232323`, fundo interno branco
+- O area lime interna ja e `bg-lime` -- pode manter ou ajustar para que nao conflite com o fundo amarelo exterior
 
 ---
 
-## 3. Header da Plataforma
+## Secao Tecnica
 
-### Problema atual
-O `Header.tsx` tem botoes que nao funcionam (Search, FolderOpen, Bell, Perfil, Sair) -- sao apenas visuais sem funcionalidade. O dropdown de perfil aponta para `/profile` que nao existe. O visual usa `hsl(var(--surface-primary))` que pode nao estar definido. A rota `/profile` nao existe no `App.tsx`.
+### `src/tools/unbsgrid/lib/preset-engine.ts`
+Adicionar 6 novos presets ao array retornado por `getBuiltinPresets()`, antes do "Auditoria Completa":
 
-### Solucao
-- Remover os botoes sem funcionalidade (Search, FolderOpen, Bell)
-- Remover o dropdown de perfil e o botao "Sair" (nao ha autenticacao)
-- Simplificar o header para: logo "UNBSERVED." a esquerda + link de volta quando em sub-app
-- Aplicar cores oficiais: fundo branco, texto `#232323`, borda `#D0D0C8`
-- Remover o menu mobile (apenas o back arrow e logo sao necessarios)
+| Preset | Opcoes Ativas |
+|---|---|
+| Fluxo Dinamico | parallelFlowLines, dominantDiagonals, skeletonCenterline, pathDirectionArrows |
+| Circulos Construtivos | circles, underlyingCircles, vesicaPiscis, anchoringPoints |
+| Minimalista | boundingRects, centerLines, opticalCenter |
+| Contraste & Peso | contrastGuide, visualWeightMap, ruleOfOdds, anchoringPoints |
+| Diagonal & Perspectiva | diagonals, dominantDiagonals, thirdLines, goldenRatio |
+| Skeleton & Curvas | skeletonCenterline, curvatureComb, bezierHandles, tangentIntersections, anchorPoints |
 
-### Arquivo: `src/components/Header.tsx`
-- Reescrever para versao minimalista: apenas logo + back arrow + titulo
+### `src/tools/unbsgrid/components/PresetManager.tsx`
+- Importar `Collapsible, CollapsibleTrigger, CollapsibleContent` de `./ui/collapsible`
+- Adicionar estado `open` (default true) via prop ou interno com `useState`
+- Envolver conteudo no Collapsible:
 
----
-
-## 4. Remover Limites Laterais
-
-### Problema atual
-O `ToolLayout.tsx` usa `<main className="container py-6">` que aplica `max-width` e padding lateral do Tailwind container. O UNBSCOLOR internamente usa `max-w-[1600px]`, e o UNBSGRID tem seu proprio layout. O `container` do Tailwind adiciona margens laterais que limitam o conteudo.
-
-### Solucao
-- No `ToolLayout.tsx`: trocar `className="container py-6"` por `className="w-full py-6"` para remover o max-width do container
-- No `Header.tsx`: trocar `className="container flex..."` por `className="w-full px-6 flex..."` para que o header tambem ocupe toda a largura
-- Cada sub-app ja controla seu proprio max-width internamente
-
-### Arquivos:
-- `src/components/ToolLayout.tsx`: remover `container`
-- `src/components/Header.tsx`: remover `container`
-
----
-
-## Secao Tecnica Detalhada
-
-### `src/tools/unbscolor/components/GeneratedPalettes.tsx`
-
-**Novo estado (linha ~88)**:
 ```text
-const [fullContrastMode, setFullContrastMode] = useState(false);
+<Collapsible defaultOpen>
+  <CollapsibleTrigger> [Chevron] Presets [InfoTooltip] </CollapsibleTrigger>
+  <CollapsibleContent>
+    ... botoes Load/Save, chips, revert ...
+  </CollapsibleContent>
+</Collapsible>
 ```
 
-**Modificar `albersGrid` useMemo (linhas 229-270)**:
-- Adicionar `fullContrastMode` como dependencia
-- Quando ativo, filtrar o grid final para manter apenas combos onde `getContrastRatio(combo.middle, combo.inner) >= 4.5`
-- Garantir que todas as cores da paleta participem como outer pelo menos uma vez
+### `src/tools/unbsgrid/pages/Index.tsx`
+Linha 417 (dentro do `<div className="px-3 pt-3 pb-2">`): adicionar logo SVG inline antes do SVGDropZone:
 
-**Modificar `suggestNewCombination` (linhas 539-556)**:
-- Quando `fullContrastMode` ativo: gerar cores com luminosidades variadas para garantir contraste
-- Exemplo: gerar 2-3 cores saturadas + 1 branco + 1 preto, validar que pares tenham ratio >= 4.5
-
-**Botao UI na secao 2 (linha ~1301-1307)**:
 ```text
-<button 
-  onClick={() => setFullContrastMode(!fullContrastMode)}
-  style={fullContrastMode ? { backgroundColor: '#F0FF00', color: '#232323' } : {}}
-  className="px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase..."
->
-  FULL CONTRAST
-</button>
+<div className="mb-2 flex justify-center">
+  <svg width="120" height="auto" viewBox="0 0 1427 434" fill="none" ...>
+    [paths do logo UNBSGRID]
+  </svg>
+</div>
 ```
 
-**Botao UI na secao 3 (linha ~1334)**: mesmo padrao
+### `src/pages/Index.tsx`
+- Linha 24: trocar `bg-background` por estilo inline `backgroundColor: '#F0FF00'`
+- Linhas 59-71: dentro de cada `<Link>`, substituir `<tool.icon>` por SVG inline do logo correspondente (UNBSCOLOR ou UNBSGRID), com altura ~16px e `fill="currentColor"`
+- Remover imports de `Palette` e `LayoutGrid` do lucide-react
+- Remover a propriedade `icon` do array `tools`
 
-### `src/tools/unbscolor/App.tsx`
+### Arquivos editados
 
-**`buildCardExportData` (linhas 296-311)**: adicionar `code` ao strip:
-```text
-const strip = findReferenceMatches(color, library, 6).map((m) => ({
-    hex: m.reference.hex,
-    name: m.reference.name,
-    code: m.reference.code  // NOVO
-}));
-```
-
-**`generateCardSvg` (linhas 356-370)**: renderizar codigo Pantone abaixo de cada swatch rect quando disponivel
-
-### `src/tools/unbscolor/components/BatchAnalyzer.tsx`
-
-**Trocar estado (linha 48)**:
-```text
-De: const [showAlternatives, setShowAlternatives] = useState(false);
-Para: const [showAlternatives, setShowAlternatives] = useState<Set<number>>(new Set());
-```
-
-**Toggle por slot (linhas 176-183)**:
-```text
-onClick={() => setShowAlternatives(prev => {
-  const next = new Set(prev);
-  next.has(idx) ? next.delete(idx) : next.add(idx);
-  return next;
-})}
-```
-
-**Condicional (linha 186)**: `showAlternatives.has(idx)`
-
-### `src/components/Header.tsx`
-Reescrever completamente para versao minimalista:
-- Apenas: ArrowLeft (quando showBack) + "UNBSERVED." link + titulo breadcrumb
-- Fundo branco, borda `#D0D0C8`, texto `#232323`
-- Sem botoes nao funcionais, sem menu mobile, sem avatar
-
-### `src/components/ToolLayout.tsx`
-- Linha 13: trocar `container py-6` por `w-full py-6`
-
-### Impacto
-- Shuffle agora cobre todos os slots e tem modo de contraste garantido
-- Multi-Slot exporta alternativas Pantone
-- Header limpo e funcional
-- Apps sem limites laterais artificiais
-- Zero quebra de funcionalidade existente
+| Arquivo | Mudanca |
+|---|---|
+| `src/tools/unbsgrid/lib/preset-engine.ts` | 6 novos presets criativos |
+| `src/tools/unbsgrid/components/PresetManager.tsx` | Collapsible na secao Presets |
+| `src/tools/unbsgrid/pages/Index.tsx` | Restaurar logo UNBSGRID no topo da sidebar |
+| `src/pages/Index.tsx` | Fundo #F0FF00, logos SVG inline nos botoes |
