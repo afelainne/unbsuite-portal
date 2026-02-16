@@ -574,11 +574,11 @@ const App: React.FC = () => {
     const getPmsSolidU = () => findReferenceMatches(hex, solidUncoatedLibrary, 1)[0];
 
     return (
-        <div className="min-h-screen font-sans flex flex-col relative overflow-x-hidden" style={{ backgroundColor: '#E8E8E3', color: '#232323' }}>
+        <div className="min-h-screen font-sans flex flex-col relative overflow-x-hidden" style={{ backgroundColor: '#FFFFFF', color: '#232323' }}>
             {showSettings && (
                 <div className="fixed inset-0 z-[200] flex justify-end">
                     <div className="absolute inset-0 bg-white/20 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
-                    <div className="relative w-full max-w-[440px] border-l p-12 shadow-[0_0_100px_rgba(0,0,0,0.05)] h-full animate-in slide-in-from-right duration-500 overflow-y-auto" style={{ backgroundColor: '#E8E8E3', borderColor: '#D0D0C8' }}>
+                    <div className="relative w-full max-w-[440px] border-l p-12 shadow-[0_0_100px_rgba(0,0,0,0.05)] h-full animate-in slide-in-from-right duration-500 overflow-y-auto" style={{ backgroundColor: '#FFFFFF', borderColor: '#D0D0C8' }}>
                         <div className="flex justify-between items-center mb-16">
                             <div className="flex items-center gap-3">
                                 <h2 className="text-3xl font-normal tracking-tighter">{t.settings}</h2>
@@ -697,7 +697,7 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            <header className="sticky top-0 z-30 backdrop-blur border-b px-6 md:px-8 py-6" style={{ backgroundColor: 'rgba(232,232,227,0.95)', borderColor: '#D0D0C8' }}>
+            <header className="sticky top-0 z-30 backdrop-blur border-b px-6 md:px-8 py-6" style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: '#D0D0C8' }}>
                 <div className="max-w-[1600px] mx-auto w-full space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-4 md:gap-6">
                         <div className="flex items-center gap-4 md:gap-6">
@@ -722,24 +722,13 @@ const App: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-end text-[10px] font-mono">
-                            {activeTab === 'matcher' && (
-                                <PaletteGenerator
-                                    onColorSelect={handleHexChange}
-                                    onPaletteDetected={(colors) => {
-                                        handleHexChange(colors[0]);
-                                    }}
-                                />
-                            )}
-
-                            {activeTab === 'batch' && (
-                                <PaletteGenerator
-                                    onColorSelect={handleHexChange}
-                                    onPaletteDetected={(colors) => {
-                                        setBatchColors(colors);
-                                        handleHexChange(colors[0]);
-                                    }}
-                                />
-                            )}
+                            <PaletteGenerator
+                                onColorSelect={handleHexChange}
+                                onPaletteDetected={(colors) => {
+                                    setBatchColors(colors);
+                                    handleHexChange(colors[0]);
+                                }}
+                            />
 
                             <button
                                 onClick={() => setShowSettings(true)}

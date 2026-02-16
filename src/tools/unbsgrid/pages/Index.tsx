@@ -42,12 +42,12 @@ import type { GeometryOptions, GeometryStyle, GeometryStyles, CanvasBackground }
 
 // Theme constants for UNBSGRID
 const THEME = {
-  bg: '#E8E8E3',
+  bg: '#FFFFFF',
   text: '#232323',
   accent: '#F0FF00',
   border: '#D0D0C8',
   muted: '#888',
-  inputBg: '#DEDED8',
+  inputBg: '#F5F5F5',
   hoverBg: '#DDDDD7',
 };
 
