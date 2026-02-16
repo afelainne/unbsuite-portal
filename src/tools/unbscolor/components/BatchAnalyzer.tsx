@@ -45,7 +45,7 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
     formatRgbDisplay,
     getClosestColorName
 }) => {
-    const [showAlternatives, setShowAlternatives] = useState(false);
+    const [showAlternatives, setShowAlternatives] = useState<Set<number>>(new Set());
 
     return (
         <div className="space-y-12">
@@ -173,9 +173,13 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                     <div className="text-[10px] font-bold text-gray-300 uppercase tracking-[0.2em]">{t.nearbyAlternatives}</div>
-                                    {!showAlternatives && (
+                                    {!showAlternatives.has(idx) && (
                                         <button
-                                            onClick={() => setShowAlternatives(true)}
+                                            onClick={() => setShowAlternatives(prev => {
+                                                const next = new Set(prev);
+                                                next.add(idx);
+                                                return next;
+                                            })}
                                             className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-widest border border-gray-200 bg-white rounded-lg hover:border-black hover:text-black transition-all"
                                         >
                                             Buscar Pantone próximo na web
@@ -183,7 +187,7 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
                                     )}
                                 </div>
 
-                                {showAlternatives && (
+                                {showAlternatives.has(idx) && (
                                     <div className="grid grid-cols-3 gap-3">
                                         {strip.map((s, i) => (
                                             <div key={i} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-black/5">

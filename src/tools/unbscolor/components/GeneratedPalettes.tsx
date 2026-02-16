@@ -91,6 +91,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const [albersLayerCount, setAlbersLayerCount] = useState<2 | 3 | 4>(3);
     const [comboLocks, setComboLocks] = useState<Record<number, boolean>>({});
     const [draggedColorIndex, setDraggedColorIndex] = useState<number | null>(null);
+    const [fullContrastMode, setFullContrastMode] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Atualizar cores quando externalColors mudar
@@ -231,11 +232,11 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         const validColors = colors.filter(c => isValidHex(c.hex));
         if (validColors.length < 2) return grid;
         
-        // Criar combinações ponderadas pelo peso
+        // Ensure every color participates as outer at least once
         for (let i = 0; i < validColors.length; i++) {
             for (let j = 0; j < validColors.length; j++) {
                 if (i !== j) {
-                    // Encontrar melhor inner para contraste
+                    // Pick best inner for contrast with middle
                     let bestInner = validColors[0].hex;
                     let bestContrast = 0;
                     for (const c of validColors) {
@@ -245,7 +246,6 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             bestInner = c.hex;
                         }
                     }
-                    // Peso da combinação é a média dos pesos das cores usadas
                     const comboWeight = (validColors[i].weight + validColors[j].weight) / 2;
                     grid.push({ 
                         outer: validColors[i].hex, 
@@ -256,18 +256,27 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                 }
             }
         }
-        // Ordenar por peso (maior primeiro)
-        grid.sort((a, b) => b.weight - a.weight);
+
+        // When fullContrastMode is active, filter to only combos with WCAG AA contrast (4.5:1)
+        let filtered = fullContrastMode
+            ? grid.filter(combo => getContrastRatio(combo.middle, combo.inner) >= 4.5)
+            : grid;
+
+        // If filtering removed everything, keep best contrast combos
+        if (filtered.length === 0) filtered = [...grid].sort((a, b) => getContrastRatio(b.middle, b.inner) - getContrastRatio(a.middle, a.inner)).slice(0, Math.min(8, grid.length));
+
+        // Sort by weight
+        filtered.sort((a, b) => b.weight - a.weight);
         
-        // Shuffle baseado no seed mas manter tendência de peso
-        const shuffled = [...grid];
+        // Shuffle based on seed but keep weight tendency
+        const shuffled = [...filtered];
         for (let i = shuffled.length - 1; i > 0; i--) {
-            const range = Math.min(3, i); // Shuffle apenas com vizinhos próximos para manter ordem por peso
+            const range = Math.min(3, i);
             const j = i - Math.floor((Math.sin(albersSeed + i) * 10000) % range);
             if (j >= 0) [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
         return shuffled;
-    }, [colors, albersSeed]);
+    }, [colors, albersSeed, fullContrastMode]);
 
     const totalWeight = useMemo(() => colors.reduce((sum, c) => sum + c.weight, 0), [colors]);
 
@@ -540,19 +549,38 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         const baseHue = Math.floor(Math.random() * 360);
         const harmonies = [[0, 180], [0, 120, 240], [0, 30, 60], [0, 150, 210]];
         const harmony = harmonies[Math.floor(Math.random() * harmonies.length)];
-        const saturation = 60 + Math.random() * 30;
-        const lightness = 45 + Math.random() * 20;
-        const colorCount = harmony.length + 2;
-        const weightPerColor = Math.floor(100 / colorCount);
-        const newColors: PaletteColor[] = harmony.map((shift) => {
-            const hue = (baseHue + shift) % 360;
-            const rgb = hslToRgb({ h: hue, s: saturation, l: lightness });
-            const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
-            return { hex, name: getClosestColorName(hex), weight: weightPerColor, locked: false };
-        });
-        newColors.push({ hex: '#FFFFFF', name: 'White', weight: weightPerColor, locked: false });
-        newColors.push({ hex: '#1A1A1A', name: 'Black', weight: 100 - (weightPerColor * (colorCount - 1)), locked: false });
-        setColors(newColors);
+
+        if (fullContrastMode) {
+            // Generate colors with guaranteed WCAG AA contrast between pairs
+            const lightnesses = [25, 45, 65, 85]; // spread luminosities
+            const colorCount = harmony.length + 2;
+            const weightPerColor = Math.floor(100 / colorCount);
+            const newColors: PaletteColor[] = harmony.map((shift, i) => {
+                const hue = (baseHue + shift) % 360;
+                const sat = 60 + Math.random() * 30;
+                const light = lightnesses[i % lightnesses.length];
+                const rgb = hslToRgb({ h: hue, s: sat, l: light });
+                const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+                return { hex, name: getClosestColorName(hex), weight: weightPerColor, locked: false };
+            });
+            newColors.push({ hex: '#FAFAFA', name: 'White', weight: weightPerColor, locked: false });
+            newColors.push({ hex: '#1A1A1A', name: 'Black', weight: 100 - (weightPerColor * (colorCount - 1)), locked: false });
+            setColors(newColors);
+        } else {
+            const saturation = 60 + Math.random() * 30;
+            const lightness = 45 + Math.random() * 20;
+            const colorCount = harmony.length + 2;
+            const weightPerColor = Math.floor(100 / colorCount);
+            const newColors: PaletteColor[] = harmony.map((shift) => {
+                const hue = (baseHue + shift) % 360;
+                const rgb = hslToRgb({ h: hue, s: saturation, l: lightness });
+                const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+                return { hex, name: getClosestColorName(hex), weight: weightPerColor, locked: false };
+            });
+            newColors.push({ hex: '#FFFFFF', name: 'White', weight: weightPerColor, locked: false });
+            newColors.push({ hex: '#1A1A1A', name: 'Black', weight: 100 - (weightPerColor * (colorCount - 1)), locked: false });
+            setColors(newColors);
+        }
     };
 
     const generatePaletteSvg = (): string => {
@@ -1299,6 +1327,13 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             </select>
                         </div>
                         <div className="flex gap-2">
+                            <button 
+                                onClick={() => setFullContrastMode(!fullContrastMode)} 
+                                className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all border ${fullContrastMode ? 'border-transparent' : 'border-gray-200 hover:bg-gray-50'}`}
+                                style={fullContrastMode ? { backgroundColor: '#F0FF00', color: '#232323' } : {}}
+                            >
+                                {fullContrastMode ? '◉' : '○'} FULL CONTRAST
+                            </button>
                             <button onClick={shuffleAlbers} className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">
                                 🔀 {t.shuffleAlbers}
                             </button>
@@ -1331,6 +1366,13 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             />
                             <span className="font-mono text-sm font-bold w-6 text-center">{Math.min(cardCount, getMaxCardsByTemplate(albersTemplate), albersGrid.length)}</span>
                         </div>
+                        <button 
+                            onClick={() => setFullContrastMode(!fullContrastMode)} 
+                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all border ${fullContrastMode ? 'border-transparent' : 'border-gray-200 hover:bg-gray-50'}`}
+                            style={fullContrastMode ? { backgroundColor: '#F0FF00', color: '#232323' } : {}}
+                        >
+                            {fullContrastMode ? '◉' : '○'} FULL CONTRAST
+                        </button>
                         <button onClick={() => { shuffleAlbers(); setCustomCombos({}); }} className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">
                             🔀 {t.shuffleAlbers}
                         </button>
