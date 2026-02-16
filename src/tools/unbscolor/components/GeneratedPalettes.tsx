@@ -45,7 +45,7 @@ const defaultSettings: Settings = {
 };
 
 export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({ 
-    initialHex = '#F0FF00',
+    initialHex = '#F7E043',
     settings = defaultSettings,
     externalColors
 }) => {
@@ -61,9 +61,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                 locked: false
             }));
         }
-        // Cores padrão com #F0FF00 como cor principal
         return [
-            { hex: '#F0FF00', name: 'Reference Yellow', weight: 40, locked: false },
+            { hex: '#F7E043', name: 'Reference Yellow', weight: 40, locked: false },
             { hex: '#1A1A1A', name: 'Black', weight: 20, locked: false },
             { hex: '#FFFFFF', name: 'White', weight: 20, locked: false },
             { hex: '#E5E5E5', name: 'Light Gray', weight: 10, locked: false },
