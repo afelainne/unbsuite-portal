@@ -193,16 +193,16 @@ const extractCode = (raw: string) => {
   const match = raw.match(/prefix=([^$]+)\$\$\//);
   if (match && match[1]) return match[1].trim();
   const cleaned = raw
-    .replace(/\$\$\$\/colorbook\/PANTONE\/prefix=/g, '')
-    .replace(/\$\$\$\/colorbook\/PANTONE\/postfix=/g, '')
+    .replace(/\$\$\$\/colorbook\/[A-Z]+\/prefix=/g, '')
+    .replace(/\$\$\$\/colorbook\/[A-Z]+\/postfix=/g, '')
     .replace(/\$\$\$/g, '')
     .trim();
   return cleaned || raw.trim();
 };
 
 const SYSTEM_ALIAS: Record<string, string> = {
-  pantone_color_bridge_v4: 'sys_a',
-  pantone_solid_v4: 'sys_b'
+  cb_v4: 'sys_a',
+  sol_v4: 'sys_b'
 };
 
 const FINISH_ALIAS: Record<string, string> = {
@@ -217,38 +217,36 @@ const ALLOWED_FINISHES = new Set([
   'sys_b_fin_u'
 ]);
 
-const SOURCE_MAP: Record<string, { systemId: string; systemName: string; finishId: string; finishName: string }> = {
-  'PANTONE Color Bridge Coated-V4.acb': {
-    systemId: 'pantone_color_bridge_v4',
-    systemName: 'Pantone Color Bridge V4',
-    finishId: 'coated',
-    finishName: 'Coated'
-  },
-  'PANTONE Color Bridge Uncoated-V4.acb': {
-    systemId: 'pantone_color_bridge_v4',
-    systemName: 'Pantone Color Bridge V4',
-    finishId: 'uncoated',
-    finishName: 'Uncoated'
-  },
-  'PANTONE Solid Coated-V4.acb': {
-    systemId: 'pantone_solid_v4',
-    systemName: 'Pantone Solid V4',
-    finishId: 'coated',
-    finishName: 'Coated'
-  },
-  'PANTONE Solid Uncoated-V4.acb': {
-    systemId: 'pantone_solid_v4',
-    systemName: 'Pantone Solid V4',
-    finishId: 'uncoated',
-    finishName: 'Uncoated'
+// Map source keys from encoded data to internal aliases
+const SOURCE_REMAP: Record<string, { systemId: string; systemName: string; finishId: string; finishName: string }> = {};
+
+// Build remap dynamically from known source patterns
+const SRC_PATTERNS: Array<{ pattern: RegExp; systemId: string; finishId: string }> = [
+  { pattern: /Bridge.*Coated.*V4/i, systemId: 'cb_v4', finishId: 'coated' },
+  { pattern: /Bridge.*Uncoated.*V4/i, systemId: 'cb_v4', finishId: 'uncoated' },
+  { pattern: /Solid.*Coated.*V4/i, systemId: 'sol_v4', finishId: 'coated' },
+  { pattern: /Solid.*Uncoated.*V4/i, systemId: 'sol_v4', finishId: 'uncoated' },
+];
+
+const resolveSource = (source: string): { systemId: string; systemName: string; finishId: string; finishName: string } | null => {
+  for (const p of SRC_PATTERNS) {
+    if (p.pattern.test(source)) {
+      return {
+        systemId: p.systemId,
+        systemName: p.systemId === 'cb_v4' ? 'System A' : 'System B',
+        finishId: p.finishId,
+        finishName: p.finishId === 'coated' ? 'Coated' : 'Uncoated'
+      };
+    }
   }
+  return null;
 };
 
 const buildSystems = (): ColorLibrarySystem[] => {
   const grouped: Record<string, ColorLibraryFinish> = {};
 
   colorsData.colors.forEach((color) => {
-    const meta = SOURCE_MAP[color.source];
+    const meta = resolveSource(color.source || '');
     if (!meta) return;
     const systemId = SYSTEM_ALIAS[meta.systemId] || meta.systemId;
     const finishId = FINISH_ALIAS[meta.finishId] || meta.finishId;

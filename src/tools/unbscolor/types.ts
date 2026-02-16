@@ -54,7 +54,7 @@ export interface HarmonyColor {
   hex: string;
   name: string;
   type: string;
-  pantoneCode?: string;
+  refCode?: string;
 }
 
 export interface AnalysisResult {

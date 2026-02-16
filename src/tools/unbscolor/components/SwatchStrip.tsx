@@ -6,10 +6,10 @@ interface SwatchStripProps {
   colors: HarmonyColor[];
   onSelect: (hex: string) => void;
   selectedHex: string;
-  showPantoneMatch: boolean;
+  showRefMatch: boolean;
 }
 
-export const SwatchStrip: React.FC<SwatchStripProps> = ({ colors, onSelect, selectedHex, showPantoneMatch }) => {
+export const SwatchStrip: React.FC<SwatchStripProps> = ({ colors, onSelect, selectedHex, showRefMatch }) => {
   
   // Helper to color code Delta E
   const getDeltaEColor = (str: string) => {
@@ -56,7 +56,7 @@ export const SwatchStrip: React.FC<SwatchStripProps> = ({ colors, onSelect, sele
                   textShadow: textColor === '#FFFFFF' ? '0 1px 3px rgba(0,0,0,0.3)' : 'none'
               }}
             >
-              {showPantoneMatch ? color.pantoneCode || color.name : color.name}
+              {showRefMatch ? color.refCode || color.name : color.name}
             </span>
             
             {/* Score Label (Visible on hover or if space permits, always visible at bottom in group hover) */}

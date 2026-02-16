@@ -6,16 +6,16 @@ interface SimilarityGridProps {
   matches: ColorMatch[];
   selectedHex: string;
   onSelect: (hex: string) => void;
-  showPantoneMatch: boolean;
+  showRefMatch: boolean;
 }
 
-const normalizePantoneCode = (code?: string) => {
+const normalizeRefCode = (code?: string) => {
     if (!code) return '';
     const upper = code.toUpperCase();
     return upper.replace(/\s+CP\b/g, ' C').replace(/\s+UP\b/g, ' U');
 };
 
-const SimilarityCard: React.FC<{ match: ColorMatch; onSelect: () => void; showPantoneMatch: boolean }> = ({ match, onSelect, showPantoneMatch }) => {
+const SimilarityCard: React.FC<{ match: ColorMatch; onSelect: () => void; showRefMatch: boolean }> = ({ match, onSelect, showRefMatch }) => {
     const { reference, deltaE } = match;
   
   // Calc derived stats for the card
@@ -64,10 +64,10 @@ const SimilarityCard: React.FC<{ match: ColorMatch; onSelect: () => void; showPa
         {/* Subtitle (Hex) */}
         <div className="text-xs font-mono text-gray-400 mb-3">{reference.hex}</div>
 
-        {/* Meta 1 (Pantone code revealed after search) */}
-        {showPantoneMatch && (
+        {/* Reference code revealed after search */}
+        {showRefMatch && (
           <div className="font-mono text-[10px] text-gray-500 mb-1 border-t border-gray-100 pt-2">
-            Pantone {normalizePantoneCode(reference.code)}
+            {normalizeRefCode(reference.code)}
           </div>
         )}
 
@@ -97,7 +97,7 @@ const SimilarityCard: React.FC<{ match: ColorMatch; onSelect: () => void; showPa
   );
 };
 
-export const SimilarityGrid: React.FC<SimilarityGridProps> = ({ matches, onSelect, showPantoneMatch }) => {
+export const SimilarityGrid: React.FC<SimilarityGridProps> = ({ matches, onSelect, showRefMatch }) => {
   return (
     <div className="mt-16 mb-12">
         <h3 className="font-mono text-xs font-bold text-gray-400 mb-6 uppercase tracking-widest">
@@ -109,7 +109,7 @@ export const SimilarityGrid: React.FC<SimilarityGridProps> = ({ matches, onSelec
                     key={idx + match.reference.code}
                     match={match}
                     onSelect={() => onSelect(match.reference.hex)}
-                    showPantoneMatch={showPantoneMatch}
+                    showRefMatch={showRefMatch}
                 />
             ))}
         </div>
