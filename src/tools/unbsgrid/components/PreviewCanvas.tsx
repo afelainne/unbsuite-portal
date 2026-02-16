@@ -48,14 +48,19 @@ const bgClasses: Record<CanvasBackground, string> = {
   checkerboard: '',
 };
 
+const TOOLBAR_THEME = {
+  bg: '#E8E8E3',
+  text: '#232323',
+  muted: '#888',
+  border: '#D0D0C8',
+};
+
 const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
   parsedSVG, clearspaceValue, clearspaceUnit, showGrid, gridSubdivisions,
   geometryOptions, geometryStyles, canvasBackground, modularScaleRatio = 1.618,
   safeZoneMargin = 0.1, svgColorOverride, useRealDataInterpretation = true,
   svgOutlineMode = false, svgOutlineWidth = 1, svgOutlineDash = [], svgOutlineLineCap = 'butt',
-  maxFlowLines = 5,
-  anchorPointSize = 3,
-  onProjectReady,
+  maxFlowLines = 5, anchorPointSize = 3, onProjectReady,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -77,7 +82,6 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
 
     const item = paper.project.importSVG(parsedSVG.originalSVG, { expandShapes: true });
 
-    // Apply color override
     if (svgColorOverride) {
       const overrideColor = new paper.Color(svgColorOverride);
       const applyColor = (item: paper.Item) => {
@@ -92,15 +96,12 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
       applyColor(item);
     }
 
-    // Apply outline mode: convert fills to strokes
     if (svgOutlineMode) {
       const applyOutline = (it: paper.Item) => {
         if (it instanceof paper.Path || it instanceof paper.CompoundPath) {
           const pathItem = it as any;
           const color = pathItem.fillColor || pathItem.strokeColor;
-          if (color) {
-            pathItem.strokeColor = color;
-          }
+          if (color) pathItem.strokeColor = color;
           pathItem.fillColor = null;
           pathItem.strokeWidth = svgOutlineWidth;
           if (svgOutlineDash.length > 0) pathItem.dashArray = svgOutlineDash;
@@ -123,8 +124,6 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
     const bounds = item.bounds;
     const components = parsedSVG.components;
     const logomarkSize = getLogomarkSize(components) * scale;
-
-    // Extract actual paths from the scaled/transformed SVG
     const actualPaths = collectPaths(item);
 
     const scaledCompBounds = components.map(c => new paper.Rectangle(
@@ -134,12 +133,10 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
       c.bounds.height / parsedSVG.fullBounds.height * bounds.height,
     ));
 
-    // Clearspace
     if (clearspaceValue > 0) {
       const zones = computeClearspace(bounds, clearspaceValue, clearspaceUnit, logomarkSize);
       const csColor = new paper.Color(0.37, 0.67, 0.97, 0.08);
       const borderColor = new paper.Color(0.37, 0.67, 0.97, 0.4);
-
       const rects = [
         [bounds.left - zones.left, bounds.top - zones.top, bounds.right + zones.right, bounds.top],
         [bounds.left - zones.left, bounds.bottom, bounds.right + zones.right, bounds.bottom + zones.bottom],
@@ -150,17 +147,12 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
         const r = new paper.Path.Rectangle(new paper.Point(x1, y1), new paper.Point(x2, y2));
         r.fillColor = csColor; r.strokeColor = null;
       });
-
-      // Dashed outer border for the full clearspace zone
       const outerRect = new paper.Path.Rectangle(
         new paper.Point(bounds.left - zones.left, bounds.top - zones.top),
         new paper.Point(bounds.right + zones.right, bounds.bottom + zones.bottom)
       );
-      outerRect.strokeColor = borderColor;
-      outerRect.strokeWidth = 1;
-      outerRect.dashArray = [6, 4];
-      outerRect.fillColor = null;
-
+      outerRect.strokeColor = borderColor; outerRect.strokeWidth = 1;
+      outerRect.dashArray = [6, 4]; outerRect.fillColor = null;
       if (zones.top > 15) {
         const xText = new paper.PointText(new paper.Point(bounds.center.x, bounds.top - zones.top / 2 + 4));
         xText.content = 'X'; xText.fillColor = new paper.Color(0.95, 0.55, 0.2, 0.8);
@@ -168,12 +160,10 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
       }
     }
 
-    // Construction Grid
     if (showGrid) {
       const scaledComponents = components.map((c, i) => ({ ...c, bounds: scaledCompBounds[i] }));
       const gridData = generateGridLines(bounds, scaledComponents as any, gridSubdivisions);
       const gridColor = new paper.Color(0.37, 0.67, 0.97, 0.25);
-
       gridData.vertical.forEach(x => {
         if (x >= bounds.left - 200 && x <= bounds.right + 200) {
           const line = new paper.Path.Line(new paper.Point(x, bounds.top - 50), new paper.Point(x, bounds.bottom + 50));
@@ -188,7 +178,6 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
       });
     }
 
-    // Geometry renderers - each wrapped in try/catch to prevent cascading failures
     const s = geometryStyles;
     const renderContext = { actualPaths, useRealData: useRealDataInterpretation, contentBounds: useRealDataInterpretation && actualPaths.length > 0 ? (() => { let b = actualPaths[0].bounds.clone(); for (let i = 1; i < actualPaths.length; i++) b = b.unite(actualPaths[i].bounds); return b; })() : undefined };
     const safe = (fn: () => void) => { try { fn(); } catch { /* skip broken renderer */ } };
@@ -201,9 +190,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
     if (geometryOptions.tangentLines) safe(() => renderTangentLines(bounds, scaledCompBounds, s.tangentLines, renderContext));
     if (geometryOptions.goldenSpiral) safe(() => renderGoldenSpiral(bounds, s.goldenSpiral, renderContext));
     if (geometryOptions.isometricGrid) safe(() => renderIsometricGrid(bounds, s.isometricGrid, gridSubdivisions, renderContext));
-    if (geometryOptions.bezierHandles) {
-      safe(() => renderBezierHandles(parsedSVG.segments, parsedSVG.fullBounds, bounds, s.bezierHandles, renderContext));
-    }
+    if (geometryOptions.bezierHandles) safe(() => renderBezierHandles(parsedSVG.segments, parsedSVG.fullBounds, bounds, s.bezierHandles, renderContext));
     if (geometryOptions.typographicProportions) safe(() => renderTypographicProportions(bounds, s.typographicProportions, renderContext));
     if (geometryOptions.thirdLines) safe(() => renderThirdLines(bounds, s.thirdLines, renderContext));
     if (geometryOptions.symmetryAxes) safe(() => renderSymmetryAxes(bounds, scaledCompBounds, s.symmetryAxes, renderContext));
@@ -225,7 +212,6 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
     if (geometryOptions.visualWeightMap) safe(() => renderVisualWeightMap(bounds, scaledCompBounds, s.visualWeightMap, renderContext));
     if (geometryOptions.anchoringPoints) safe(() => renderAnchoringPoints(bounds, s.anchoringPoints, renderContext));
     if (geometryOptions.harmonicDivisions) safe(() => renderHarmonicDivisions(bounds, s.harmonicDivisions, renderContext));
-    // Advanced SVG Analysis
     if (geometryOptions.parallelFlowLines) safe(() => renderParallelFlowLines(bounds, s.parallelFlowLines, renderContext, maxFlowLines));
     if (geometryOptions.underlyingCircles) safe(() => renderUnderlyingCircles(bounds, s.underlyingCircles, renderContext));
     if (geometryOptions.dominantDiagonals) safe(() => renderDominantDiagonals(bounds, s.dominantDiagonals, renderContext));
@@ -273,14 +259,9 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
     }
   }, [isPanning, panStart]);
 
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false);
-  }, []);
+  const handleMouseUp = useCallback(() => { setIsPanning(false); }, []);
 
-  const fitToScreen = useCallback(() => {
-    setZoom(1);
-    setPanOffset({ x: 0, y: 0 });
-  }, []);
+  const fitToScreen = useCallback(() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); }, []);
 
   const checkerStyle = canvasBackground === 'checkerboard' ? {
     backgroundImage: 'linear-gradient(45deg, hsl(0 0% 18%) 25%, transparent 25%), linear-gradient(-45deg, hsl(0 0% 18%) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, hsl(0 0% 18%) 75%), linear-gradient(-45deg, transparent 75%, hsl(0 0% 18%) 75%)',
@@ -291,26 +272,32 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
 
   return (
     <div className="relative w-full h-full flex flex-col">
-      {/* Canvas Toolbar */}
-      <div className="flex items-center gap-1 px-2 py-1.5 bg-sidebar border-b border-sidebar-border rounded-t-lg">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.min(5, z + 0.25))}>
-          <ZoomIn className="h-3.5 w-3.5" />
+      {/* Canvas Toolbar - themed */}
+      <div className="flex items-center gap-0.5 px-2 py-1 rounded-t-lg border-b"
+        style={{ backgroundColor: TOOLBAR_THEME.bg, borderColor: TOOLBAR_THEME.border }}
+      >
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoom(z => Math.min(5, z + 0.25))}
+          style={{ color: TOOLBAR_THEME.text }}>
+          <ZoomIn className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setZoom(z => Math.max(0.1, z - 0.25))}>
-          <ZoomOut className="h-3.5 w-3.5" />
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setZoom(z => Math.max(0.1, z - 0.25))}
+          style={{ color: TOOLBAR_THEME.text }}>
+          <ZoomOut className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={fitToScreen}>
-          <Maximize className="h-3.5 w-3.5" />
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fitToScreen}
+          style={{ color: TOOLBAR_THEME.text }}>
+          <Maximize className="h-3 w-3" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); }}>
-          <RotateCcw className="h-3.5 w-3.5" />
+        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); }}
+          style={{ color: TOOLBAR_THEME.text }}>
+          <RotateCcw className="h-3 w-3" />
         </Button>
-        <div className="h-4 w-px bg-sidebar-border mx-1" />
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <Move className="h-3 w-3" />
-          <span>Alt+Drag to pan</span>
+        <div className="h-3 w-px mx-0.5" style={{ backgroundColor: TOOLBAR_THEME.border }} />
+        <div className="flex items-center gap-0.5 text-[9px]" style={{ color: TOOLBAR_THEME.muted }}>
+          <Move className="h-2.5 w-2.5" />
+          <span>Alt+Drag</span>
         </div>
-        <div className="ml-auto flex items-center gap-2 text-[10px] text-muted-foreground">
+        <div className="ml-auto flex items-center gap-2 text-[9px]" style={{ color: TOOLBAR_THEME.muted }}>
           {cursorPos && <span>X:{cursorPos.x} Y:{cursorPos.y}</span>}
           <span className="font-mono">{Math.round(zoom * 100)}%</span>
         </div>
@@ -330,7 +317,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
         <canvas ref={canvasRef} className="w-full h-full" />
         {!parsedSVG && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <p className="text-muted-foreground text-sm">Upload an SVG to get started</p>
+            <p className="text-sm" style={{ color: TOOLBAR_THEME.muted }}>Upload an SVG to get started</p>
           </div>
         )}
       </div>
