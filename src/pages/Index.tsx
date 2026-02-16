@@ -50,12 +50,7 @@ const Index = () => {
             <Shield className="h-6 w-6 text-lime-foreground/60" strokeWidth={1.5} />
           </div>
 
-          {/* Vertical text left side */}
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-vertical">
-            <span className="text-[11px] font-black uppercase tracking-[0.3em] text-lime-foreground/50">
-              Popular
-            </span>
-          </div>
+
 
           {/* Center content */}
           <div className="flex flex-col items-center justify-center h-full pt-16 pb-12 px-12">
@@ -76,12 +71,7 @@ const Index = () => {
               ))}
             </div>
 
-            {/* Author bottom */}
-            <div className="mt-auto pt-8">
-              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-lime-foreground/50">
-                Yago Ferreira
-              </span>
-            </div>
+
           </div>
         </div>
 
