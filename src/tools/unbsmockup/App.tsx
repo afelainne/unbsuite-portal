@@ -1,10 +1,19 @@
-import React, { useState, useRef } from 'react';
-import { TEMPLATES } from './templates';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { TEMPLATES, EditableField } from './templates';
 import TemplatePicker from './components/TemplatePicker';
 import ImageUploader from './components/ImageUploader';
 import DeviceFrame from './components/DeviceFrame';
 import ExportControls from './components/ExportControls';
-import { RotateCcw } from 'lucide-react';
+import { RotateCcw, Upload, User } from 'lucide-react';
+
+function getDefaultFieldValues(fields?: EditableField[]): Record<string, string> {
+  if (!fields) return {};
+  const vals: Record<string, string> = {};
+  for (const f of fields) {
+    if (f.type === 'text') vals[f.id] = f.defaultValue;
+  }
+  return vals;
+}
 
 const UnbsMockupApp: React.FC = () => {
   const [selectedId, setSelectedId] = useState(TEMPLATES[0].id);
@@ -13,15 +22,36 @@ const UnbsMockupApp: React.FC = () => {
   const [zoom, setZoom] = useState(1);
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const template = TEMPLATES.find(t => t.id === selectedId) || TEMPLATES[0];
+
+  // Reset field values when template changes
+  useEffect(() => {
+    setFieldValues(getDefaultFieldValues(template.editableFields));
+  }, [template.id]);
 
   const resetAdjustments = () => {
     setZoom(1);
     setOffsetX(0);
     setOffsetY(0);
   };
+
+  const handleAvatarFile = useCallback((file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) setAvatarSrc(e.target.result as string);
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
+  const hasEditableFields = template.editableFields && template.editableFields.length > 0;
+  const textFields = template.editableFields?.filter(f => f.type === 'text') || [];
+  const hasAvatar = template.editableFields?.some(f => f.type === 'avatar') || false;
 
   return (
     <div className="max-w-6xl mx-auto px-4">
@@ -116,6 +146,72 @@ const UnbsMockupApp: React.FC = () => {
             </div>
           )}
 
+          {/* Content editing - only for templates with editable fields */}
+          {hasEditableFields && (
+            <div>
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Content</span>
+              <div className="space-y-3">
+                {/* Avatar upload */}
+                {hasAvatar && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => avatarInputRef.current?.click()}
+                      className="w-10 h-10 rounded-full border border-border bg-muted/50 flex items-center justify-center overflow-hidden hover:border-accent transition-colors flex-shrink-0"
+                      title="Upload avatar"
+                    >
+                      {avatarSrc ? (
+                        <img src={avatarSrc} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                    <div className="flex-1">
+                      <button
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="font-mono text-[9px] text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                      >
+                        <Upload className="h-3 w-3" />
+                        {avatarSrc ? 'Replace avatar' : 'Upload avatar'}
+                      </button>
+                      {avatarSrc && (
+                        <button
+                          onClick={() => setAvatarSrc(null)}
+                          className="font-mono text-[8px] text-muted-foreground/60 hover:text-destructive transition-colors block mt-0.5"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleAvatarFile(file);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Text fields */}
+                {textFields.map(field => (
+                  <div key={field.id}>
+                    <span className="font-mono text-[8px] text-muted-foreground mb-1 block">{field.label}</span>
+                    <input
+                      type="text"
+                      value={fieldValues[field.id] ?? field.defaultValue}
+                      onChange={(e) => setFieldValues(prev => ({ ...prev, [field.id]: e.target.value }))}
+                      className="w-full font-mono text-[11px] px-3 py-1.5 rounded-lg border border-border bg-background"
+                      placeholder={field.defaultValue}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Templates */}
           <div>
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Templates</span>
@@ -132,7 +228,17 @@ const UnbsMockupApp: React.FC = () => {
         {/* Preview */}
         <div className="flex items-center justify-center order-1 lg:order-2 min-h-[400px] rounded-xl bg-muted/30 p-8">
           {imageSrc ? (
-            <DeviceFrame ref={svgRef} template={template} imageSrc={imageSrc} bgColor={bgColor} zoom={zoom} offsetX={offsetX} offsetY={offsetY} />
+            <DeviceFrame
+              ref={svgRef}
+              template={template}
+              imageSrc={imageSrc}
+              bgColor={bgColor}
+              zoom={zoom}
+              offsetX={offsetX}
+              offsetY={offsetY}
+              fieldValues={fieldValues}
+              avatarSrc={avatarSrc}
+            />
           ) : (
             <div className="text-center space-y-3">
               <div className="w-24 h-24 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center">
@@ -150,7 +256,17 @@ const UnbsMockupApp: React.FC = () => {
               </div>
               <p className="font-mono text-[10px] text-muted-foreground">Upload an image to preview</p>
               <div className="hidden">
-                <DeviceFrame ref={svgRef} template={template} imageSrc={null} bgColor={bgColor} zoom={zoom} offsetX={offsetX} offsetY={offsetY} />
+                <DeviceFrame
+                  ref={svgRef}
+                  template={template}
+                  imageSrc={null}
+                  bgColor={bgColor}
+                  zoom={zoom}
+                  offsetX={offsetX}
+                  offsetY={offsetY}
+                  fieldValues={fieldValues}
+                  avatarSrc={avatarSrc}
+                />
               </div>
             </div>
           )}

@@ -8,11 +8,13 @@ interface DeviceFrameProps {
   zoom?: number;
   offsetX?: number;
   offsetY?: number;
+  fieldValues?: Record<string, string>;
+  avatarSrc?: string | null;
 }
 
 const DeviceFrame = forwardRef<SVGSVGElement, DeviceFrameProps>(
-  ({ template, imageSrc, bgColor, zoom = 1, offsetX = 0, offsetY = 0 }, ref) => {
-    const { viewBox, screen, frameSvg, bgSvg } = template;
+  ({ template, imageSrc, bgColor, zoom = 1, offsetX = 0, offsetY = 0, fieldValues = {}, avatarSrc = null }, ref) => {
+    const { viewBox, screen, frameSvg, bgSvg, editableFields } = template;
     const clipId = `clip-${template.id}`;
 
     // Calculate image dimensions with zoom and offset
@@ -45,6 +47,12 @@ const DeviceFrame = forwardRef<SVGSVGElement, DeviceFrameProps>(
               rx={screen.rx || 0}
             />
           </clipPath>
+          {/* Avatar clip paths */}
+          {editableFields?.filter(f => f.type === 'avatar').map(f => (
+            <clipPath key={`avatar-clip-${f.id}`} id={`avatar-clip-${template.id}-${f.id}`}>
+              <circle cx={f.cx!} cy={f.cy!} r={f.r!} />
+            </clipPath>
+          ))}
         </defs>
 
         <rect
@@ -69,6 +77,56 @@ const DeviceFrame = forwardRef<SVGSVGElement, DeviceFrameProps>(
         )}
 
         <g dangerouslySetInnerHTML={{ __html: frameSvg }} />
+
+        {/* Render editable fields */}
+        {editableFields?.map(field => {
+          if (field.type === 'avatar') {
+            const avatarClipId = `avatar-clip-${template.id}-${field.id}`;
+            if (avatarSrc) {
+              return (
+                <image
+                  key={field.id}
+                  href={avatarSrc}
+                  x={field.cx! - field.r!}
+                  y={field.cy! - field.r!}
+                  width={field.r! * 2}
+                  height={field.r! * 2}
+                  clipPath={`url(#${avatarClipId})`}
+                  preserveAspectRatio="xMidYMid slice"
+                />
+              );
+            }
+            // Placeholder circle
+            return (
+              <circle
+                key={field.id}
+                cx={field.cx!}
+                cy={field.cy!}
+                r={field.r!}
+                fill={template.id.includes('story') ? 'none' : '#e0e0e0'}
+                stroke={template.id.includes('story') ? '#fff' : '#ccc'}
+                strokeWidth={template.id.includes('story') ? 2 : 1.5}
+              />
+            );
+          }
+
+          // Text field
+          const value = fieldValues[field.id] ?? field.defaultValue;
+          return (
+            <text
+              key={field.id}
+              x={field.x}
+              y={field.y}
+              fontFamily={field.fontFamily || 'sans-serif'}
+              fontSize={field.fontSize || 13}
+              fontWeight={field.fontWeight || 'normal'}
+              fill={field.fill || '#262626'}
+              textAnchor={field.textAnchor}
+            >
+              {value}
+            </text>
+          );
+        })}
       </svg>
     );
   }

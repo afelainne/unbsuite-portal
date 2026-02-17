@@ -1,3 +1,43 @@
+// ─── SVG Icon Paths (16x16 viewBox) ───
+// These are used inline in social templates via <g transform="translate(x,y) scale(s)">
+
+export const SVG_ICONS = {
+  heart: `<path d="M8 14s-5.5-3.5-5.5-7A3.5 3.5 0 0 1 6 3.5c.97 0 1.8.5 2 1.3.2-.8 1.03-1.3 2-1.3A3.5 3.5 0 0 1 13.5 7C13.5 10.5 8 14 8 14z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>`,
+  comment: `<path d="M1.5 2.5h13v9h-5.5L5.5 14v-2.5H1.5z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>`,
+  share: `<path d="M14.5 1.5L7 9M14.5 1.5L10 14.5 7 9 1.5 6z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>`,
+  bookmark: `<path d="M3.5 1.5h9v13L8 11l-4.5 3.5z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>`,
+  like: `<path d="M2 8.5h2.5V14H2zM4.5 8.5l2-6c.3-.9 1.1-1 1.5-1 .8 0 1.5.7 1.5 1.5V6h4c.8 0 1.5.7 1.4 1.5l-1 6c-.1.6-.6 1-1.2 1H4.5z" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>`,
+  globe: `<circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.1"/><ellipse cx="8" cy="8" rx="3" ry="6.5" fill="none" stroke="currentColor" stroke-width="1.1"/><line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" stroke-width="1.1"/>`,
+  reply: `<path d="M6 4L2 8l4 4M2 8h8c2.2 0 4 1.8 4 4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  retweet: `<path d="M2 10l2 3 2-3M14 6l-2-3-2 3M4 13V5h4M12 3v8H8" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  moreH: `<circle cx="3" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="13" cy="8" r="1.5" fill="currentColor"/>`,
+};
+
+// Helper to place an icon in SVG at given position/size
+function icon(name: keyof typeof SVG_ICONS, x: number, y: number, size: number = 16, color: string = 'currentColor'): string {
+  const s = size / 16;
+  return `<g transform="translate(${x},${y}) scale(${s})" color="${color}">${SVG_ICONS[name]}</g>`;
+}
+
+export interface EditableField {
+  id: string;
+  label: string;
+  type: 'text' | 'avatar';
+  defaultValue: string;
+  // text positioning
+  x?: number;
+  y?: number;
+  fontSize?: number;
+  fontWeight?: string;
+  fill?: string;
+  fontFamily?: string;
+  textAnchor?: string;
+  // avatar positioning
+  cx?: number;
+  cy?: number;
+  r?: number;
+}
+
 export interface MockupTemplate {
   id: string;
   name: string;
@@ -8,6 +48,7 @@ export interface MockupTemplate {
   screen: { x: number; y: number; width: number; height: number; rx?: number };
   frameSvg: string;
   bgSvg?: string;
+  editableFields?: EditableField[];
 }
 
 export const TEMPLATES: MockupTemplate[] = [
@@ -209,14 +250,23 @@ export const TEMPLATES: MockupTemplate[] = [
     frameSvg: `
       <rect x="0" y="0" width="500" height="580" rx="0" fill="none" stroke="#dbdbdb" stroke-width="1"/>
       <rect x="0" y="0" width="500" height="56" fill="#fff" stroke="#dbdbdb" stroke-width="1"/>
-      <circle cx="28" cy="28" r="16" fill="#e0e0e0" stroke="#ccc" stroke-width="1.5"/>
-      <text x="54" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="#262626">username</text>
-      <text x="54" y="40" font-family="sans-serif" font-size="10" fill="#8e8e8e">Location</text>
+      <!-- avatar placeholder rendered by editableFields -->
+      <!-- three dots menu -->
       <circle cx="470" cy="22" r="2" fill="#262626"/>
       <circle cx="470" cy="28" r="2" fill="#262626"/>
       <circle cx="470" cy="34" r="2" fill="#262626"/>
+      <!-- action bar -->
       <line x1="0" y1="556" x2="500" y2="556" stroke="#dbdbdb" stroke-width="1"/>
+      ${icon('heart', 12, 560, 18, '#262626')}
+      ${icon('comment', 40, 560, 18, '#262626')}
+      ${icon('share', 68, 560, 18, '#262626')}
+      ${icon('bookmark', 468, 560, 18, '#262626')}
     `,
+    editableFields: [
+      { id: 'avatar', label: 'Avatar', type: 'avatar', defaultValue: '', cx: 28, cy: 28, r: 16 },
+      { id: 'username', label: 'Username', type: 'text', defaultValue: 'username', x: 54, y: 24, fontSize: 13, fontWeight: 'bold', fill: '#262626', fontFamily: 'sans-serif' },
+      { id: 'location', label: 'Location', type: 'text', defaultValue: 'Location', x: 54, y: 40, fontSize: 10, fill: '#8e8e8e', fontFamily: 'sans-serif' },
+    ],
   },
   {
     id: 'instagram-story',
@@ -230,11 +280,14 @@ export const TEMPLATES: MockupTemplate[] = [
     frameSvg: `
       <rect x="0" y="0" width="360" height="640" rx="16" fill="none" stroke="#333" stroke-width="2"/>
       <rect x="1" y="1" width="358" height="58" rx="16" fill="rgba(0,0,0,0.5)"/>
-      <circle cx="28" cy="30" r="16" fill="none" stroke="#fff" stroke-width="2"/>
-      <text x="54" y="34" font-family="sans-serif" font-size="13" font-weight="bold" fill="#fff">username</text>
+      <!-- avatar rendered by editableFields -->
       <rect x="10" y="8" width="80" height="3" rx="1.5" fill="rgba(255,255,255,0.5)"/>
       <rect x="96" y="8" width="80" height="3" rx="1.5" fill="rgba(255,255,255,0.2)"/>
     `,
+    editableFields: [
+      { id: 'avatar', label: 'Avatar', type: 'avatar', defaultValue: '', cx: 28, cy: 30, r: 16 },
+      { id: 'username', label: 'Username', type: 'text', defaultValue: 'username', x: 54, y: 34, fontSize: 13, fontWeight: 'bold', fill: '#ffffff', fontFamily: 'sans-serif' },
+    ],
   },
   {
     id: 'twitter-post',
@@ -246,11 +299,19 @@ export const TEMPLATES: MockupTemplate[] = [
     screen: { x: 60, y: 70, width: 420, height: 200, rx: 12 },
     bgSvg: `<rect x="0" y="0" width="500" height="280" fill="#15202b"/>`,
     frameSvg: `
-      <circle cx="30" cy="38" r="20" fill="#2a3a4a"/>
-      <text x="60" y="34" font-family="sans-serif" font-size="14" font-weight="bold" fill="#e7e9ea">User Name</text>
-      <text x="60" y="50" font-family="sans-serif" font-size="12" fill="#71767b">@username</text>
-      <text x="60" y="66" font-family="sans-serif" font-size="10" fill="#71767b">Check this out 👇</text>
+      <!-- avatar rendered by editableFields -->
+      <!-- action bar below image area -->
+      ${icon('reply', 70, 274, 14, '#71767b')}
+      ${icon('retweet', 170, 274, 14, '#71767b')}
+      ${icon('heart', 270, 274, 14, '#71767b')}
+      ${icon('share', 370, 274, 14, '#71767b')}
     `,
+    editableFields: [
+      { id: 'avatar', label: 'Avatar', type: 'avatar', defaultValue: '', cx: 30, cy: 38, r: 20 },
+      { id: 'displayName', label: 'Display Name', type: 'text', defaultValue: 'User Name', x: 60, y: 34, fontSize: 14, fontWeight: 'bold', fill: '#e7e9ea', fontFamily: 'sans-serif' },
+      { id: 'handle', label: 'Handle', type: 'text', defaultValue: '@username', x: 60, y: 50, fontSize: 12, fill: '#71767b', fontFamily: 'sans-serif' },
+      { id: 'caption', label: 'Caption', type: 'text', defaultValue: 'Check this out', x: 60, y: 66, fontSize: 10, fill: '#71767b', fontFamily: 'sans-serif' },
+    ],
   },
   {
     id: 'facebook-post',
@@ -263,15 +324,22 @@ export const TEMPLATES: MockupTemplate[] = [
     bgSvg: `<rect x="0" y="0" width="500" height="360" fill="#242526"/>`,
     frameSvg: `
       <rect x="0" y="0" width="500" height="60" fill="#242526"/>
-      <circle cx="30" cy="30" r="18" fill="#3a3b3c"/>
-      <text x="58" y="26" font-family="sans-serif" font-size="14" font-weight="bold" fill="#e4e6eb">User Name</text>
-      <text x="58" y="42" font-family="sans-serif" font-size="10" fill="#b0b3b8">Just now · 🌎</text>
+      <!-- avatar rendered by editableFields -->
+      <!-- action bar -->
       <rect x="0" y="320" width="500" height="40" fill="#242526"/>
       <line x1="0" y1="320" x2="500" y2="320" stroke="#3e4042" stroke-width="1"/>
-      <text x="85" y="344" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#b0b3b8">👍 Like</text>
-      <text x="250" y="344" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#b0b3b8">💬 Comment</text>
-      <text x="415" y="344" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#b0b3b8">↗ Share</text>
+      ${icon('like', 60, 334, 14, '#b0b3b8')}
+      <text x="80" y="344" font-family="sans-serif" font-size="12" fill="#b0b3b8">Like</text>
+      ${icon('comment', 220, 334, 14, '#b0b3b8')}
+      <text x="240" y="344" font-family="sans-serif" font-size="12" fill="#b0b3b8">Comment</text>
+      ${icon('share', 385, 334, 14, '#b0b3b8')}
+      <text x="405" y="344" font-family="sans-serif" font-size="12" fill="#b0b3b8">Share</text>
     `,
+    editableFields: [
+      { id: 'avatar', label: 'Avatar', type: 'avatar', defaultValue: '', cx: 30, cy: 30, r: 18 },
+      { id: 'username', label: 'Username', type: 'text', defaultValue: 'User Name', x: 58, y: 26, fontSize: 14, fontWeight: 'bold', fill: '#e4e6eb', fontFamily: 'sans-serif' },
+      { id: 'timestamp', label: 'Timestamp', type: 'text', defaultValue: 'Just now', x: 58, y: 42, fontSize: 10, fill: '#b0b3b8', fontFamily: 'sans-serif' },
+    ],
   },
   {
     id: 'youtube-thumbnail',
