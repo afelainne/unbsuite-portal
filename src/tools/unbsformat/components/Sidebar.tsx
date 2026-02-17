@@ -9,7 +9,7 @@ interface SidebarProps {
   onSelect: (preset: FormatPreset) => void;
 }
 
-const CATEGORY_ORDER = ['PRINT', 'EDITORIAL', 'PACKAGING', 'SIGNAGE', 'SOCIAL MEDIA', 'STATIONERY'] as const;
+const CATEGORY_ORDER = ['PRINT', 'EDITORIAL', 'PHOTO', 'PACKAGING', 'SIGNAGE', 'ADVERTISING', 'SOCIAL MEDIA', 'SCREEN', 'STATIONERY'] as const;
 
 export const Sidebar: React.FC<SidebarProps> = ({ selectedId, onSelect }) => {
   const [openCategories, setOpenCategories] = useState<Set<string>>(new Set(['PRINT']));
