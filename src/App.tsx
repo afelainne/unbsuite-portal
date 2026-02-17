@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import UnbsColor from "./pages/UnbsColor";
 import UnbsGrid from "./pages/UnbsGrid";
 import UnbsFont from "./pages/UnbsFont";
+import UnbsFormat from "./pages/UnbsFormat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/unbscolor/*" element={<UnbsColor />} />
           <Route path="/unbsgrid/*" element={<UnbsGrid />} />
           <Route path="/unbsfont/*" element={<UnbsFont />} />
+          <Route path="/unbsformat/*" element={<UnbsFormat />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
