@@ -536,49 +536,27 @@ const App: React.FC = () => {
         setLibrary(enriched);
     }, [libraryType]);
 
+    // Synchronous local matching for instant updates
+    const computedMatches = useMemo(() => {
+        if (!isValidHex(hex) || !library.length) return [];
+        return findReferenceMatches(hex, library, 12);
+    }, [hex, library]);
+
+    const computedStripColors = useMemo(() => {
+        return computedMatches.map((m) => ({
+            hex: m.reference.hex,
+            name: getClosestColorName(m.reference.hex),
+            refCode: normalizeRefCode(m.reference.code),
+            type: `ΔE ${m.deltaE.toFixed(2)}`
+        }));
+    }, [computedMatches]);
+
+    // Keep state in sync for components that read from state
     useEffect(() => {
-        let cancelled = false;
-
-        const run = async () => {
-            if (!isValidHex(hex)) {
-                setMatches([]);
-                setStripColors([]);
-                return;
-            }
-
-            try {
-                const fetched = await fetchMatchesWithFallback({
-                    hex,
-                    libraryId: libraryType,
-                    count: 12,
-                    fallbackLibrary: library
-                });
-
-                if (cancelled) return;
-
-                setMatches(fetched);
-                const similarForStrip = fetched.map((m) => ({
-                    hex: m.reference.hex,
-                    name: getClosestColorName(m.reference.hex),
-                    refCode: normalizeRefCode(m.reference.code),
-                    type: `ΔE ${m.deltaE.toFixed(2)}`
-                }));
-                setStripColors(similarForStrip);
-                setAnalysis(null);
-            } catch (err) {
-                if (!cancelled) {
-                    setMatches([]);
-                    setStripColors([]);
-                }
-            }
-        };
-
-        run();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [library, hex, libraryType]);
+        setMatches(computedMatches);
+        setStripColors(computedStripColors);
+        setAnalysis(null);
+    }, [computedMatches, computedStripColors]);
 
     const triggerAiAnalysis = async () => {
         if (!matches[0]) return;
