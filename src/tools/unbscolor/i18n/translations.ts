@@ -453,6 +453,9 @@ export interface Translations {
   copyPalette: string;
   baseColors: string;
   noBaseColors: string;
+  slots: string;
+  lockColor: string;
+  unlockColor: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -909,6 +912,9 @@ export const translations: Record<Language, Translations> = {
     copyPalette: 'Copy Palette',
     baseColors: 'Base Colors',
     noBaseColors: 'Add colors via SVG upload or hex input to generate palettes',
+    slots: 'Slots',
+    lockColor: 'Lock',
+    unlockColor: 'Unlock',
   },
   
   pt: {
@@ -1364,6 +1370,9 @@ export const translations: Record<Language, Translations> = {
     copyPalette: 'Copiar Paleta',
     baseColors: 'Cores Base',
     noBaseColors: 'Adicione cores via upload de SVG ou entrada hex para gerar paletas',
+    slots: 'Slots',
+    lockColor: 'Travar',
+    unlockColor: 'Destravar',
   },
   
   es: {
@@ -1819,6 +1828,9 @@ export const translations: Record<Language, Translations> = {
     copyPalette: 'Copiar Paleta',
     baseColors: 'Colores Base',
     noBaseColors: 'Agrega colores vía carga de SVG o entrada hex para generar paletas',
+    slots: 'Slots',
+    lockColor: 'Bloquear',
+    unlockColor: 'Desbloquear',
   },
 };
 
