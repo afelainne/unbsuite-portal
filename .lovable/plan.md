@@ -1,125 +1,91 @@
 
+# Palette Magic: Lock de Cores, Paletas Realistas e Slots Configuráveis
 
-# Mascaramento Final + Cor Default F0FF00 + Nova Aba Palette Magic
+## Problema Atual
 
-## Parte 1: Mascaramento Remanescente
+1. **Sem lock de cores**: Ao dar shuffle, todas as 5 cores mudam. Não há como "travar" uma cor que o usuário gostou.
+2. **Paletas muito RGB**: As cores são geradas puramente por rotação de hue + jitter aleatório, resultando em combinações que parecem artificiais e não remetem a paletas profissionais de design.
+3. **Quantidade fixa de slots**: Cada card sempre gera exatamente 5 cores, sem possibilidade de alterar (3, 4, 5, 6 ou 7 cores por paleta).
 
-### Problemas encontrados
+## Solução
 
-A auditoria anterior corrigiu muito, mas ainda restam vazamentos:
+### 1. Sistema de Lock por Slot
 
-| Arquivo | Problema |
-|---|---|
-| `translations.ts` | **Chaves TypeScript** ainda usam nomes `pantoneBridgeC`, `pantoneBridgeU`, `pantoneC`, `pantoneU`, `usePantone`, `nearbyPantones`, `pantoneGuide`, `pantoneSpotColors`, `pantoneSpotDesc` na interface `Translations` e em todas as 3 linguas (linhas 29-32, 62, 86, 126, 282-283) |
-| `App.tsx` | Usa `t.pantoneBridgeC`, `t.pantoneBridgeU`, `t.pantoneC`, `t.pantoneU` em 8+ lugares (linhas 268, 276, 284, 292, 648-651, 886, 892, 898, 904) |
-| `PaletteBuilder.tsx` | Usa `t.usePantone` (linha 195) |
-| `ColorGuide.tsx` | Usa `t.pantoneSpotColors`, `t.pantoneSpotDesc` (linha 893) |
-| `App.tsx` linhas 951 | Usa `t.nearbyPantones` |
-| `colors.json` | Arquivo JSON com 8550 cores totalmente em texto claro com "PANTONE" em cada entrada -- nao e importado diretamente mas esta no bundle |
+Cada paleta terá um array `lockedSlots` (ex: `[false, true, false, false, false]`). Ao clicar num ícone de cadeado em cada swatch do card, aquela posição é travada. No próximo shuffle:
 
-### Solucao
+- Cores travadas permanecem no lugar
+- Apenas cores não-travadas são regeneradas
+- O estado de lock é mantido por paleta (cada card tem seus próprios locks)
 
-1. **`translations.ts`**: Renomear todas as chaves da interface e valores:
-   - `pantoneBridgeC` -> `refBridgeC`
-   - `pantoneBridgeU` -> `refBridgeU`
-   - `pantoneC` -> `refSolidC`
-   - `pantoneU` -> `refSolidU`
-   - `usePantone` -> `useRefMatch`
-   - `nearbyPantones` -> `nearbyRefs`
-   - `pantoneGuide` -> `refGuide`
-   - `pantoneSpotColors` -> `spotRefColors`
-   - `pantoneSpotDesc` -> `spotRefDesc`
-   - Atualizar na interface `Translations` e nos 3 objetos de traducao (en, pt, es)
+**Estado novo no componente**:
+- `lockedColors: Record<string, Record<number, string>>` -- mapa de `paletteId -> { slotIndex: hexColor }`
 
-2. **`App.tsx`**: Atualizar todas as referencias `t.pantone*` para usar as novas chaves `t.ref*`
+**UI**: Ícone de cadeado (aberto/fechado) sobre cada swatch na strip de cores do card. Clicar alterna o lock.
 
-3. **`PaletteBuilder.tsx`**: Trocar `t.usePantone` por `t.useRefMatch`
+### 2. Paletas Realistas (Curadoria + Algoritmo Melhorado)
 
-4. **`ColorGuide.tsx`**: Trocar `t.pantoneSpotColors` e `t.pantoneSpotDesc` por `t.spotRefColors` e `t.spotRefDesc`
+Em vez de depender apenas de rotação de hue, o sistema usará:
 
-5. **`colors.json`**: Deletar este arquivo. Ele NAO e importado por nenhum codigo (confirmado via busca), mas fica no repositorio com todas as referencias em texto claro.
+**a) Banco de paletas-semente curadas** (~30-40 paletas):
+Paletas reais usadas em branding e design, cada uma com 5-7 cores. Exemplos:
+- "Luxury Noir" (#1A1A2E, #16213E, #0F3460, #E94560, #FFFFFF)
+- "Earthy Warm" (#2D1B14, #8B4513, #D2691E, #F4A460, #FAEBD7)
+- "Nordic Frost" (#2E3440, #3B4252, #88C0D0, #D8DEE9, #ECEFF4)
+- "Sunset Editorial" (#1B1B2F, #E43F5A, #FF6B6B, #FFC93C, #F9F7F7)
+- Etc.
 
-## Parte 2: Cor Default F7E043 -> F0FF00
+**b) Geração híbrida**: Cada shuffle mistura:
+- 3-4 paletas derivadas do banco de sementes (com variação controlada)
+- 3-4 paletas geradas por harmonia (algoritmo atual melhorado)
+- 1-2 paletas baseadas nas cores do usuário
 
-Trocar todas as ocorrencias de `#F7E043` para `#F0FF00`:
+**c) Algoritmo melhorado**: Reduzir drasticamente o jitter (de +/-10 para +/-3), usar saturações mais contidas (não ultrapassar S:85 para brand, S:60 para editorial), e incluir sempre pelo menos um neutro (dark ou light) em cada paleta.
 
-| Arquivo | Linhas |
-|---|---|
-| `App.tsx` | 57, 73-78 (6 ocorrencias de estado inicial) |
-| `GeneratedPalettes.tsx` | 48, 64, 66 |
-| `ColorGuide.tsx` | 20 (fallback safeHex) |
+### 3. Seletor de Quantidade de Slots
 
-## Parte 3: Nova Aba "Palette Magic"
+Um controle acima do grid permite o usuário escolher quantas cores por paleta: 3, 4, 5, 6 ou 7.
 
-### Conceito
+- Exibido como botões compactos (pills) ao lado dos contextos
+- O valor é passado para `generateShuffledBatch` como `slotCount`
+- As paletas-semente são recortadas ou expandidas conforme o `slotCount`:
+  - Se semente tem 5 e quer 3: pega as 3 cores mais representativas (maior spread de luminosidade)
+  - Se semente tem 5 e quer 7: interpola 2 cores extras entre as existentes
 
-Uma aba que gera paletas inteligentes validadas por contraste e tendencias de design, usando as cores do usuario (via SVG upload ou hex manual) como base. O sistema sugere combinacoes perfeitas para marcas, identidades visuais, cartazes e layouts.
+## Detalhes Técnicos
 
-### Funcionalidades
+### Arquivo: `src/tools/unbscolor/components/PaletteMagic.tsx`
 
-1. **Paletas por Harmonia Validada**: Gera paletas complementares, analogas, triadicas, split-complementary a partir da cor base, mas **valida cada par pelo contraste WCAG** (ratio 4.5:1 para texto, 3:1 para graficos) e descarta combinacoes com contraste ruim
-2. **Paletas em Tendencia**: Presets curados de paletas populares em design (Monocromatica Minimal, Earthy Tones, Neon & Dark, Pastel Dream, Corporate Trust, Sunset Gradient, etc.)
-3. **Paletas do Usuario**: Usa as cores uploadadas via SVG ou adicionadas manualmente como base e sugere expansoes e complementos validados
-4. **Sugestoes por Contexto**: O usuario escolhe o contexto (Brand Identity, Poster, UI/Layout, Editorial, Packaging) e as paletas sao filtradas/priorizadas conforme o caso de uso
-5. **Score de Qualidade**: Cada paleta recebe um score baseado em contraste, harmonia e diversidade tonal
-
-### Arquitetura tecnica
-
-Criar um novo componente `PaletteMagic.tsx` em `src/tools/unbscolor/components/`:
-
-- Recebe `initialHex`, `batchColors` (cores do SVG), `onHexChange`
-- Usa funcoes existentes de `colorMath.ts`: `generateHarmonies`, `hexToRgb`, `rgbToHsl`, `hslToRgb`, `getContrastColor`, `getClosestColorName`, `findReferenceMatches`
-- Implementa logica de contraste WCAG interna (calculo de luminance relativa e contrast ratio)
-- Gera paletas de 3-6 cores cada, filtradas por contraste minimo
-- Presets de tendencias hardcoded como arrays de hex
-- Contextos como enum/type para filtrar sugestoes
-
-Adicionar ao `App.tsx`:
-- Nova opcao no `activeTab`: `'magic'`
-- Import do componente
-- Botao na nav
-- Renderizacao condicional na main
-
-Adicionar traducoes para:
-- `paletteMagic` (nome da aba)
-- `contextBrand`, `contextPoster`, `contextUI`, `contextEditorial`, `contextPackaging`
-- `contrastScore`, `harmonyScore`, `paletteScore`
-- `trendPalettes`, `userPalettes`, `expandPalette`
-- `generateMagic`, `applyPalette`
-
-### Fluxo do usuario
-
-1. Entra na aba "Palette Magic"
-2. Ve suas cores atuais (do SVG ou hex) no topo como "base palette"
-3. Escolhe um contexto (Brand, Poster, UI, etc.)
-4. O sistema gera 6-12 paletas sugeridas, cada uma com score de contraste
-5. Pode expandir qualquer paleta para ver detalhes (contrast ratio entre pares, nomes das cores)
-6. Pode copiar ou aplicar a paleta ao batch colors
-
-### Logica de geracao de paletas
-
+**Novos estados**:
 ```text
-Para cada cor base:
-  1. Gerar harmonias (complementar, triadic, split, analogous)
-  2. Para cada harmonia, gerar variacoes de luminosidade (claro/escuro)
-  3. Validar contraste WCAG entre todos os pares
-  4. Calcular score = (contrast_score * 0.4) + (harmony_score * 0.3) + (diversity_score * 0.3)
-  5. Filtrar paletas com score < 0.5
-  6. Ordenar por score descendente
-  7. Para paletas de tendencia, aplicar mesma validacao de contraste
+slotCount: number (default 5, range 3-7)
+lockedColors: Record<string, Record<number, string>>
 ```
 
----
+**Novo array constante**: `CURATED_PALETTES` -- array de ~35 paletas com nome, cores e tags de contexto (brand, poster, ui, editorial, packaging).
+
+**Funções novas**:
+- `generateFromSeed(seed, slotCount)`: Pega uma paleta-semente, aplica variação mínima, ajusta ao slotCount
+- `adaptToSlotCount(colors, target)`: Recorta ou interpola cores para atingir o número desejado
+- `generateWithLocks(palette, lockedColors, slotCount, context)`: Gera nova paleta respeitando posições travadas
+
+**Função `handleShuffle` atualizada**: Verifica locks de cada paleta existente. Para paletas com locks, regenera apenas slots não-travados. Para novas paletas (sem locks), gera do zero.
+
+**UI changes**:
+- Slot count selector (pills: 3, 4, 5, 6, 7) entre contextos e botão shuffle
+- Ícone de lock em cada swatch do color strip (visível no hover, sempre visível se locked)
+- Swatch locked tem borda dourada e ícone de cadeado fechado
+- Swatch unlocked mostra cadeado aberto no hover
+
+### Traduções necessárias em `translations.ts`
+
+Adicionar à interface e aos 3 idiomas:
+- `slots`: "Slots" / "Slots" / "Slots"
+- `lockColor`: "Lock" / "Travar" / "Bloquear"  
+- `unlockColor`: "Unlock" / "Destravar" / "Desbloquear"
 
 ## Resumo de Arquivos
 
-| Arquivo | Acao |
+| Arquivo | Ação |
 |---|---|
-| `src/tools/unbscolor/i18n/translations.ts` | Renomear 9 chaves pantone* na interface + 3 objetos |
-| `src/tools/unbscolor/App.tsx` | Atualizar refs t.pantone*, trocar F7E043->F0FF00, add tab magic |
-| `src/tools/unbscolor/components/PaletteBuilder.tsx` | Trocar t.usePantone -> t.useRefMatch |
-| `src/tools/unbscolor/components/ColorGuide.tsx` | Trocar t.pantone* + F7E043->F0FF00 |
-| `src/tools/unbscolor/components/GeneratedPalettes.tsx` | Trocar F7E043->F0FF00 |
-| `src/tools/unbscolor/components/PaletteMagic.tsx` | **NOVO** - componente da aba Palette Magic |
-| `src/tools/unbscolor/colors.json` | **DELETAR** - arquivo com dados em texto claro nao utilizado |
-
+| `src/tools/unbscolor/components/PaletteMagic.tsx` | Rewrite: locks, curated palettes, slot count |
+| `src/tools/unbscolor/i18n/translations.ts` | Adicionar 3 novas chaves (slots, lockColor, unlockColor) |
