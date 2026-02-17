@@ -621,15 +621,32 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
       });
   };
 
-  const handleSave = () => {
+  const buildSavePayload = useCallback(() => {
     const newAnchors = [{ name: 'top', x: globalAnchor.x, y: globalAnchor.y }];
-    const dataToSave = { ...data, anchors: newAnchors, anchorOverrides: anchorOverrides };
+    return { ...data, anchors: newAnchors, anchorOverrides: anchorOverrides };
+  }, [data, globalAnchor, anchorOverrides]);
+
+  const handleSave = () => {
+    const dataToSave = buildSavePayload();
     onSave(glyph.char, dataToSave);
     if (onBuildDerivatives && selectedDerivatives.size > 0) {
         onBuildDerivatives(glyph.char, globalAnchor, anchorOverrides, Array.from<string>(selectedDerivatives), dataToSave);
     }
     onClose();
   };
+
+  const handleCloseWithAutoSave = useCallback(() => {
+    // Auto-save if data changed from original glyph
+    const original = ensureKerningBias(glyph);
+    const current = dataRef.current;
+    const hasChanges = JSON.stringify({ pathData: current.pathData, advanceWidth: current.advanceWidth, leftSideBearing: current.leftSideBearing, kerningBias: current.kerningBias, components: current.components, baselineOffset: current.baselineOffset, scale: current.scale }) !== JSON.stringify({ pathData: original.pathData, advanceWidth: original.advanceWidth, leftSideBearing: original.leftSideBearing, kerningBias: original.kerningBias, components: original.components, baselineOffset: original.baselineOffset, scale: original.scale });
+    if (hasChanges) {
+        const newAnchors = [{ name: 'top', x: globalAnchor.x, y: globalAnchor.y }];
+        const dataToSave = { ...current, anchors: newAnchors, anchorOverrides };
+        onSave(glyph.char, dataToSave);
+    }
+    onClose();
+  }, [glyph, globalAnchor, anchorOverrides, onSave, onClose]);
   
   const handleAutoCenter = () => { 
       const newData = { ...data, leftSideBearing: 50 };
@@ -1755,7 +1772,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
             
           </div>
           <div className={`p-3 border-t flex gap-2 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-neutral-200'}`}>
-             <button onClick={onClose} className={`flex-1 py-2 rounded-lg border transition-colors text-xs font-bold ${btnSec}`}>Cancel</button>
+             <button onClick={handleCloseWithAutoSave} className={`flex-1 py-2 rounded-lg border transition-colors text-xs font-bold ${btnSec}`}>Close</button>
              <button onClick={handleSave} className={`flex-1 py-2 rounded-lg font-bold transition-colors text-xs ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>Save</button>
           </div>
         </div>

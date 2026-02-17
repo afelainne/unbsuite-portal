@@ -27,7 +27,7 @@ const PROFILE_MULTIPLIER: Record<KerningProfile, number> = {
   serif: 1.15,
 };
 
-const sanitizeToken = (value: string, fallback: string) => (value && value.length > 0 ? value : fallback);
+const sanitizeToken = (value: string | undefined): string | undefined => (value && value.length > 0 ? value : undefined);
 
 // ============================================================================
 // RESOLUÇÃO DE KERNING
@@ -47,11 +47,13 @@ export const resolveKerningValue = (
   if (kerning[directKey] !== undefined) {
       base = kerning[directKey];
   } else {
-      const leftClass = sanitizeToken(leftGlyph.groups.right, leftGlyph.char);
-      const rightClass = sanitizeToken(rightGlyph.groups.left, rightGlyph.char);
-      const classKey = buildPairKey(leftClass, rightClass);
-      if (kerning[classKey] !== undefined) {
-          base = kerning[classKey];
+      const leftClass = sanitizeToken(leftGlyph.groups.right);
+      const rightClass = sanitizeToken(rightGlyph.groups.left);
+      if (leftClass && rightClass) {
+          const classKey = buildPairKey(leftClass, rightClass);
+          if (kerning[classKey] !== undefined) {
+              base = kerning[classKey];
+          }
       }
   }
 
@@ -177,12 +179,16 @@ export const generateSmartAutoKerning = (
   
   // Filtra apenas glyphs alfabéticos com path data
   const validGlyphs = glyphs.filter(g => {
-    const hasPath = (g.svgPathData || g.pathData || '').trim().length > 0;
+    const hasPath = (g.pathData || '').trim().length > 0;
     if (!hasPath) return false;
     
-    // Apenas letras para o kerning principal
     const isAlpha = /[a-zA-Z]/.test(g.char);
-    return isAlpha;
+    const isNumber = /[0-9]/.test(g.char);
+    const isPunct = /[^a-zA-Z0-9\s]/.test(g.char);
+    if (isAlpha) return true;
+    if (opts.includeNumbers && isNumber) return true;
+    if (opts.includePunctuation && isPunct) return true;
+    return false;
   });
   
   // Identifica glyphs com características problemáticas que PRECISAM de kerning
@@ -234,7 +240,7 @@ export const generateSmartAutoKerning = (
         const profileBoost = PROFILE_MULTIPLIER[opts.profile] ?? 1.0;
         const adjusted = Math.round(kernValue * opts.intensity * profileBoost);
         
-        if (Math.abs(adjusted) >= 15) {
+        if (Math.abs(adjusted) >= 5) {
           newKerning[pairKey] = adjusted;
         }
       }
@@ -244,7 +250,7 @@ export const generateSmartAutoKerning = (
   // Também processa pares com pontuação se habilitado
   if (opts.includePunctuation) {
     const punctGlyphs = glyphs.filter(g => {
-      const hasPath = (g.svgPathData || g.pathData || '').trim().length > 0;
+      const hasPath = (g.pathData || '').trim().length > 0;
       return hasPath && /[.,:;!?'"\-]/.test(g.char);
     });
     

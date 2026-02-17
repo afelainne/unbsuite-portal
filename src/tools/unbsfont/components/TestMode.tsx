@@ -400,14 +400,17 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                     }
                     
                     if (!g || !g.pathData) {
+                        const placeholderW = fontSize * 0.5;
                         return (
                             <span
                                 key={charIdx}
-                                style={{ fontSize: fontSize, width: fontSize * 0.6, height: fontSize }}
-                                className="opacity-20 inline-flex items-center justify-center bg-red-100 text-red-500 border border-red-300 mx-[1px] rounded-sm align-baseline"
+                                style={{ width: placeholderW, height: fontSize, fontSize: fontSize * 0.35 }}
+                                className={`inline-flex items-center justify-center mx-[1px] align-baseline border-2 border-dashed rounded-sm ${isDarkMode ? 'border-slate-600 text-slate-500' : 'border-neutral-300 text-neutral-400'}`}
+                                title={`Missing glyph: "${char}" (U+${char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')})`}
                                 onContextMenu={(event) => handleGlyphContextMenu(event, char)}
+                                onClick={() => { const found = glyphs.find(gl => gl.char === char); if (found) onEditGlyph(found); }}
                             >
-                                {char}
+                                ?
                             </span>
                         );
                     }
