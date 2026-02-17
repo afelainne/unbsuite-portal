@@ -1,133 +1,83 @@
 
 
-# Revisao do UNBSMOCKUP -- Textos Editaveis, Avatar e Icones Reais
+# Correcoes: Upload de imagem global no UNBSCOLOR + Layout do header do UNBSFORMAT
 
-## Problemas Atuais
+## 1. UNBSCOLOR -- Upload de imagem (SVG + raster) disponivel globalmente
 
-1. Templates sociais usam emojis como texto SVG (👍 Like, 💬 Comment, 🌎) -- renderizam mal ou nao renderizam
-2. Username e textos sao hardcoded no SVG (`frameSvg`) -- impossivel editar
-3. Sem opcao de avatar de perfil
-4. A UI nao oferece controle sobre o conteudo textual dos mockups
+Atualmente o upload de SVG so esta disponivel via `PaletteGenerator` no header, e o upload de imagem raster so existe no Palette Magic. A mudanca e unificar ambos num unico componente de upload no header que aceita **SVG + JPG/PNG/WEBP**, e distribuir as cores extraidas para todas as abas (Matcher, Multi-Slot, Generated Palettes, Print Guide, etc.).
 
-## Solucao
+### Mudancas em `src/tools/unbscolor/components/PaletteGenerator.tsx`
 
-### A) Novo sistema de campos editaveis por template
+- Expandir o `accept` do file input para aceitar tambem `image/jpeg, image/png, image/webp` alem de `.svg`
+- Ao receber um arquivo:
+  - Se for SVG: usar `extractColorsFromSvg` (logica atual)
+  - Se for imagem raster (JPG/PNG/WEBP): usar `extractDominantColors` do `imageExtraction.ts`
+- As cores extraidas sao injetadas via `onColorSelect` (primeiro cor) e `onPaletteDetected` (todas as cores)
+- Atualizar o label do botao para indicar que aceita SVG e imagens
+- Atualizar o `accept` para `.svg,image/svg+xml,image/jpeg,image/png,image/webp`
 
-Adicionar ao tipo `MockupTemplate` um campo opcional `editableFields` que define quais textos e imagens o usuario pode customizar:
+Isso garante que o upload no header funciona para SVG e imagens, e as cores sao distribuidas para todas as tabs porque `onPaletteDetected` chama `setBatchColors` e `handleHexChange` no `App.tsx`.
 
-```typescript
-interface EditableField {
-  id: string;           // ex: 'username', 'caption', 'location'
-  label: string;        // ex: 'Username'
-  type: 'text' | 'avatar';
-  defaultValue: string; // valor padrao
-  // posicao no SVG
-  x: number;
-  y: number;
-  fontSize?: number;
-  fontWeight?: string;
-  fill?: string;
-  textAnchor?: string;
-  // para avatar:
-  cx?: number;
-  cy?: number;
-  r?: number;
-}
+### Mudancas em `src/tools/unbscolor/App.tsx`
+
+Nenhuma mudanca necessaria -- o `PaletteGenerator` ja esta conectado ao `handleHexChange` e `setBatchColors` que alimentam todas as abas.
+
+---
+
+## 2. UNBSFORMAT -- Correcao do layout do header (sliders na mesma linha)
+
+O bug esta na estrutura HTML das linhas 73-98 do `App.tsx` do UNBSFORMAT. O `<div>` que envolve "Columns" nao esta fechado antes de "Rows" comecar, fazendo com que Rows fique aninhado dentro de Columns (um sobre o outro). Os 4 controles (Columns, Rows, Gutter, Safe Margin) devem estar todos no mesmo nivel como filhos diretos do flex container.
+
+### Mudanca em `src/tools/unbsformat/App.tsx`
+
+Corrigir a estrutura HTML do header (linhas 73-98):
+
+**Antes (bugado):**
+```
+<div flex-col>  // Columns wrapper
+  <div flex>    // Columns slider
+    // Missing closing </div> for Columns wrapper here!
+    <div flex-col>  // Rows wrapper (nested inside Columns!)
+      ...
+    </div>
+  </div>        // This closes Columns slider div but is misplaced
+</div>          // This closes Columns wrapper
 ```
 
-Cada template social tera seus campos. Exemplo para Instagram Post:
-- avatar (circle na posicao do perfil)
-- username (texto bold)
-- location (texto menor)
+**Depois (corrigido):**
+```
+<div flex-col>   // Columns
+  <span>Columns</span>
+  <div flex>...</div>
+</div>           // Closed properly
 
-### B) Icones SVG reais em vez de emojis
+<div flex-col>   // Rows
+  <span>Rows</span>
+  <div flex>...</div>
+</div>           // Separate sibling
 
-Remover todos os emojis dos templates e substituir por paths SVG reais:
-- **Like** (thumbs up): path SVG inline
-- **Comment** (balao de fala): path SVG inline
-- **Share** (seta de compartilhar): path SVG inline
-- **Globe** (globo terrestre): path SVG inline
-- **Heart** (coracao): path SVG inline para Instagram
+<div flex-col>   // Gutter
+  ...
+</div>
 
-Os paths serao definidos como constantes reutilizaveis no `templates.ts`.
+<div flex-col>   // Safe Margin
+  ...
+</div>
+```
 
-### C) Avatar de perfil
-
-- Novo `ImageUploader` para avatar (separado do principal)
-- O avatar e renderizado como `<image>` com `<clipPath>` circular no SVG
-- Se nao houver avatar, mostra circulo cinza (placeholder)
-
-### D) Painel de edicao na sidebar
-
-Nova secao "Content" na sidebar (visivel apenas para templates com `editableFields`) com:
-- Input de texto para cada campo de texto (username, location, caption)
-- Upload de avatar (pequeno, ao lado do nome)
+Todos os 4 controles ficam como filhos diretos do `<div className="flex gap-12 items-center">`, alinhados horizontalmente na mesma linha.
 
 ---
 
-## Mudancas por Arquivo
+## Resumo de arquivos
 
-### `src/tools/unbsmockup/templates.ts`
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/tools/unbscolor/components/PaletteGenerator.tsx` | Aceitar SVG + imagens raster, usar extractDominantColors para JPG/PNG/WEBP |
+| `src/tools/unbsformat/App.tsx` | Corrigir aninhamento dos divs de Columns/Rows para ficarem na mesma linha horizontal |
 
-1. Adicionar interface `EditableField` e campo `editableFields?: EditableField[]` ao `MockupTemplate`
-2. Criar constantes de paths SVG para icones:
-   - `ICON_LIKE` (thumbs up)
-   - `ICON_COMMENT` (speech bubble)
-   - `ICON_SHARE` (arrow/share)
-   - `ICON_GLOBE` (globe)
-   - `ICON_HEART` (heart outline)
-   - `ICON_BOOKMARK` (bookmark)
-3. Atualizar templates sociais:
-   - **Instagram Post**: remover emojis do frameSvg, remover textos de username/location do frameSvg, adicionar icones SVG (heart, comment, share, bookmark), adicionar `editableFields` para username, location
-   - **Instagram Story**: remover texto username do frameSvg, adicionar `editableFields`
-   - **Twitter/X Post**: remover emoji e texto estatico do frameSvg, adicionar `editableFields` para displayName, handle, tweetText, usar icones SVG para reply/retweet/like
-   - **Facebook Post**: remover emojis (👍💬🌎) do frameSvg, adicionar icones SVG reais de like/comment/share, adicionar `editableFields` para username, timestamp
-   - **YouTube Thumbnail**: sem mudancas (nao tem texto social)
+## Ordem de execucao
 
-### `src/tools/unbsmockup/components/DeviceFrame.tsx`
-
-1. Receber nova prop `fieldValues: Record<string, string>` e `avatarSrc: string | null`
-2. Apos renderizar o `frameSvg` e antes do final, renderizar os campos editaveis:
-   - Para campos tipo `text`: renderizar `<text>` com as coordenadas e estilo do campo
-   - Para campos tipo `avatar`: renderizar `<image>` com `<clipPath>` circular, ou circulo placeholder se nao houver avatar
-
-### `src/tools/unbsmockup/App.tsx`
-
-1. Adicionar state `fieldValues: Record<string, string>` (inicializado com defaultValues do template)
-2. Adicionar state `avatarSrc: string | null`
-3. Ao trocar de template, resetar fieldValues com os defaults do novo template
-4. Adicionar secao "Content" na sidebar com:
-   - Upload de avatar (pequeno, inline)
-   - Inputs de texto para cada campo editavel
-5. Passar `fieldValues` e `avatarSrc` ao `DeviceFrame`
-
----
-
-## Templates Sociais Atualizados
-
-### Instagram Post
-- Icones: heart outline, comment bubble, share arrow, bookmark (na barra inferior)
-- Campos: avatar, username, location
-
-### Instagram Story
-- Campos: avatar, username
-
-### Twitter/X Post
-- Icones: reply, retweet, heart, share (na barra inferior)
-- Campos: avatar, displayName, handle (@), tweetText
-
-### Facebook Post
-- Icones: like (thumbs up), comment (bubble), share (arrow)
-- Campos: avatar, username, timestamp
-- Globe icon no timestamp em vez de emoji
-
----
-
-## Ordem de Execucao
-
-| # | Tarefa |
-|---|--------|
-| 1 | Atualizar `templates.ts`: adicionar tipo EditableField, constantes de icones SVG, atualizar templates sociais |
-| 2 | Atualizar `DeviceFrame.tsx`: renderizar campos editaveis e avatar |
-| 3 | Atualizar `App.tsx`: state de fields/avatar, secao Content na sidebar, upload de avatar |
+1. Corrigir layout do header do UNBSFORMAT
+2. Expandir PaletteGenerator para aceitar imagens raster
 
