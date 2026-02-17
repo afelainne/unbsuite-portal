@@ -190,10 +190,11 @@ export interface FontMetadata {
   kerning: Record<string, number>; 
   kerningProfile?: string;
   autoPosition?: {
-    scale: number;
+    targetVisualHeight: number;
     baselineOffset: number;
     leftSideBearing: number;
     sourceChar: string;
+    sourceScale: number;
   };
 }
 

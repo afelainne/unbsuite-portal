@@ -573,3 +573,67 @@ export const normalizeGlyphToReference = (
     advanceWidth: Math.round(bbox.width * suggestedScale + 100)
   };
 };
+
+/**
+ * Normaliza automaticamente os tamanhos de todos os glyphs por categoria.
+ * Usa a altura visual mediana (bbox.height * scale) como alvo,
+ * e calcula o scale individual por glyph para atingir essa altura.
+ */
+export const autoNormalizeAllSizes = (
+  glyphs: GlyphData[],
+  _metadata: FontMetadata
+): Map<string, Partial<GlyphData>> => {
+  const fixes = new Map<string, Partial<GlyphData>>();
+  const validGlyphs = glyphs.filter(g => g.pathData && g.pathData.trim() && g.char !== ' ');
+
+  if (validGlyphs.length < 3) return fixes;
+
+  // Group by category
+  const categoryGroups = new Map<CharCategory, GlyphData[]>();
+  for (const g of validGlyphs) {
+    const cat = getCharCategory(g.char);
+    if (!categoryGroups.has(cat)) categoryGroups.set(cat, []);
+    categoryGroups.get(cat)!.push(g);
+  }
+
+  const median = (arr: number[]) => {
+    if (arr.length === 0) return 0;
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
+
+  for (const [_cat, catGlyphs] of categoryGroups) {
+    if (catGlyphs.length < 3) continue;
+
+    // Calculate visual heights: bbox.height * scale
+    const visualHeights: { g: GlyphData; vh: number; bboxH: number }[] = [];
+    for (const g of catGlyphs) {
+      const bbox = measurePathBBox(g.pathData);
+      if (!bbox || bbox.height < 1) continue;
+      const scale = g.scale ?? 1;
+      visualHeights.push({ g, vh: bbox.height * scale, bboxH: bbox.height });
+    }
+
+    if (visualHeights.length < 3) continue;
+
+    const medianVH = median(visualHeights.map(v => v.vh));
+    const medianBaseline = median(catGlyphs.map(g => g.baselineOffset ?? 0));
+
+    for (const { g, vh, bboxH } of visualHeights) {
+      const deviation = Math.abs(vh - medianVH) / medianVH;
+      if (deviation > 0.25) {
+        const newScale = medianVH / bboxH;
+        const lsb = g.leftSideBearing ?? 50;
+        const bbox = measurePathBBox(g.pathData)!;
+        fixes.set(g.char, {
+          scale: newScale,
+          baselineOffset: Math.round(medianBaseline),
+          advanceWidth: Math.round(bbox.width * newScale + Math.abs(lsb) * 2),
+        });
+      }
+    }
+  }
+
+  return fixes;
+};
