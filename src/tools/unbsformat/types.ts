@@ -27,3 +27,15 @@ export interface AnalysisResult {
   technicalIssues: string[];
   recommendations: PaperRecommendation[];
 }
+
+export interface GridStylePreset {
+  id: string;
+  name: string;
+  columns: number;
+  rows: number;
+  gutter: number;
+  safeZone: number;
+  bleed: number;
+  category: 'CLASSIC' | 'EDITORIAL' | 'DIGITAL' | 'POSTER' | 'MINIMAL' | 'MODULAR';
+  description: string;
+}
