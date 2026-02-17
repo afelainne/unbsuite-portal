@@ -281,15 +281,17 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                 // Fix #8: lineSpacing uses only lineGap, no separate lineHeight multiplier
                 const lineSpacing = (lineGap / upm) * fontSize;
                 const scale = fontSize / upm;
+                const lineBodyHeight = fontSize * (ascender + descender) / upm;
                 
                 return (
                 <div 
                     key={lineIdx} 
                     className="flex flex-wrap items-end justify-center w-full"
                     style={{ 
+                        height: lineBodyHeight,
+                        overflow: 'visible',
                         marginTop: lineIdx > 0 ? `${lineSpacing}px` : 0,
                         fontSize,
-                        // Fix #3: NO letterSpacing/wordSpacing in CSS - handled manually per glyph
                     }}
                 >
                     {line.split('').map((char, charIdx) => {
@@ -349,7 +351,6 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                                 width: Math.max(0, width), 
                                 height: spanHeight,
                                 marginLeft: spacingAdjust,
-                                marginBottom: -(spanHeight - fontSize) * 0.2,
                             }}
                             className="inline-block relative group cursor-pointer hover:z-10"
                             onClick={() => onEditGlyph(g)}
