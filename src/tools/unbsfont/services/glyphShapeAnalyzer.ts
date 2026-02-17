@@ -392,7 +392,7 @@ const calculateNegativeSpace = (profile: number[], isLeft: boolean): number => {
  * Analisa um glyph e retorna seu perfil geométrico
  */
 export const analyzeGlyphShape = (glyph: GlyphData): GlyphProfile | null => {
-  const pathData = glyph.svgPathData || glyph.pathData;
+  const pathData = glyph.pathData || '';
   if (!pathData || !pathData.trim()) return null;
   
   const points = extractPathPoints(pathData);
@@ -503,81 +503,87 @@ export const calculateOptimalKerning = (
   rightProfile: GlyphProfile,
   targetDensity: number = 0.15 // Densidade alvo de espaço entre glyphs (0-1)
 ): number => {
-  // Abordagem conservadora: começa com 0 e só adiciona kerning se necessário
+  // === CÁLCULO BASEADO EM PERFIS DE BORDA ===
+  // Usa os edge profiles para calcular o gap real entre os dois glyphs
+  
+  const leftEdge = leftProfile.rightEdgeProfile;
+  const rightEdge = rightProfile.leftEdgeProfile;
+  
+  if (leftEdge.length > 0 && rightEdge.length > 0) {
+    const numRows = Math.min(leftEdge.length, rightEdge.length);
+    let totalGap = 0;
+    let validRows = 0;
+    
+    for (let i = 0; i < numRows; i++) {
+      // Gap = espaço vazio à direita do left glyph + espaço vazio à esquerda do right glyph
+      const gap = (1 - leftEdge[i]) + rightEdge[i];
+      if (Number.isFinite(gap)) {
+        totalGap += gap;
+        validRows++;
+      }
+    }
+    
+    if (validRows > 0) {
+      const avgGap = totalGap / validRows;
+      
+      // Se o gap médio é maior que a densidade alvo, precisa de kerning negativo
+      if (avgGap > targetDensity) {
+        let kerningValue = Math.round(-(avgGap - targetDensity) * 100);
+        
+        // Limitar a valores razoáveis
+        kerningValue = Math.max(-120, Math.min(kerningValue, 0));
+        
+        // Ignorar valores muito pequenos
+        if (Math.abs(kerningValue) < 5) {
+          return 0;
+        }
+        
+        return kerningValue;
+      }
+    }
+  }
+  
+  // === FALLBACK: REGRAS BASEADAS EM CARACTERÍSTICAS GEOMÉTRICAS ===
   let kerningValue = 0;
   
-  // Analisa o espaço negativo combinado
   const leftSpace = leftProfile.rightNegativeSpace;
   const rightSpace = rightProfile.leftNegativeSpace;
   
   // Se ambos os lados têm pouco espaço negativo, não precisa de kerning
-  if (leftSpace < 0.15 && rightSpace < 0.15) {
+  if (leftSpace < 0.1 && rightSpace < 0.1) {
     return 0;
   }
   
-  // === REGRAS BASEADAS EM CARACTERÍSTICAS GEOMÉTRICAS ===
-  
   // 1. Overhang à direita (T, F, L, r) + qualquer coisa que cabe embaixo
   if (leftProfile.hasRightOverhang) {
-    if (rightProfile.hasLeftDiagonal) {
-      // T + A, T + V = kerning forte
-      kerningValue = -70;
-    } else if (rightProfile.hasLeftCurve) {
-      // T + O, T + e = kerning médio
-      kerningValue = -50;
-    } else if (rightSpace > 0.2) {
-      // T + qualquer coisa com espaço
-      kerningValue = -35;
-    }
+    if (rightProfile.hasLeftDiagonal) kerningValue = -70;
+    else if (rightProfile.hasLeftCurve) kerningValue = -50;
+    else if (rightSpace > 0.15) kerningValue = -35;
   }
-  
   // 2. Diagonal à direita (V, W, Y, A) + algo que encaixa
   else if (leftProfile.hasRightDiagonal) {
-    if (rightProfile.hasLeftDiagonal) {
-      // A + V, V + A = kerning forte
-      kerningValue = -60;
-    } else if (rightProfile.hasLeftCurve) {
-      // V + O, A + O = kerning médio
-      kerningValue = -45;
-    } else if (rightProfile.hasLeftOverhang) {
-      // A + T = kerning médio
-      kerningValue = -40;
-    }
+    if (rightProfile.hasLeftDiagonal) kerningValue = -60;
+    else if (rightProfile.hasLeftCurve) kerningValue = -45;
+    else if (rightProfile.hasLeftOverhang) kerningValue = -40;
   }
-  
   // 3. Curva à direita (O, D, P, b) + diagonal
   else if (leftProfile.hasRightCurve) {
-    if (rightProfile.hasLeftDiagonal) {
-      // O + V, O + A = kerning leve
-      kerningValue = -30;
-    } else if (rightProfile.hasLeftOverhang) {
-      // O + T = kerning leve
-      kerningValue = -25;
-    }
-    // Round + round geralmente não precisa de kerning extra
+    if (rightProfile.hasLeftDiagonal) kerningValue = -30;
+    else if (rightProfile.hasLeftOverhang) kerningValue = -25;
   }
-  
   // 4. Abertura à direita (C) precisa de menos kerning
   else if (leftProfile.hasRightOpen) {
-    kerningValue = Math.min(kerningValue + 10, 0); // Reduz kerning
+    kerningValue = Math.min(kerningValue + 10, 0);
   }
-  
   // 5. Se nenhuma característica especial, usa espaço negativo
-  else if (leftSpace > 0.25 && rightSpace > 0.25) {
-    // Ambos têm muito espaço - pode apertar um pouco
+  else if (leftSpace > 0.2 && rightSpace > 0.2) {
     kerningValue = -20;
   }
   
-  // === AJUSTES FINAIS ===
+  // Limitar e filtrar
+  kerningValue = Math.max(-120, Math.min(kerningValue, 0));
   
-  // Não aplicar kerning positivo (aumentar espaço) - isso é raro
-  kerningValue = Math.min(kerningValue, 0);
-  
-  // Limitar a valores razoáveis (-100 é já bem forte)
-  kerningValue = Math.max(-100, kerningValue);
-  
-  // Ignorar valores muito pequenos
-  if (Math.abs(kerningValue) < 15) {
+  if (Math.abs(kerningValue) < 5) {
     return 0;
   }
   

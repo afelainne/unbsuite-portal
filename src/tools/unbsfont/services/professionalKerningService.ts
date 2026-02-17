@@ -34,7 +34,7 @@
  */
 
 import { GlyphData, ShapeCategory } from '../types';
-import { analyzeGlyphShape, GlyphProfile } from './glyphShapeAnalyzer';
+import { analyzeGlyphShape, analyzeAllGlyphShapes, calculateOptimalKerning, GlyphProfile } from './glyphShapeAnalyzer';
 
 // ============================================================================
 // CONHECIMENTO TIPOGRÁFICO - DADOS DE ESTUDO
@@ -121,25 +121,25 @@ export const PROFESSIONAL_KERNING_VALUES = {
  */
 export const KERNING_CLASSES = {
   // Lado direito reto
-  rightStraight: ['B', 'D', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'R', 'b', 'd', 'h', 'i', 'k', 'l', 'm', 'n', 'p', 'r'],
+  rightStraight: ['B', 'D', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'R', 'd', 'h', 'i', 'k', 'l', 'm', 'n'],
   
   // Lado direito diagonal
   rightDiagonal: ['A', 'X', 'Z', 'z'],
   
   // Lado direito redondo
-  rightRound: ['C', 'G', 'O', 'Q', 'c', 'e', 'o', 'q'],
+  rightRound: ['C', 'G', 'O', 'Q', 'b', 'c', 'e', 'o', 'p', 'q'],
   
   // Lado direito com overhang (projeção para direita no topo)
-  rightOverhang: ['T', 'V', 'W', 'Y', 'f', 'v', 'w', 'y', 't'],
+  rightOverhang: ['T', 'V', 'W', 'Y', 'f', 'r', 'v', 'w', 'y', 't'],
   
   // Lado esquerdo reto
-  leftStraight: ['B', 'D', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'R', 'h', 'i', 'k', 'l', 'm', 'n', 'u'],
+  leftStraight: ['B', 'D', 'E', 'F', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'R', 'h', 'i', 'k', 'l', 'm', 'n'],
   
   // Lado esquerdo diagonal
   leftDiagonal: ['V', 'W', 'X', 'Y', 'v', 'w', 'x', 'y'],
   
   // Lado esquerdo redondo
-  leftRound: ['C', 'G', 'O', 'Q', 'c', 'e', 'o', 'q', 'd'],
+  leftRound: ['C', 'G', 'O', 'Q', 'c', 'd', 'e', 'o', 'q', 'u'],
   
   // Lado esquerdo com abertura (espaço vazio)
   leftOpen: ['A', 'a'],
@@ -552,81 +552,6 @@ export function generateProfessionalKerning(
 }
 
 /**
- * Gera kerning usando análise geométrica real dos glifos
- */
-export function generateGeometricKerning(
-  glyphs: GlyphData[],
-  options: ProfessionalKerningOptions = {}
-): KerningPair[] {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const pairs: KerningPair[] = [];
-  const processed = new Set<string>();
-  
-  // Analisa geometria de cada glifo
-  const profiles = new Map<string, GlyphProfile>();
-  for (const glyph of glyphs) {
-    const profile = analyzeGlyphShape(glyph);
-    if (profile) {
-      profiles.set(glyph.char, profile);
-    }
-  }
-  
-  const multiplier = (opts.intensity || 1.0);
-  
-  // Processa todos os pares
-  const chars = Array.from(profiles.keys());
-  
-  for (const left of chars) {
-    const leftProfile = profiles.get(left)!;
-    
-    for (const right of chars) {
-      if (left === right) continue;
-      
-      const pairKey = `${left}${right}`;
-      if (processed.has(pairKey)) continue;
-      
-      const rightProfile = profiles.get(right)!;
-      
-      // Calcula kerning baseado em geometria
-      let kernValue = 0;
-      
-      // Regra 1: Overhang direito + qualquer coisa
-      if (leftProfile.hasRightOverhang) {
-        if (rightProfile.hasLeftDiagonal) kernValue = -70;
-        else if (rightProfile.hasLeftCurve) kernValue = -50;
-        else if (rightProfile.leftNegativeSpace > 0.2) kernValue = -35;
-      }
-      // Regra 2: Diagonal direita
-      else if (leftProfile.hasRightDiagonal) {
-        if (rightProfile.hasLeftDiagonal) kernValue = -60;
-        else if (rightProfile.hasLeftCurve) kernValue = -45;
-        else if (rightProfile.hasLeftOverhang) kernValue = -40;
-      }
-      // Regra 3: Curva direita
-      else if (leftProfile.hasRightCurve) {
-        if (rightProfile.hasLeftDiagonal) kernValue = -30;
-        else if (rightProfile.hasLeftOverhang) kernValue = -25;
-      }
-      // Regra 4: Muito espaço negativo em ambos
-      else if (leftProfile.rightNegativeSpace > 0.25 && rightProfile.leftNegativeSpace > 0.25) {
-        kernValue = -20;
-      }
-      
-      // Aplica multiplicador
-      kernValue = Math.round(kernValue * multiplier);
-      
-      // Só adiciona se significativo
-      if (Math.abs(kernValue) >= opts.minValue!) {
-        pairs.push({ left, right, value: kernValue });
-        processed.add(pairKey);
-      }
-    }
-  }
-  
-  return pairs;
-}
-
-/**
  * Combina kerning profissional (tabelas) com geométrico (análise real)
  * Melhor dos dois mundos!
  */
@@ -634,17 +559,30 @@ export function generateHybridKerning(
   glyphs: GlyphData[],
   options: ProfessionalKerningOptions = {}
 ): KerningPair[] {
+  const opts = { ...DEFAULT_OPTIONS, ...options };
   // Começa com kerning profissional (valores de referência)
   const professionalPairs = generateProfessionalKerning(glyphs, { ...options, useClasses: false });
   const processed = new Set(professionalPairs.map(p => `${p.left}${p.right}`));
   
-  // Adiciona kerning geométrico para pares não cobertos
-  const geometricPairs = generateGeometricKerning(glyphs, options);
+  // Usa calculateOptimalKerning para pares não cobertos
+  const profiles = analyzeAllGlyphShapes(glyphs);
+  const multiplier = opts.intensity || 1.0;
+  const chars = Array.from(profiles.keys());
   
-  for (const pair of geometricPairs) {
-    const key = `${pair.left}${pair.right}`;
-    if (!processed.has(key)) {
-      professionalPairs.push(pair);
+  for (const left of chars) {
+    const leftProfile = profiles.get(left)!;
+    for (const right of chars) {
+      if (left === right) continue;
+      const pairKey = `${left}${right}`;
+      if (processed.has(pairKey)) continue;
+      
+      const rightProfile = profiles.get(right)!;
+      const kernValue = Math.round(calculateOptimalKerning(leftProfile, rightProfile, 0.15) * multiplier);
+      
+      if (Math.abs(kernValue) >= (opts.minValue || 10)) {
+        professionalPairs.push({ left, right, value: kernValue });
+        processed.add(pairKey);
+      }
     }
   }
   

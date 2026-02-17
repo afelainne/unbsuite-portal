@@ -352,14 +352,12 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         
         let newKerning: Record<string, number> = {};
         let generatedPairs: KerningPair[] = [];
-        let suggestedTracking = letterSpacing;
         let suggestedIntensity = kerningIntensity;
         
         switch (preset) {
             case 'none':
                 newKerning = {};
                 generatedPairs = [];
-                suggestedTracking = 0;
                 suggestedIntensity = 1.0;
                 pushNotice('Kerning removido.', 'info');
                 break;
@@ -369,7 +367,6 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                suggestedTracking = -20;
                 pushNotice(`Tight: ${generatedPairs.length} pares. Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
                 break;
             case 'normal':
@@ -378,7 +375,6 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                suggestedTracking = 0;
                 pushNotice(`Normal: ${generatedPairs.length} pares.`, 'success');
                 break;
             case 'loose':
@@ -387,7 +383,6 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                suggestedTracking = 30;
                 pushNotice(`Loose: ${generatedPairs.length} pares. Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
                 break;
             case 'auto-smart':
@@ -405,7 +400,6 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     });
                     pushNotice(`Smart (fallback): ${generatedPairs.length} pares.`, 'success');
                 } else {
-                    suggestedTracking = Math.round(-10 * suggestedIntensity);
                     const smartStats = getKerningStats(newKerning);
                     pushNotice(`Smart: ${smartStats?.totalPairs || 0} pares.`, 'success');
                 }
@@ -420,7 +414,6 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     });
                     pushNotice(`Comum (fallback): ${generatedPairs.length} pares.`, 'success');
                 } else {
-                    suggestedTracking = Math.round(-5 * suggestedIntensity);
                     const commonStats = getKerningStats(newKerning);
                     pushNotice(`Comum: ${commonStats?.totalPairs || 0} pares.`, 'success');
                 }
@@ -431,11 +424,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                suggestedTracking = fontStyle.includes('display') ? -30 : 
-                                   fontStyle.includes('script') ? 10 :
-                                   fontStyle.includes('geometric') ? -15 : -10;
-                const profQuality = analyzeKerningQuality(glyphs, generatedPairs);
-                pushNotice(`Pro: ${generatedPairs.length} pares (${profQuality.grade}).`, 'success');
+                {
+                    const profQuality = analyzeKerningQuality(glyphs, generatedPairs);
+                    pushNotice(`Pro: ${generatedPairs.length} pares (${profQuality.grade}).`, 'success');
+                }
                 break;
             case 'hybrid':
                 suggestedIntensity = kerningIntensity;
@@ -443,11 +435,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                suggestedTracking = fontStyle.includes('display') ? -25 : 
-                                   fontStyle.includes('script') ? 5 :
-                                   fontStyle.includes('geometric') ? -12 : -8;
-                const hybridQuality = analyzeKerningQuality(glyphs, generatedPairs);
-                pushNotice(`Híbrido: ${generatedPairs.length} pares (${hybridQuality.grade}).`, 'success');
+                {
+                    const hybridQuality = analyzeKerningQuality(glyphs, generatedPairs);
+                    pushNotice(`Híbrido: ${generatedPairs.length} pares (${hybridQuality.grade}).`, 'success');
+                }
                 break;
             default:
                 // Template de fonte específico
@@ -458,21 +449,12 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         scale: suggestedIntensity,
                         overwrite: true,
                     });
-                    suggestedTracking = preset.includes('Helvetica') ? -15 :
-                                       preset.includes('Times') ? 5 :
-                                       preset.includes('Futura') ? -20 :
-                                       preset.includes('Garamond') ? 8 :
-                                       preset.includes('Roboto') ? -10 :
-                                       preset.includes('Frutiger') ? -5 :
-                                       preset.includes('Didot') ? 15 :
-                                       preset.includes('DIN') ? -18 : 0;
                     pushNotice(`Template "${template.name}". Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
                 }
                 break;
         }
         
-        // Since setKerning/setLetterSpacing now update metadata directly,
-        // we just call them and the combined kerning is handled via kerningRecord memo
+        // Combine kerning without touching tracking
         const combinedKerning: Record<string, number> = { ...newKerning };
         generatedPairs.forEach(pair => {
             combinedKerning[`${pair.left}${pair.right}`] = pair.value;
@@ -481,11 +463,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         setKerningPairs(generatedPairs);
         setKerningIntensity(suggestedIntensity);
         
-        // Single metadata update with all changes
+        // Update only kerning in metadata, do NOT modify tracking
         onUpdateMetadata(prev => ({
             ...prev,
             kerning: combinedKerning,
-            tracking: suggestedTracking,
         }));
     }, [glyphs, kerningIntensity, fontStyle, pushNotice, onUpdateMetadata]);
 
