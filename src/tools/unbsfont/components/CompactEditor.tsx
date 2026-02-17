@@ -103,15 +103,15 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
     const [activeCategory, setActiveCategory] = useState<GlyphCategory>('all');
     const [isDragging, setIsDragging] = useState(false);
     
-    // Estados de espaçamento - inicializar a partir do metadata
-    const [letterSpacing, setLetterSpacing] = useState(metadata.tracking || 0);
-    const [wordSpacing, setWordSpacing] = useState(metadata.wordSpacing || 250);
+    // Derivar kerning/tracking/wordSpacing diretamente do metadata (sem estado local)
+    const letterSpacing = metadata.tracking || 0;
+    const wordSpacing = metadata.wordSpacing || 250;
+    const kerning = metadata.kerning || {};
     const [lineHeight, setLineHeight] = useState(1.2);
     const [kerningPreset, setKerningPreset] = useState<KerningPreset>(
         Object.keys(metadata.kerning || {}).length > 0 ? 'auto-smart' : 'none'
     );
     const [kerningIntensity, setKerningIntensity] = useState(1.0);
-    const [kerning, setKerning] = useState<Record<string, number>>(metadata.kerning || {});
     
     // Estados de Advance Width Global
     const [advanceWidthMode, setAdvanceWidthMode] = useState<AdvanceWidthMode>('auto');
@@ -129,60 +129,19 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         ...DEFAULT_AUTO_CONFIG_OPTIONS
     });
     const [isAutoConfiguring, setIsAutoConfiguring] = useState(false);
+
+    // Helper para atualizar tracking/wordSpacing/kerning no metadata
+    const setLetterSpacing = useCallback((val: number) => {
+        onUpdateMetadata(prev => ({ ...prev, tracking: val }));
+    }, [onUpdateMetadata]);
     
-    // Ref para evitar loop infinito na sincronização
-    const isLocalUpdateRef = useRef(false);
-    // Ref para armazenar último metadata sincronizado
-    const lastSyncedMetadataRef = useRef<string>('');
-
-    // Sincronizar estados locais quando metadata mudar (ex: vindo do modo Avançado)
-    useEffect(() => {
-        // Só sincronizar se a mudança veio de fora (não do próprio componente)
-        if (isLocalUpdateRef.current) {
-            isLocalUpdateRef.current = false;
-            return;
-        }
-        // Atualizar estados locais para refletir mudanças do metadata
-        if (Object.keys(metadata.kerning || {}).length > 0) {
-            setKerning(metadata.kerning);
-        }
-        setLetterSpacing(metadata.tracking || 0);
-        setWordSpacing(metadata.wordSpacing || 250);
-    }, [metadata.kerning, metadata.tracking, metadata.wordSpacing]);
-
-    // Sincronizar TODAS as configurações com metadata para que o modo avançado veja as mudanças
-    // Usar useEffect separado para evitar dependências circulares
-    useEffect(() => {
-        // Combinar kerning local com kerningPairs profissional
-        const combinedKerning: Record<string, number> = { ...kerning };
-        kerningPairs.forEach(pair => {
-            combinedKerning[`${pair.left}${pair.right}`] = pair.value;
-        });
-        
-        // Criar objeto de atualização
-        const updates = {
-            kerning: combinedKerning,
-            tracking: letterSpacing,
-            wordSpacing: wordSpacing
-        };
-        
-        // Verificar se realmente mudou para evitar loops
-        const updateHash = JSON.stringify(updates);
-        if (updateHash === lastSyncedMetadataRef.current) {
-            return;
-        }
-        
-        // Marcar que a próxima mudança de metadata é local
-        isLocalUpdateRef.current = true;
-        lastSyncedMetadataRef.current = updateHash;
-        
-        onUpdateMetadata(prev => ({ 
-            ...prev, 
-            kerning: combinedKerning,
-            tracking: letterSpacing,
-            wordSpacing: wordSpacing
-        }));
-    }, [kerning, kerningPairs, letterSpacing, wordSpacing, onUpdateMetadata]);
+    const setWordSpacing = useCallback((val: number) => {
+        onUpdateMetadata(prev => ({ ...prev, wordSpacing: val }));
+    }, [onUpdateMetadata]);
+    
+    const setKerning = useCallback((newKerning: Record<string, number>) => {
+        onUpdateMetadata(prev => ({ ...prev, kerning: newKerning }));
+    }, [onUpdateMetadata]);
 
     // Temas
     const bgMain = isDarkMode ? 'bg-slate-950' : 'bg-white';
@@ -354,25 +313,16 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 setKerningPreset('professional');
             }
             
-            // Sincronizar IMEDIATAMENTE com metadata (não esperar useEffect)
+            // Sincronizar com metadata
             const newKerningFinal = { ...kerning };
             result.kerningPairs.forEach(pair => {
                 newKerningFinal[`${pair.left}${pair.right}`] = pair.value;
             });
             
-            // Marcar como atualização local
-            isLocalUpdateRef.current = true;
-            lastSyncedMetadataRef.current = JSON.stringify({
-                kerning: newKerningFinal,
-                tracking: letterSpacing,
-                wordSpacing: wordSpacing
-            });
             onUpdateMetadata(prev => ({
                 ...prev,
                 ...result.metadataUpdates,
                 kerning: newKerningFinal,
-                tracking: letterSpacing,
-                wordSpacing: wordSpacing
             }));
             
             // Mostrar relatório
@@ -521,54 +471,37 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 break;
         }
         
-        // Atualizar estados locais
-        setKerning(newKerning);
-        setKerningPairs(generatedPairs);
-        setLetterSpacing(suggestedTracking);
-        setKerningIntensity(suggestedIntensity);
-        
-        // Combinar kerning record e pairs para sincronização
+        // Since setKerning/setLetterSpacing now update metadata directly,
+        // we just call them and the combined kerning is handled via kerningRecord memo
         const combinedKerning: Record<string, number> = { ...newKerning };
         generatedPairs.forEach(pair => {
             combinedKerning[`${pair.left}${pair.right}`] = pair.value;
         });
         
-        // Sincronizar IMEDIATAMENTE com metadata
-        isLocalUpdateRef.current = true;
-        lastSyncedMetadataRef.current = JSON.stringify({
-            kerning: combinedKerning,
-            tracking: suggestedTracking,
-            wordSpacing: wordSpacing
-        });
+        setKerningPairs(generatedPairs);
+        setKerningIntensity(suggestedIntensity);
+        
+        // Single metadata update with all changes
         onUpdateMetadata(prev => ({
             ...prev,
             kerning: combinedKerning,
             tracking: suggestedTracking,
-            wordSpacing: wordSpacing
         }));
-    }, [glyphs, kerningIntensity, fontStyle, letterSpacing, wordSpacing, pushNotice, onUpdateMetadata]);
+    }, [glyphs, kerningIntensity, fontStyle, pushNotice, onUpdateMetadata]);
 
     // Reset kerning
     const handleResetKerning = useCallback(() => {
-        setKerning({});
         setKerningPairs([]);
         setKerningPreset('none');
         setKerningIntensity(1.0);
         
-        // Sincronizar imediatamente com metadata
-        isLocalUpdateRef.current = true;
-        lastSyncedMetadataRef.current = JSON.stringify({
-            kerning: {},
-            tracking: letterSpacing,
-            wordSpacing: wordSpacing
-        });
         onUpdateMetadata(prev => ({
             ...prev,
             kerning: {},
         }));
         
         pushNotice('Kerning resetado.', 'info');
-    }, [letterSpacing, wordSpacing, onUpdateMetadata, pushNotice]);
+    }, [onUpdateMetadata, pushNotice]);
 
     // Obter valor de kerning para um par de caracteres
     const getKerning = useCallback((char1: string, char2: string): number => {

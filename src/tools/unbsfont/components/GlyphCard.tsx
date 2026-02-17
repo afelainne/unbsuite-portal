@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import { GlyphData } from '../types';
 import { useNotice } from '../contexts/NoticeContext';
 
+export type GlyphWarning = 'overshoot' | 'height-violation' | 'no-path';
+
 interface GlyphCardProps {
   glyph: GlyphData;
   onEdit: (glyph: GlyphData) => void;
@@ -16,10 +18,17 @@ interface GlyphCardProps {
   onClear: () => void;
   isSelected?: boolean;
   isDarkMode?: boolean;
+  warnings?: GlyphWarning[];
 }
 
+const WARNING_ICONS: Record<GlyphWarning, { icon: string; label: string; color: string }> = {
+  'overshoot': { icon: '⬆', label: 'Overshoot expected', color: 'bg-amber-500' },
+  'height-violation': { icon: '↕', label: 'Height violation', color: 'bg-red-500' },
+  'no-path': { icon: '∅', label: 'Empty glyph', color: 'bg-slate-500' },
+};
+
 const GlyphCard: React.FC<GlyphCardProps> = ({ 
-  glyph, onEdit, onUpdate, onDragStart, onDrop, isPasteMode, onPaste, onMoveGlyph, onContextMenu, onClear, isSelected, isDarkMode
+  glyph, onEdit, onUpdate, onDragStart, onDrop, isPasteMode, onPaste, onMoveGlyph, onContextMenu, onClear, isSelected, isDarkMode, warnings
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -146,7 +155,20 @@ const GlyphCard: React.FC<GlyphCardProps> = ({
         )}
       </div>
 
-      {/* Hover Actions (Top Right) */}
+      {/* Typographic Warning Badges */}
+      {warnings && warnings.length > 0 && (
+          <div className="absolute bottom-10 left-3 z-30 flex gap-1 pointer-events-none">
+              {warnings.map(w => {
+                  const info = WARNING_ICONS[w];
+                  return (
+                      <span key={w} className={`w-4 h-4 flex items-center justify-center rounded-full text-[8px] text-white ${info.color}`} title={info.label}>
+                          {info.icon}
+                      </span>
+                  );
+              })}
+          </div>
+      )}
+
       {!isPasteMode && (
           <div className="absolute top-3 right-3 z-30 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
              {hasPath && (
