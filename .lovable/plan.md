@@ -1,98 +1,87 @@
 
-# Fix: Auto Position Should Normalize by Visual Height, Not Copy Scale
+# Fix: Canvas Zoom, Pan e Fit-to-View no UNBSFORMAT
 
-## Root Cause
+## Problema
 
-The "Auto Position" feature copies `scale` directly from the reference glyph to all others. But each glyph has a **different native SVG path size** (depending on the source SVG's coordinate system). 
+O canvas SVG usa dimensoes fixas em pixels (`width={vbW} height={vbH}`), que para formatos como A4 geram um SVG de ~816x1145px. Isso ultrapassa a area visivel e o conteudo fica cortado.
 
-Example:
-- Glyph "b" native path height: ~500 units. Scale 1.56 makes it 780 units tall -- correct.
-- Glyph "r" native path height: ~800 units. Scale 1.56 makes it 1248 units tall -- way too big!
+## Solucao
 
-Both have the same `scale` value but look completely different sizes because their source SVGs use different coordinate ranges.
+Adicionar navegacao completa ao TemplatePreview: **auto-fit**, **zoom** (scroll wheel), **pan** (Alt+drag ou middle-click) e **botoes de controle** -- seguindo o mesmo padrao do PreviewCanvas do unbsgrid.
 
-## Solution
+## Mudancas
 
-Replace the "copy raw scale" approach with a **target-height normalization**. When Auto Position is applied:
+### Arquivo: `TemplatePreview.tsx`
 
-1. Measure the **reference glyph's visual height** = `measurePath(refPath).height * refScale`
-2. For each target glyph, calculate the correct scale = `targetVisualHeight / measurePath(glyphPath).height`
-3. Apply the calculated per-glyph scale (not the reference's raw scale)
+**Auto-fit na montagem**: calcular o zoom inicial para que o SVG inteiro caiba na area visivel com padding, usando `Math.min(containerW / vbW, containerH / vbH) * 0.9`.
 
-This ensures all glyphs reach the same visual height regardless of their native SVG dimensions.
+**Estado de navegacao**:
+- `zoom` (number, default calculado para fit)
+- `panOffset` ({x, y}, default {0, 0})
+- `isPanning` (boolean)
 
-## Changes
+**SVG responsivo**: Em vez de `width={vbW} height={vbH}` fixo, usar `width={vbW * zoom} height={vbH * zoom}` com `transform: translate(panX, panY)` no container.
 
-### File 1: `types.ts`
+**Eventos**:
+- `onWheel`: zoom in/out (0.1 a 5x)
+- `onMouseDown` (Alt+click ou middle-click): inicia pan
+- `onMouseMove`: atualiza pan offset
+- `onMouseUp`: finaliza pan
+- `ResizeObserver`: recalcula fit quando o container muda de tamanho
 
-Update `autoPosition` to store `targetVisualHeight` instead of raw `scale`:
+**Toolbar de navegacao** (acima do canvas, estilo unbsgrid):
+- Botoes: Zoom In (+), Zoom Out (-), Fit to Screen, Reset
+- Indicador de zoom atual (ex: "75%")
+- Dica "Alt+Drag" para pan
+- Coordenadas do cursor
 
-```text
-autoPosition?: {
-    targetVisualHeight: number;  // the visual height to match (in font units)
-    baselineOffset: number;
-    leftSideBearing: number;
-    sourceChar: string;
-    sourceScale: number;  // keep for display only
-};
-```
+**Fit to Screen**: funcao que recalcula o zoom para o SVG caber inteiro na area visivel. Chamada automaticamente ao mudar de formato.
 
-### File 2: `App.tsx` - `applyAutoPositionToAll`
-
-Change the propagation logic:
+### Estrutura do componente atualizado
 
 ```text
-// OLD (buggy): g.scale = autoPos.scale
-// NEW: calculate per-glyph scale based on target visual height
-const bbox = measurePath(g.pathData);
-if (bbox.height > 0) {
-    const newScale = autoPos.targetVisualHeight / bbox.height;
-    return { ...g, scale: newScale, baselineOffset: autoPos.baselineOffset, leftSideBearing: autoPos.leftSideBearing };
-}
+<div className="flex-1 flex flex-col">
+    <!-- Toolbar: [+] [-] [Fit] [Reset] | Alt+Drag | 75% -->
+    <div className="toolbar">...</div>
+    
+    <!-- Canvas area com overflow hidden -->
+    <div ref={containerRef} 
+         className="flex-1 overflow-hidden"
+         onWheel={handleWheel}
+         onMouseDown={handleMouseDown}
+         onMouseMove={handleMouseMove}
+         onMouseUp={handleMouseUp}>
+        
+        <!-- SVG com transform para zoom+pan -->
+        <div style={{ transform: translate(panX, panY) }}>
+            <svg width={vbW * zoom} height={vbH * zoom} 
+                 viewBox="0 0 {vbW} {vbH}">
+                ... (conteudo existente inalterado)
+            </svg>
+        </div>
+    </div>
+</div>
 ```
 
-### File 3: `EditorModal.tsx` - "Usar como referencia" handler
+### Comportamento
 
-When setting the reference, calculate and store the visual height:
+| Acao | Resultado |
+|------|-----------|
+| Abrir / mudar formato | Auto-fit: SVG cabe inteiro com margem |
+| Scroll wheel | Zoom in/out (10% por step, range 10%-500%) |
+| Alt + arrastar | Pan (mover canvas livremente) |
+| Middle-click + arrastar | Pan (alternativo) |
+| Botao Fit | Recentraliza e auto-fit |
+| Botao Reset | Zoom 100%, pan (0,0) |
+| Botao + / - | Zoom step de 25% |
 
-```text
-// When user clicks "Usar como referencia":
-const bbox = measurePath(data.pathData);
-const visualHeight = bbox.height * data.scale;
-onUpdateMetadata(prev => ({
-    ...prev,
-    autoPosition: {
-        targetVisualHeight: visualHeight,
-        baselineOffset: data.baselineOffset,
-        leftSideBearing: data.leftSideBearing,
-        sourceChar: data.char,
-        sourceScale: data.scale,
-    }
-}));
-```
+### Ordem de execucao
 
-Also update "Resetar para auto" to use the same per-glyph calculation.
-
-### File 4: `glyphDiagnosticService.ts` - `autoNormalizeAllSizes`
-
-Apply the same per-glyph scale calculation in the normalize function (if it was already added from the previous plan):
-
-```text
-// Instead of: fixes.set(char, { scale: medianScale })
-// Use: 
-const bbox = measurePath(g.pathData);
-const targetHeight = medianVisualHeight; // median of (bbox.height * scale) in category
-const newScale = targetHeight / bbox.height;
-fixes.set(char, { scale: newScale, ... });
-```
-
-## Execution Order
-
-| # | Task | File |
-|---|------|------|
-| 1 | Update `autoPosition` type to use `targetVisualHeight` | types.ts |
-| 2 | Fix `applyAutoPositionToAll` to calculate per-glyph scale | App.tsx |
-| 3 | Fix "Usar como referencia" to store visual height | EditorModal.tsx |
-| 4 | Fix "Resetar para auto" to use per-glyph calculation | EditorModal.tsx |
-| 5 | Add `autoNormalizeAllSizes` with correct per-glyph logic | glyphDiagnosticService.ts |
-| 6 | Add "Normalizar Tamanhos" button to GlyphDiagnostics.tsx | GlyphDiagnostics.tsx |
+| # | Tarefa |
+|---|--------|
+| 1 | Adicionar estados zoom, panOffset, isPanning ao TemplatePreview |
+| 2 | Adicionar containerRef e ResizeObserver para calcular fit inicial |
+| 3 | Mudar SVG de dimensoes fixas para zoom responsivo |
+| 4 | Adicionar handlers de wheel, mouseDown, mouseMove, mouseUp |
+| 5 | Adicionar toolbar com botoes de zoom, fit e reset |
+| 6 | Recalcular fit automaticamente ao mudar de formato (preset) |
