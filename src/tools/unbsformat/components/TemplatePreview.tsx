@@ -134,7 +134,8 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
         onMouseLeave={handleMouseUp}
       >
         <div style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px)` }}>
-          <svg 
+          <svg
+            id="formatlab-canvas"
             width={vbW * zoom} 
             height={vbH * zoom} 
             viewBox={`0 0 ${vbW} ${vbH}`}

@@ -43,15 +43,21 @@ const App: React.FC = () => {
   };
 
   const downloadSVG = () => {
-    const svg = document.querySelector('svg');
+    const svg = document.getElementById('formatlab-canvas');
     if (!svg) return;
     const serializer = new XMLSerializer();
-    const source = serializer.serializeToString(svg);
-    const url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(source);
+    let source = serializer.serializeToString(svg);
+    if (!source.includes('xmlns=')) {
+      source = source.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    source = '<?xml version="1.0" encoding="UTF-8"?>\n' + source;
+    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.download = `formatlab_${selectedFormat.id}_template.svg`;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -75,7 +81,20 @@ const App: React.FC = () => {
                     onChange={(e) => setSettings({...settings, columns: parseInt(e.target.value)})}
                     className="w-24 accent-black"
                 />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[9px] mono uppercase text-gray-400">Rows</span>
+              <div className="flex items-center gap-3">
+                <span className="mono text-lg font-bold w-6">{settings.rows}</span>
+                <input 
+                    type="range" min="1" max="12" 
+                    value={settings.rows} 
+                    onChange={(e) => setSettings({...settings, rows: parseInt(e.target.value)})}
+                    className="w-24 accent-black"
+                />
               </div>
+            </div>
             </div>
 
             <div className="flex flex-col gap-1">
