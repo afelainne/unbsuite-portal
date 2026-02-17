@@ -26,7 +26,7 @@ interface CompactEditorProps {
     glyphs: GlyphData[];
     metadata: FontMetadata;
     onUpdateGlyph: (char: string, data: Partial<GlyphData>) => void;
-    onUpdateMetadata: (metadata: FontMetadata) => void;
+    onUpdateMetadata: React.Dispatch<React.SetStateAction<FontMetadata>>;
     isDarkMode: boolean;
     onSwitchToAdvanced: () => void;
     onGoHome: () => void;
