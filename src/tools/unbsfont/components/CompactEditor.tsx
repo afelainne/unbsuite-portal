@@ -797,26 +797,28 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             className={`p-4 rounded-xl border flex items-center justify-center overflow-auto ${cardBg}`}
                             style={{ lineHeight, minHeight: '120px', maxHeight: '280px' }}
                         >
-                            <div 
+                        <div 
                                 className="flex flex-wrap items-end justify-center" 
                                 style={{ 
                                     fontSize,
-                                    // letterSpacing e wordSpacing são em unidades de design, converter para pixels
-                                    letterSpacing: `${letterSpacing * (fontSize / (metadata.unitsPerEm || 1000))}px`,
-                                    wordSpacing: `${wordSpacing * (fontSize / (metadata.unitsPerEm || 1000))}px`,
+                                    // Fix: NO letterSpacing/wordSpacing in CSS - handled manually per glyph
                                 }}
                             >
                                 {previewText.split('').map((char, idx) => {
                                     const g = getGlyph(char);
+                                    // Fix: space width converts wordSpacing from design units to pixels
                                     if (char === ' ') {
-                                        return <span key={idx} style={{ width: fontSize * 0.3 + wordSpacing }}>&nbsp;</span>;
+                                        const upm = metadata.unitsPerEm || 1000;
+                                        const spaceWidth = wordSpacing * (fontSize / upm);
+                                        return <span key={idx} style={{ width: spaceWidth }}>&nbsp;</span>;
                                     }
                                     if (!g) return <span key={idx} className="opacity-20">{char}</span>;
                                     
-                                    const scale = fontSize / (metadata.unitsPerEm || 1000);
+                                    const upm = metadata.unitsPerEm || 1000;
+                                    const scale = fontSize / upm;
                                     const baseWidth = g.advanceWidth * scale;
                                     
-                                    // Aplicar kerning com intensidade
+                                    // Kerning
                                     let kernAdjust = 0;
                                     if (idx > 0) {
                                         const prevChar = previewText[idx - 1];
@@ -825,17 +827,16 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         }
                                     }
                                     
-                                    // letterSpacing também em unidades de design, convertido para pixels
-                                    const width = baseWidth + (letterSpacing * scale);
+                                    // Fix: tracking added as marginLeft, not in width
+                                    const trackingAdjust = letterSpacing * scale;
+                                    const width = baseWidth;
                                     
-                                    // Calcular viewBox para incluir acentos (espaço extra acima)
-                                    const upm = metadata.unitsPerEm || 1000;
+                                    // Fix: viewBox includes descender
                                     const ascender = metadata.ascender || 800;
                                     const descender = Math.abs(metadata.descender || -200);
-                                    // Espaço extra para acentos (20% acima do ascender)
                                     const accentSpace = upm * 0.25;
-                                    const viewBoxHeight = upm + accentSpace;
-                                    const viewBoxY = -accentSpace; // Começar acima de 0
+                                    const viewBoxHeight = ascender + descender + accentSpace;
+                                    const viewBoxY = -accentSpace;
                                     
                                     // Altura do span proporcional para mostrar acentos
                                     const spanHeight = fontSize * (viewBoxHeight / upm);
@@ -846,7 +847,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                             style={{ 
                                                 width: Math.max(0, width), 
                                                 height: spanHeight,
-                                                marginLeft: kernAdjust,
+                                                marginLeft: kernAdjust + trackingAdjust,
                                                 marginBottom: -(spanHeight - fontSize) * 0.2, // Compensar espaço extra
                                             }}
                                             className="inline-block relative"
