@@ -18,6 +18,7 @@ interface EditorModalProps {
   onBuildDerivatives?: (baseChar: string, globalAnchor: {x:number, y:number}, overrides: Record<string, {x:number, y:number}>, derivatives: string[], baseGlyphOverride?: GlyphData) => void;
   isDarkMode?: boolean;
     onOpenKerningPanel?: (glyphChar: string) => void;
+  onApplyAutoPosition?: (autoPos: FontMetadata['autoPosition']) => void;
 }
 
 const ensureKerningBias = (g: GlyphData): GlyphData => ({ ...g, kerningBias: g.kerningBias ?? 0 });
@@ -49,7 +50,7 @@ const describeKerningToken = (token: string) => {
     return token;
 };
 
-const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onClose, onSave, metadata, onUpdateMetadata, onUpdateMembers, onBuildDerivatives, isDarkMode, onOpenKerningPanel }) => {
+const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onClose, onSave, metadata, onUpdateMetadata, onUpdateMembers, onBuildDerivatives, isDarkMode, onOpenKerningPanel, onApplyAutoPosition }) => {
     const [data, setData] = useState<GlyphData>(() => ensureKerningBias(glyph));
         const [activeTab, setActiveTab] = useState<'METRICS' | 'KERNING' | 'ACCENTS' | 'COMPS' | 'STROKE'>('METRICS');
   const [strokeWidth, setStrokeWidth] = useState(10);
@@ -58,7 +59,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
     const [history, setHistory] = useState<GlyphData[]>([ensureKerningBias(glyph)]);
   const [historyIndex, setHistoryIndex] = useState(0);
 
-    const [draggingGuide, setDraggingGuide] = useState<'ASCENDER' | 'BASELINE' | 'DESCENDER' | 'WIDTH' | 'ORIGIN' | 'ANCHOR' | null>(null);
+    const [draggingGuide, setDraggingGuide] = useState<'ASCENDER' | 'BASELINE' | 'DESCENDER' | 'X_HEIGHT' | 'CAP_HEIGHT' | 'WIDTH' | 'ORIGIN' | 'ANCHOR' | null>(null);
   const [draggingComponentIndex, setDraggingComponentIndex] = useState<number | null>(null);
   const [dragStart, setDragStart] = useState<{x: number, y: number, initialDx: number, initialDy: number} | null>(null);
   
@@ -345,6 +346,12 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
             }
             else if (draggingGuide === 'DESCENDER') {
                 onUpdateMetadata(prev => ({ ...prev, descender: VISUAL_BASELINE_Y - svgY })); 
+            }
+            else if (draggingGuide === 'X_HEIGHT') {
+                onUpdateMetadata(prev => ({ ...prev, xHeight: VISUAL_BASELINE_Y - svgY }));
+            }
+            else if (draggingGuide === 'CAP_HEIGHT') {
+                onUpdateMetadata(prev => ({ ...prev, capHeight: VISUAL_BASELINE_Y - svgY }));
             }
             else if (draggingGuide === 'WIDTH') setData(prev => ({ ...prev, advanceWidth: Math.max(0, svgX) }));
             else if (draggingGuide === 'ORIGIN') setData(prev => ({ ...prev, leftSideBearing: prev.leftSideBearing + (svgX - 0) }));
@@ -723,11 +730,17 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
     const visualBaselineY = VISUAL_BASELINE_Y - baselineShift;
     const visualAscenderY = visualBaselineY - metadata.ascender;
     const visualDescenderY = visualBaselineY - metadata.descender; 
+    const xHeight = metadata.xHeight ?? 520;
+    const capHeight = metadata.capHeight ?? 720;
+    const visualXHeightY = visualBaselineY - xHeight;
+    const visualCapHeightY = visualBaselineY - capHeight;
     const dynamicOriginX = data.leftSideBearing;
   
   const GUIDE_COLOR_BASELINE = "#ef4444"; 
   const GUIDE_COLOR_METRIC = isDarkMode ? "#64748b" : "#94a3b8"; 
   const GUIDE_COLOR_WIDTH = "#3b82f6"; 
+  const GUIDE_COLOR_XHEIGHT = "#22c55e";
+  const GUIDE_COLOR_CAPHEIGHT = "#8b5cf6";
   const LABEL_COLOR = isDarkMode ? "fill-slate-400" : "fill-slate-500";
 
     const themeBg = isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-black';
@@ -864,6 +877,25 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                     preserveAspectRatio="xMidYMid meet"
                >
                  
+                      {/* ═══ TYPOGRAPHIC ZONES (Glyphs App style) ═══ */}
+                      {/* Ascender zone: above capHeight to ascender (blue) */}
+                      <rect x="-500" y={visualAscenderY} width="2000" 
+                            height={visualCapHeightY - visualAscenderY} 
+                            fill={isDarkMode ? "rgba(139, 92, 246, 0.08)" : "rgba(139, 92, 246, 0.05)"} className="pointer-events-none" />
+                      {/* Cap Height to x-Height zone (light purple/blue) */}
+                      <rect x="-500" y={visualCapHeightY} width="2000"
+                            height={visualXHeightY - visualCapHeightY}
+                            fill={isDarkMode ? "rgba(59, 130, 246, 0.06)" : "rgba(59, 130, 246, 0.04)"} className="pointer-events-none" />
+                      {/* x-Height zone: baseline to x-Height (green) */}
+                      <rect x="-500" y={visualXHeightY} width="2000"
+                            height={visualBaselineY - visualXHeightY}
+                            fill={isDarkMode ? "rgba(34, 197, 94, 0.08)" : "rgba(34, 197, 94, 0.05)"} className="pointer-events-none" />
+                      {/* Descender zone: below baseline (red) */}
+                      <rect x="-500" y={visualBaselineY} width="2000"
+                            height={visualDescenderY - visualBaselineY}
+                            fill={isDarkMode ? "rgba(239, 68, 68, 0.08)" : "rgba(239, 68, 68, 0.05)"} className="pointer-events-none" />
+
+                      {/* Origin line */}
                       <line x1={dynamicOriginX} y1="-200" x2={dynamicOriginX} y2="1500" stroke={GUIDE_COLOR_METRIC} strokeWidth="3" strokeDasharray="6,6" />
                       <g transform={`translate(${dynamicOriginX - 15}, -240)`}>
                           <rect x="0" y="0" width="60" height="20" className={`${isDarkMode ? 'fill-slate-800' : 'fill-neutral-200'}`} rx="3" />
@@ -873,11 +905,25 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                  {/* Ascender */}
                  <line x1="-500" y1={visualAscenderY} x2="1500" y2={visualAscenderY} stroke={GUIDE_COLOR_METRIC} strokeWidth="3" strokeDasharray="4,4" className="pointer-events-auto" />
                  <line x1="-500" y1={visualAscenderY} x2="1500" y2={visualAscenderY} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('ASCENDER')} />
-                 
-                 {/* SMALL LABEL TAGS */}
                  <g transform={`translate(-480, ${visualAscenderY + 6})`}>
                     <rect x="0" y="-12" width="70" height="16" className={`${isDarkMode ? 'fill-slate-800' : 'fill-neutral-200'}`} rx="2" />
                     <text x="5" y="0" className={`text-xs font-bold font-mono tracking-widest select-none ${LABEL_COLOR}`}>ASCENDER</text>
+                 </g>
+
+                 {/* Cap Height */}
+                 <line x1="-500" y1={visualCapHeightY} x2="1500" y2={visualCapHeightY} stroke={GUIDE_COLOR_CAPHEIGHT} strokeWidth="2" strokeDasharray="6,4" strokeOpacity="0.6" className="pointer-events-auto" />
+                 <line x1="-500" y1={visualCapHeightY} x2="1500" y2={visualCapHeightY} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('CAP_HEIGHT')} />
+                 <g transform={`translate(-480, ${visualCapHeightY + 6})`}>
+                    <rect x="0" y="-12" width="80" height="16" fill={isDarkMode ? "#1e1b4b" : "#ede9fe"} rx="2" />
+                    <text x="5" y="0" className="text-xs font-bold font-mono tracking-widest select-none" fill={GUIDE_COLOR_CAPHEIGHT}>CAP HEIGHT</text>
+                 </g>
+
+                 {/* x-Height */}
+                 <line x1="-500" y1={visualXHeightY} x2="1500" y2={visualXHeightY} stroke={GUIDE_COLOR_XHEIGHT} strokeWidth="2" strokeDasharray="6,4" strokeOpacity="0.6" className="pointer-events-auto" />
+                 <line x1="-500" y1={visualXHeightY} x2="1500" y2={visualXHeightY} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('X_HEIGHT')} />
+                 <g transform={`translate(-480, ${visualXHeightY + 6})`}>
+                    <rect x="0" y="-12" width="70" height="16" fill={isDarkMode ? "#052e16" : "#dcfce7"} rx="2" />
+                    <text x="5" y="0" className="text-xs font-bold font-mono tracking-widest select-none" fill={GUIDE_COLOR_XHEIGHT}>x-HEIGHT</text>
                  </g>
 
                  {/* Baseline */}
@@ -1072,6 +1118,30 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                              </div>
                              <input type="range" min="0" max="1500" value={metadata.ascender} onChange={(e) => onUpdateMetadata({...metadata, ascender: parseInt(e.target.value)})} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
                         </div>
+                        {/* Cap Height */}
+                        <div>
+                             <div className="flex justify-between items-center mb-1">
+                                 <label className={`text-[10px] font-bold ${textSub}`} style={{color: GUIDE_COLOR_CAPHEIGHT}}>Cap Height</label>
+                                 <div className="flex items-center gap-1">
+                                    <button onClick={() => onUpdateMetadata(prev => ({...prev, capHeight: (prev.capHeight ?? 720) - 10}))} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>-</button>
+                                    <input type="number" value={capHeight} onChange={(e) => onUpdateMetadata(prev => ({...prev, capHeight: parseInt(e.target.value)}))} className={`w-16 h-7 rounded text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
+                                    <button onClick={() => onUpdateMetadata(prev => ({...prev, capHeight: (prev.capHeight ?? 720) + 10}))} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>+</button>
+                                 </div>
+                             </div>
+                             <input type="range" min="0" max="1200" value={capHeight} onChange={(e) => onUpdateMetadata(prev => ({...prev, capHeight: parseInt(e.target.value)}))} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} style={{accentColor: GUIDE_COLOR_CAPHEIGHT}} />
+                        </div>
+                        {/* x-Height */}
+                        <div>
+                             <div className="flex justify-between items-center mb-1">
+                                 <label className={`text-[10px] font-bold ${textSub}`} style={{color: GUIDE_COLOR_XHEIGHT}}>x-Height</label>
+                                 <div className="flex items-center gap-1">
+                                    <button onClick={() => onUpdateMetadata(prev => ({...prev, xHeight: (prev.xHeight ?? 520) - 10}))} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>-</button>
+                                    <input type="number" value={xHeight} onChange={(e) => onUpdateMetadata(prev => ({...prev, xHeight: parseInt(e.target.value)}))} className={`w-16 h-7 rounded text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
+                                    <button onClick={() => onUpdateMetadata(prev => ({...prev, xHeight: (prev.xHeight ?? 520) + 10}))} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>+</button>
+                                 </div>
+                             </div>
+                             <input type="range" min="0" max="1000" value={xHeight} onChange={(e) => onUpdateMetadata(prev => ({...prev, xHeight: parseInt(e.target.value)}))} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} style={{accentColor: GUIDE_COLOR_XHEIGHT}} />
+                        </div>
                         {/* Descender */}
                         <div>
                              <div className="flex justify-between items-center mb-1">
@@ -1127,6 +1197,76 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                             <label className={`text-[10px] font-bold w-10 ${textSub}`}>Y Off</label>
                             <input type="range" min="-500" max="500" value={data.baselineOffset} onMouseUp={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
                             <input type="number" value={data.baselineOffset} onBlur={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Auto Position */}
+                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
+                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Auto Position</label>
+                    <div className="space-y-2">
+                        {metadata.autoPosition ? (
+                            <div className={`text-[10px] p-2 rounded border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-neutral-200'}`}>
+                                <p className={`font-bold ${textSub}`}>Referência: <span className={textMain}>'{metadata.autoPosition.sourceChar}'</span></p>
+                                <div className={`grid grid-cols-3 gap-1 mt-1 text-[9px] font-mono ${textSub}`}>
+                                    <span>Scale: {metadata.autoPosition.scale}</span>
+                                    <span>Y: {metadata.autoPosition.baselineOffset}</span>
+                                    <span>LSB: {metadata.autoPosition.leftSideBearing}</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <p className={`text-[10px] italic ${textSub}`}>Nenhuma referência definida.</p>
+                        )}
+                        <div className="flex items-center gap-2">
+                            <input 
+                                type="checkbox" 
+                                checked={data.manualPosition ?? false}
+                                onChange={(e) => {
+                                    const newData = { ...data, manualPosition: e.target.checked };
+                                    setData(newData);
+                                    pushToHistory(newData);
+                                }}
+                                className="rounded w-3 h-3 accent-black"
+                            />
+                            <label className={`text-[10px] font-bold ${textSub}`}>Posição manual (ignora auto)</label>
+                        </div>
+                        <div className="flex gap-1">
+                            <button
+                                onClick={() => {
+                                    const autoPos = {
+                                        scale: data.scale,
+                                        baselineOffset: data.baselineOffset,
+                                        leftSideBearing: data.leftSideBearing,
+                                        sourceChar: glyph.char,
+                                    };
+                                    onUpdateMetadata(prev => ({ ...prev, autoPosition: autoPos }));
+                                    if (onApplyAutoPosition) onApplyAutoPosition(autoPos);
+                                    pushNotice(`Auto Position definida a partir de '${glyph.char}'.`, 'success');
+                                }}
+                                className={`flex-1 text-[9px] py-1.5 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'bg-white text-black border-white hover:bg-neutral-200' : 'bg-black text-white border-black hover:bg-neutral-800'}`}
+                            >
+                                Usar como referência
+                            </button>
+                            {metadata.autoPosition && (
+                                <button
+                                    onClick={() => {
+                                        if (!metadata.autoPosition) return;
+                                        const newData = {
+                                            ...data,
+                                            scale: metadata.autoPosition.scale,
+                                            baselineOffset: metadata.autoPosition.baselineOffset,
+                                            leftSideBearing: metadata.autoPosition.leftSideBearing,
+                                            manualPosition: false,
+                                        };
+                                        setData(newData);
+                                        pushToHistory(newData);
+                                    }}
+                                    disabled={!data.manualPosition && data.scale === metadata.autoPosition.scale && data.baselineOffset === metadata.autoPosition.baselineOffset && data.leftSideBearing === metadata.autoPosition.leftSideBearing}
+                                    className={`flex-1 text-[9px] py-1.5 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-neutral-300 text-black hover:border-black'} disabled:opacity-40 disabled:cursor-not-allowed`}
+                                >
+                                    Resetar para auto
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
