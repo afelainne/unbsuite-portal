@@ -349,7 +349,7 @@ export function centerGlyphInBox(
   glyph: GlyphData,
   targetMargin: number = 50
 ): { leftSideBearing: number; advanceWidth: number } {
-  const pathData = glyph.pathData || glyph.svgPathData;
+  const pathData = glyph.pathData || '';
   if (!pathData) {
     return {
       leftSideBearing: glyph.leftSideBearing,
@@ -401,7 +401,7 @@ export function centerAllGlyphs(
   let count = 0;
   
   for (const glyph of glyphs) {
-    if (!glyph.pathData && !glyph.svgPathData) continue;
+    if (!glyph.pathData) continue;
     
     const centered = centerGlyphInBox(glyph, targetMargin);
     
@@ -450,7 +450,7 @@ export function generateProfessionalKerning(
   const style = FONT_STYLE_PROFILES[opts.style || 'neo-grotesque'];
   const multiplier = style.kerningMultiplier * (opts.intensity || 1.0);
   
-  const glyphChars = new Set(glyphs.filter(g => g.pathData || g.svgPathData).map(g => g.char));
+  const glyphChars = new Set(glyphs.filter(g => g.pathData).map(g => g.char));
   
   // 1. Aplica pares críticos da tabela profissional
   for (const [pair, value] of Object.entries(PROFESSIONAL_KERNING_VALUES.critical)) {
@@ -672,7 +672,7 @@ export function analyzeKerningQuality(
   glyphs: GlyphData[],
   pairs: KerningPair[]
 ): KerningQualityReport {
-  const glyphChars = new Set(glyphs.filter(g => g.pathData || g.svgPathData).map(g => g.char));
+  const glyphChars = new Set(glyphs.filter(g => g.pathData).map(g => g.char));
   const pairSet = new Set(pairs.map(p => `${p.left}${p.right}`));
   
   // Verifica pares críticos
