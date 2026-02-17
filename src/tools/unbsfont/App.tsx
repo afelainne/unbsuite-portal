@@ -15,6 +15,7 @@ import SpacingManager from './components/SpacingManager';
 import TestMode from './components/TestMode';
 import Dashboard from './components/Dashboard';
 import CompactEditor from './components/CompactEditor';
+import ModeSelector from './components/ModeSelector';
 import FontPreview from './components/FontPreview';
 import GlyphDiagnostics from './components/GlyphDiagnostics';
 import { exportFont, FontExportError } from './services/fontService';
@@ -27,7 +28,7 @@ import { NoticeContext, NoticeVariant } from './contexts/NoticeContext';
 import { KerningPair } from './services/professionalKerningService';
 
 type ViewMode = 'GRID' | 'TEST';
-type Screen = 'DASHBOARD' | 'EDITOR';
+type Screen = 'DASHBOARD' | 'MODE_SELECT' | 'EDITOR';
 type EditorMode = 'COMPACT' | 'ADVANCED';
 interface Notice {
     id: number;
@@ -353,7 +354,7 @@ const App: React.FC = () => {
       setStyleMap(newProject.styleMap);
       setCurrentStyle("Regular");
       setGlyphs(newProject.styleMap["Regular"]);
-      setScreen('EDITOR');
+      setScreen('MODE_SELECT');
   };
 
   const handleOpenProject = (id: string) => {
@@ -365,7 +366,7 @@ const App: React.FC = () => {
           const firstStyle = Object.keys(proj.styleMap)[0] || "Regular";
           setCurrentStyle(firstStyle);
           setGlyphs(proj.styleMap[firstStyle]);
-          setScreen('EDITOR');
+          setScreen('MODE_SELECT');
       }
   };
 
@@ -852,7 +853,7 @@ const App: React.FC = () => {
           return;
       }
 
-      const hasDrawnGlyphs = glyphs.some(g => (g.pathData || g.svgPathData || '').trim().length > 0);
+      const hasDrawnGlyphs = glyphs.some(g => (g.pathData || '').trim().length > 0);
       if (!hasDrawnGlyphs) {
           pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
           return;
@@ -903,7 +904,7 @@ const App: React.FC = () => {
           return;
       }
 
-      const hasDrawnGlyphs = glyphs.some(g => (g.pathData || g.svgPathData || '').trim().length > 0);
+      const hasDrawnGlyphs = glyphs.some(g => (g.pathData || '').trim().length > 0);
       if (!hasDrawnGlyphs) {
           pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
           return;
@@ -1293,6 +1294,10 @@ const App: React.FC = () => {
 
         if (screen === 'DASHBOARD') {
             return <Dashboard onCreateProject={handleCreateProject} onOpenProject={handleOpenProject} onImportProjectFile={handleImportProjectFile} onDeleteProject={handleDeleteProject} projects={projects} isDarkMode={isDarkMode} />;
+    }
+
+    if (screen === 'MODE_SELECT') {
+        return <ModeSelector onSelectMode={(mode) => { setEditorMode(mode); setScreen('EDITOR'); }} isDarkMode={isDarkMode} />;
     }
 
     // Modo Compact - Interface simplificada

@@ -355,22 +355,25 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             }
             
             // Sincronizar IMEDIATAMENTE com metadata (não esperar useEffect)
-            const metadataUpdates = {
-                ...metadata,
-                ...result.metadataUpdates,
-                kerning: newKerning,
-                tracking: letterSpacing,
-                wordSpacing: wordSpacing
-            };
+            const newKerningFinal = { ...kerning };
+            result.kerningPairs.forEach(pair => {
+                newKerningFinal[`${pair.left}${pair.right}`] = pair.value;
+            });
             
             // Marcar como atualização local
             isLocalUpdateRef.current = true;
             lastSyncedMetadataRef.current = JSON.stringify({
-                kerning: newKerning,
+                kerning: newKerningFinal,
                 tracking: letterSpacing,
                 wordSpacing: wordSpacing
             });
-            onUpdateMetadata(metadataUpdates);
+            onUpdateMetadata(prev => ({
+                ...prev,
+                ...result.metadataUpdates,
+                kerning: newKerningFinal,
+                tracking: letterSpacing,
+                wordSpacing: wordSpacing
+            }));
             
             // Mostrar relatório
             const report = result.report;
