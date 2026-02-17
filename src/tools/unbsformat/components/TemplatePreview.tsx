@@ -7,7 +7,7 @@ import { MM_TO_PX } from '../constants';
 interface TemplatePreviewProps {
   preset: FormatPreset;
   settings: PrintSettings;
-  image: string | null;
+  image?: string | null;
   showOverlay: boolean;
   showSafety: boolean;
 }
