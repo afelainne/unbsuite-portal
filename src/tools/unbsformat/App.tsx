@@ -81,6 +81,7 @@ const App: React.FC = () => {
                     onChange={(e) => setSettings({...settings, columns: parseInt(e.target.value)})}
                     className="w-24 accent-black"
                 />
+              </div>
             </div>
 
             <div className="flex flex-col gap-1">
@@ -94,7 +95,6 @@ const App: React.FC = () => {
                     className="w-24 accent-black"
                 />
               </div>
-            </div>
             </div>
 
             <div className="flex flex-col gap-1">
