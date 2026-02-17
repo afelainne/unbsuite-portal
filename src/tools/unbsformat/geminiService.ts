@@ -2,7 +2,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult } from "./types";
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
+let _ai: GoogleGenAI | null = null;
+const getAI = () => {
+  if (!_ai) {
+    const key = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!key) throw new Error("VITE_GEMINI_API_KEY is not configured. Add it to your secrets.");
+    _ai = new GoogleGenAI({ apiKey: key });
+  }
+  return _ai;
+};
 
 export const analyzePrintImage = async (base64Image: string, fileName: string): Promise<AnalysisResult> => {
   const model = 'gemini-3-flash-preview';
@@ -15,7 +23,7 @@ export const analyzePrintImage = async (base64Image: string, fileName: string): 
     Return the response in valid JSON format only.
   `;
 
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model,
     contents: {
       parts: [
