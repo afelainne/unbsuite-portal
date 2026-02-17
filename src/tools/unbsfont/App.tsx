@@ -571,12 +571,18 @@ const App: React.FC = () => {
           if (g.manualPosition) return g;
           if (!g.pathData || g.char === ' ') return g;
           if (g.char === autoPos.sourceChar) return g;
-          return {
-              ...g,
-              scale: autoPos.scale,
-              baselineOffset: autoPos.baselineOffset,
-              leftSideBearing: autoPos.leftSideBearing,
-          };
+          // Calculate per-glyph scale based on target visual height
+          const bbox = measurePath(g.pathData);
+          if (bbox && bbox.height > 0) {
+              const newScale = autoPos.targetVisualHeight / bbox.height;
+              return {
+                  ...g,
+                  scale: newScale,
+                  baselineOffset: autoPos.baselineOffset,
+                  leftSideBearing: autoPos.leftSideBearing,
+              };
+          }
+          return g;
       }));
   }, []);
 

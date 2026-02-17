@@ -1209,7 +1209,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                             <div className={`text-[10px] p-2 rounded border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-neutral-200'}`}>
                                 <p className={`font-bold ${textSub}`}>Referência: <span className={textMain}>'{metadata.autoPosition.sourceChar}'</span></p>
                                 <div className={`grid grid-cols-3 gap-1 mt-1 text-[9px] font-mono ${textSub}`}>
-                                    <span>Scale: {metadata.autoPosition.scale}</span>
+                                    <span>H: {metadata.autoPosition.targetVisualHeight.toFixed(0)}</span>
                                     <span>Y: {metadata.autoPosition.baselineOffset}</span>
                                     <span>LSB: {metadata.autoPosition.leftSideBearing}</span>
                                 </div>
@@ -1233,11 +1233,14 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                         <div className="flex gap-1">
                             <button
                                 onClick={() => {
+                                    const bbox = measurePath(data.pathData);
+                                    const visualHeight = bbox && bbox.height > 0 ? bbox.height * data.scale : data.scale * 700;
                                     const autoPos = {
-                                        scale: data.scale,
+                                        targetVisualHeight: visualHeight,
                                         baselineOffset: data.baselineOffset,
                                         leftSideBearing: data.leftSideBearing,
                                         sourceChar: glyph.char,
+                                        sourceScale: data.scale,
                                     };
                                     onUpdateMetadata(prev => ({ ...prev, autoPosition: autoPos }));
                                     if (onApplyAutoPosition) onApplyAutoPosition(autoPos);
@@ -1251,9 +1254,13 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                                 <button
                                     onClick={() => {
                                         if (!metadata.autoPosition) return;
+                                        const bbox = measurePath(data.pathData);
+                                        const newScale = bbox && bbox.height > 0 
+                                            ? metadata.autoPosition.targetVisualHeight / bbox.height 
+                                            : metadata.autoPosition.sourceScale;
                                         const newData = {
                                             ...data,
-                                            scale: metadata.autoPosition.scale,
+                                            scale: newScale,
                                             baselineOffset: metadata.autoPosition.baselineOffset,
                                             leftSideBearing: metadata.autoPosition.leftSideBearing,
                                             manualPosition: false,
@@ -1261,7 +1268,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                                         setData(newData);
                                         pushToHistory(newData);
                                     }}
-                                    disabled={!data.manualPosition && data.scale === metadata.autoPosition.scale && data.baselineOffset === metadata.autoPosition.baselineOffset && data.leftSideBearing === metadata.autoPosition.leftSideBearing}
+                                    disabled={!data.manualPosition}
                                     className={`flex-1 text-[9px] py-1.5 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-neutral-300 text-black hover:border-black'} disabled:opacity-40 disabled:cursor-not-allowed`}
                                 >
                                     Resetar para auto

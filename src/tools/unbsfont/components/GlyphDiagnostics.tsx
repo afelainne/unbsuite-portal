@@ -9,6 +9,7 @@ import {
   runFullDiagnostics,
   autoFixAllIssues,
   normalizeGlyphToReference,
+  autoNormalizeAllSizes,
   DiagnosticSummary,
   GlyphDiagnostic,
   DiagnosticSeverity
@@ -90,6 +91,14 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
       setLastFixResult(result);
       setIsFixing(false);
     }, 100);
+  }, [glyphs, metadata, onUpdateGlyph]);
+
+  const handleNormalizeAll = useCallback(() => {
+    const fixes = autoNormalizeAllSizes(glyphs, metadata);
+    for (const [char, fix] of fixes) {
+      onUpdateGlyph(char, fix);
+    }
+    setLastFixResult({ fixed: fixes.size, failed: 0 });
   }, [glyphs, metadata, onUpdateGlyph]);
 
   const handleFixSingle = useCallback((diag: GlyphDiagnostic) => {
@@ -195,6 +204,23 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
               </button>
             ))}
           </div>
+
+          {/* Normalize Sizes Button */}
+          <button
+            onClick={handleNormalizeAll}
+            className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition ${
+              isDarkMode 
+                ? 'bg-blue-600 hover:bg-blue-500 text-white' 
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 6H3M15 12H3M18 18H3" />
+              </svg>
+              Normalizar Tamanhos
+            </span>
+          </button>
 
           {/* Auto Fix Button */}
           <button
