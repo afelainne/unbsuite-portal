@@ -188,6 +188,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                 } else {
                     message = `Smart Auto-Kern: ${Object.keys(newKerning).length} pares gerados.`;
                 }
+                break;
             case 'professional': {
                 const profPairs = generateProfessionalKerning(glyphs, {
                     style: fontStyle,
