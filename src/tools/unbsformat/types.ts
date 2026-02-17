@@ -4,7 +4,7 @@ export interface FormatPreset {
   name: string;
   width: number;
   height: number;
-  category: 'PRINT' | 'SOCIAL MEDIA' | 'EDITORIAL' | 'PACKAGING' | 'SIGNAGE' | 'STATIONERY';
+  category: 'PRINT' | 'SOCIAL MEDIA' | 'EDITORIAL' | 'PACKAGING' | 'SIGNAGE' | 'STATIONERY' | 'PHOTO' | 'ADVERTISING' | 'SCREEN';
 }
 
 export interface PrintSettings {
