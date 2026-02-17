@@ -1,62 +1,94 @@
 
 
-# Corrigir SVG Export, Adicionar Grid Horizontal, e Expandir LinkedIn
+# Revisao Completa do Compact Mode - UNBSFONT
 
-## 3 Problemas Identificados
+## Problemas Identificados
 
-### 1. LinkedIn Personal vs Page
-Atualmente so existe um "LINKEDIN BANNER", "LINKEDIN POST" e "LINKEDIN STORY" genericos. O LinkedIn tem tamanhos diferentes para perfil pessoal e company page.
+### 1. Sliders de Espacamento nao afetam o Preview
+O slider "Entre Letras" atualiza `metadata.tracking`, mas o preview usa `getTrackingBetweenGlyphs()` que le de `trackingProfile.defaultTracking` -- um valor completamente separado. O slider muda um campo que ninguem le.
 
-**Novos formatos a adicionar:**
-- LINKEDIN PERSONAL COVER (1584x396px = 423.33x105.83mm)
-- LINKEDIN PERSONAL PHOTO (400x400px = 105.83x105.83mm)
-- LINKEDIN PAGE COVER (1128x191px = 298.45x50.53mm)
-- LINKEDIN PAGE LOGO (300x300px = 79.38x79.38mm)
-- LINKEDIN ARTICLE COVER (698x400px = 184.67x105.83mm)
-- LINKEDIN EVENT COVER (1776x444px = 469.90x117.48mm)
-- LINKEDIN CAROUSEL (1080x1080px = 285.75x285.75mm)
-- LINKEDIN AD SINGLE (1200x627px = 317.50x165.89mm)
+**Correcao:** Ao alterar o slider de letter spacing, atualizar `metadata.trackingProfile.defaultTracking` em vez de (ou alem de) `metadata.tracking`. Assim o preview reflete a mudanca imediatamente.
 
-Os existentes (`li_banner`, `li_post`, `li_story`) serao renomeados para maior clareza.
+### 2. Logo com transparencia
+O SVG do logo tem `fill="none"` no elemento raiz. Os paths internos usam `fill="currentColor"`, o que funciona, mas o fundo transparente do SVG pode causar efeitos visuais indesejados dependendo do contexto. Alem disso, nao ha problema de transparencia nos paths em si -- o problema pode ser a `opacity-70` aplicada no botao que contem o logo (linha 603: `className="opacity-70 hover:opacity-100"`).
 
-### 2. SVG Export quebrado
-O `downloadSVG` usa `document.querySelector('svg')` que pega o **primeiro SVG da pagina** -- que pode ser um icone do Lucide (nos botoes do toolbar). Mesmo que pegue o SVG correto, ele nao inclui o namespace XML necessario para um SVG standalone valido.
+**Correcao:** Remover `opacity-70` do botao do logo no header, deixando-o sempre com opacidade total.
 
-**Correcao:** Adicionar um `id` ou `ref` ao SVG do template e usar esse seletor especifico. Tambem adicionar `xmlns` no serializado e metadata do formato.
+### 3. Auto Config pode nao funcionar corretamente
+O `handleAutoConfig` (linha 294) funciona estruturalmente, mas tem um problema de sincronizacao: ele chama `onUpdateGlyph` em loop (que dispara re-renders individuais) e depois `onUpdateMetadata`. Alem disso, o resultado depende de glyphs terem pathData -- se poucos glyphs tem paths, o auto-config reporta sucesso mas faz pouco.
 
-### 3. Grid so vertical, sem linhas horizontais
-Atualmente o grid so desenha colunas verticais. Falta um controle de **Rows** (linhas horizontais) no header, igual ao slider de Columns. Os presets MODULAR ja setam `rows > 1`, mas o usuario nao tem controle manual.
+**Correcao:** Adicionar validacao previa (minimo de glyphs com path) e mostrar aviso claro se poucos glyphs estao preenchidos.
 
-**Correcao:** Adicionar slider de "Rows" no header control bar, ao lado do slider de Columns.
+### 4. Slider de Kerning Intensity nao reaplica automaticamente
+Ao mudar a intensidade do kerning (linha 1125-1133), o slider so muda o valor local `kerningIntensity` sem reaplicar o preset. O usuario precisa clicar "Reaplicar" manualmente.
+
+**Correcao:** Adicionar `useEffect` que reaplica o kerning quando a intensidade muda (com debounce).
+
+### 5. Inconsistencia no onUpdateMetadata
+Algumas chamadas usam forma funcional (`prev => ({...prev, ...})`) e outras passam objeto direto (`{...metadata, ...}`). A forma direta pode causar perda de dados se metadata mudar entre renders.
+
+**Correcao:** Padronizar todas as chamadas para usar a forma funcional com `prev =>`.
 
 ---
 
-## Mudancas tecnicas
+## Mudancas Tecnicas
 
-### `constants.ts`
-- Renomear/expandir os itens LinkedIn:
-  - `li_banner` -> `LINKEDIN PERSONAL COVER` (1584x396px)
-  - `li_post` -> `LINKEDIN POST` (manter)
-  - `li_story` -> `LINKEDIN STORY` (manter)
-  - Adicionar: `LINKEDIN PERSONAL PHOTO`, `LINKEDIN PAGE COVER`, `LINKEDIN PAGE LOGO`, `LINKEDIN ARTICLE COVER`, `LINKEDIN EVENT COVER`, `LINKEDIN CAROUSEL`, `LINKEDIN AD SINGLE`
+### `CompactEditor.tsx`
 
-### `TemplatePreview.tsx`
-- Adicionar `id="formatlab-canvas"` ao elemento `<svg>` do template
-- Isso garante que o export pega o SVG correto
+**A) Corrigir slider de letter spacing (Entre Letras)**
+Mudar `setLetterSpacing` para atualizar `trackingProfile.defaultTracking`:
 
-### `App.tsx`
-- Corrigir `downloadSVG`: usar `document.getElementById('formatlab-canvas')` em vez de `document.querySelector('svg')`
-- Adicionar header XML e doctype ao SVG exportado para compatibilidade
-- Adicionar slider de **Rows** no header, entre Columns e Gutter:
-  ```
-  [Columns: 12 ---|] [Rows: 1 ---|] [Gutter: 5mm ---|] [Safe: 5mm ---|]
-  ```
-
-### Resultado no header
-
-```text
-[Columns: 12] [Rows: 1] [Gutter: 5mm] [Safe: 5mm]   [GRID STYLES] [GRID] [SAFETY] [EXPORT SVG]
+```typescript
+const setLetterSpacing = useCallback((val: number) => {
+    onUpdateMetadata(prev => ({
+        ...prev,
+        tracking: val,
+        trackingProfile: {
+            ...(prev.trackingProfile || DEFAULT_TRACKING_PROFILES['body-text']),
+            defaultTracking: val,
+        }
+    }));
+}, [onUpdateMetadata]);
 ```
 
-O slider de Rows vai de 1 a 12, e ao mudar, o TemplatePreview ja renderiza as linhas horizontais (esse codigo ja existe no TemplatePreview, so faltava o controle).
+**B) Remover opacidade do logo**
+Linha 603: mudar `opacity-70 hover:opacity-100` para apenas `hover:opacity-80` ou remover completamente.
+
+**C) Padronizar onUpdateMetadata para forma funcional**
+Todas as chamadas diretas como `onUpdateMetadata({ ...metadata, familyName: e.target.value })` devem mudar para `onUpdateMetadata(prev => ({ ...prev, familyName: e.target.value }))`. Afeta linhas: ~610, ~1378, ~1387, ~1410, ~1424, ~1438.
+
+**D) Kerning intensity auto-reaplica**
+Adicionar useEffect com debounce de 300ms para reaplicar o preset de kerning quando `kerningIntensity` mudar:
+
+```typescript
+useEffect(() => {
+    if (kerningPreset === 'none') return;
+    const timer = setTimeout(() => {
+        applyKerningPreset(kerningPreset);
+    }, 300);
+    return () => clearTimeout(timer);
+}, [kerningIntensity]);
+```
+
+**E) Validacao no Auto Config**
+Antes de executar, verificar se ha pelo menos 5 glyphs com pathData. Caso contrario, mostrar aviso e nao prosseguir.
+
+### `AppLogo.tsx`
+Nenhuma mudanca necessaria -- o SVG em si esta correto. A transparencia vem do botao pai.
+
+---
+
+## Resumo das mudancas por arquivo
+
+| Arquivo | Mudanca |
+|---------|---------|
+| `CompactEditor.tsx` | Corrigir letter spacing para atualizar trackingProfile; remover opacity do logo; padronizar onUpdateMetadata; auto-reapply kerning intensity; validacao auto-config |
+
+## Ordem de execucao
+
+1. Corrigir `setLetterSpacing` para sincronizar com `trackingProfile.defaultTracking`
+2. Remover `opacity-70` do botao do logo
+3. Padronizar todas chamadas `onUpdateMetadata` para forma funcional
+4. Adicionar auto-reaplica de kerning ao mudar intensidade
+5. Adicionar validacao minima no auto-config
 
