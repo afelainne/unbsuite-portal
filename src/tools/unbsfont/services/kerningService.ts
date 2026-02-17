@@ -3,7 +3,7 @@
  * Sistema de kerning inteligente baseado em análise geométrica real dos glyphs.
  */
 
-import { GlyphData, ShapeCategory } from "../types";
+import { GlyphData } from "../types";
 import { 
   analyzeGlyphShape, 
   analyzeAllGlyphShapes, 
@@ -61,82 +61,8 @@ export const resolveKerningValue = (
 };
 
 // ============================================================================
-// MATRIZ DE KERNING LEGADA (FALLBACK)
+// GERAÇÃO DE KERNING INTELIGENTE (BASEADO EM GEOMETRIA REAL)
 // ============================================================================
-
-type KerningValue = number;
-
-const AUTO_KERN_MATRIX_GENERIC: Record<string, KerningValue> = {
-  "diagonal|diagonal": -80,
-  "diagonal|round":    -60,
-  "diagonal|straight": -30,
-  "diagonal|overhang": -40,
-  "straight|round":    -20,
-  "straight|diagonal": -20,
-  "straight|straight": 0,
-  "straight|overhang": -10,
-  "round|straight":    -15,
-  "round|diagonal":    -35,
-  "round|round":       -10,
-  "round|overhang":    -20,
-  "overhang|straight": -25,
-  "overhang|round":    -30,
-  "overhang|diagonal": -45,
-  "overhang|overhang": -20,
-};
-
-const AUTO_KERN_MATRIX_T_RIGHT: Record<ShapeCategory, KerningValue> = {
-  straight: -20,
-  diagonal: -90,
-  round:    -60,
-  overhang: -40,
-};
-
-const AUTO_KERN_MATRIX_VWY_RIGHT: Record<ShapeCategory, KerningValue> = {
-  straight: -15,
-  diagonal: -80,
-  round:    -55,
-  overhang: -35,
-};
-
-const AUTO_KERN_MATRIX_F_RIGHT: Record<ShapeCategory, KerningValue> = {
-  straight: -10,
-  diagonal: -50,
-  round:    -40,
-  overhang: -25,
-};
-
-const AUTO_KERN_MATRIX_L_RIGHT: Record<ShapeCategory, KerningValue> = {
-  straight: 0,
-  diagonal: -60,
-  round: -20,
-  overhang: -70
-};
-
-const AUTO_KERN_MATRIX_PER_RIGHT_CLASS: Record<string, Partial<Record<ShapeCategory, KerningValue>>> = {
-  "T": AUTO_KERN_MATRIX_T_RIGHT,
-  "V": AUTO_KERN_MATRIX_VWY_RIGHT,
-  "W": AUTO_KERN_MATRIX_VWY_RIGHT,
-  "Y": AUTO_KERN_MATRIX_VWY_RIGHT,
-  "F": AUTO_KERN_MATRIX_F_RIGHT,
-  "L": AUTO_KERN_MATRIX_L_RIGHT,
-  "f": { round: -30, straight: -10 },
-  "r": { round: -20, straight: -10 },
-};
-
-function getBaseKernFromShapes(
-  leftShape: ShapeCategory,
-  rightShape: ShapeCategory,
-  originRightGroup?: string
-): KerningValue | undefined {
-  if (originRightGroup && AUTO_KERN_MATRIX_PER_RIGHT_CLASS[originRightGroup]) {
-    const classMatrix = AUTO_KERN_MATRIX_PER_RIGHT_CLASS[originRightGroup]!;
-    const specific = classMatrix[rightShape];
-    if (specific !== undefined) return specific;
-  }
-  const key = `${leftShape}|${rightShape}`;
-  return AUTO_KERN_MATRIX_GENERIC[key];
-}
 
 // ============================================================================
 // GERAÇÃO DE KERNING INTELIGENTE (BASEADO EM GEOMETRIA REAL)
@@ -200,12 +126,12 @@ export const generateSmartAutoKerning = (
     if (!profile) continue;
     
     // Glyphs com overhang ou diagonal à direita causam problemas
-    if (profile.hasRightOverhang || profile.hasRightDiagonal || profile.rightNegativeSpace > 0.25) {
+    if (profile.hasRightOverhang || profile.hasRightDiagonal || profile.rightNegativeSpace > 0.15) {
       problematicLeft.add(glyph.char);
     }
     
     // Glyphs com diagonal ou curva à esquerda podem se beneficiar de kerning
-    if (profile.hasLeftDiagonal || profile.hasLeftCurve || profile.leftNegativeSpace > 0.25) {
+    if (profile.hasLeftDiagonal || profile.hasLeftCurve || profile.leftNegativeSpace > 0.15) {
       problematicRight.add(glyph.char);
     }
   }

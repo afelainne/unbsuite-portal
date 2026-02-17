@@ -170,8 +170,24 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                     includePunctuation: true,
                     onlyMissingPairs: true,
                 });
-                message = `Smart Auto-Kern: ${Object.keys(newKerning).length} pares gerados.`;
-                break;
+                // Fallback to professional if smart returns too few pairs
+                if (Object.keys(newKerning).length < 10) {
+                    const profPairs = generateProfessionalKerning(glyphs, {
+                        style: fontStyle,
+                        intensity: autoKernIntensity,
+                        includeNumbers: true,
+                        includePunctuation: true,
+                    });
+                    profPairs.forEach(p => {
+                        const key = `${p.left}${p.right}`;
+                        if (newKerning[key] === undefined) {
+                            newKerning[key] = p.value;
+                        }
+                    });
+                    message = `Smart + Fallback Pro: ${Object.keys(newKerning).length} pares gerados.`;
+                } else {
+                    message = `Smart Auto-Kern: ${Object.keys(newKerning).length} pares gerados.`;
+                }
             case 'professional': {
                 const profPairs = generateProfessionalKerning(glyphs, {
                     style: fontStyle,
@@ -222,8 +238,6 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
         let newKerning = applyKerningTemplate(template, metadata.kerning, {
             scale: templateScale,
             overwrite: true,
-            uppercase: true,
-            lowercase: true,
         });
 
         if (blendWithGeometry) {

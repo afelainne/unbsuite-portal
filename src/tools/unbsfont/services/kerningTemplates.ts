@@ -935,15 +935,11 @@ export const applyKerningTemplate = (
   options: {
     scale?: number;        // Fator de escala (1.0 = original)
     overwrite?: boolean;   // Sobrescrever valores existentes
-    uppercase?: boolean;   // Incluir versões uppercase
-    lowercase?: boolean;   // Incluir versões lowercase
   } = {}
 ): Record<string, number> => {
   const { 
     scale = 1.0, 
     overwrite = false,
-    uppercase = true,
-    lowercase = true
   } = options;
   
   const result = { ...existingKerning };
@@ -951,25 +947,8 @@ export const applyKerningTemplate = (
   for (const [pair, value] of Object.entries(template.pairs)) {
     const scaledValue = Math.round(value * scale);
     
-    // Par original
     if (overwrite || result[pair] === undefined) {
       result[pair] = scaledValue;
-    }
-    
-    // Versão uppercase
-    if (uppercase) {
-      const upperPair = pair.toUpperCase();
-      if (upperPair !== pair && (overwrite || result[upperPair] === undefined)) {
-        result[upperPair] = scaledValue;
-      }
-    }
-    
-    // Versão lowercase
-    if (lowercase) {
-      const lowerPair = pair.toLowerCase();
-      if (lowerPair !== pair && (overwrite || result[lowerPair] === undefined)) {
-        result[lowerPair] = scaledValue;
-      }
     }
   }
   
