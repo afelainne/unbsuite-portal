@@ -161,12 +161,21 @@ const App: React.FC = () => {
         }
     }, [sendObfuscationTraffic]);
 
+    const updateBatchSlot0 = useCallback((newHex: string) => {
+        setBatchColors((prev) => {
+            const updated = [...prev];
+            updated[0] = newHex;
+            return updated;
+        });
+    }, []);
+
     const handleRgbChange = (channel: 'r' | 'g' | 'b', value: number) => {
         const newRgb = { ...rgb, [channel]: value };
         setRgb(newRgb);
         const newHex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
         setHex(newHex);
         updateDerivedFromRgb(newRgb, newHex);
+        updateBatchSlot0(newHex);
     };
 
     const handleCmykChange = (channel: keyof CMYK, value: number) => {
@@ -179,6 +188,7 @@ const App: React.FC = () => {
         setHsl(rgbToHsl(newRgb));
         setHsv(rgbToHsv(newRgb));
         setLab(hexToLab(newHex));
+        updateBatchSlot0(newHex);
     };
 
     const handleHslChange = (channel: keyof HSL, value: number) => {
@@ -191,6 +201,7 @@ const App: React.FC = () => {
         setCmyk(rgbToCmyk(newRgb));
         setHsv(rgbToHsv(newRgb));
         setLab(hexToLab(newHex));
+        updateBatchSlot0(newHex);
     };
 
     const handleBatchColorUpdate = (index: number, newHex: string) => {
