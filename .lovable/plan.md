@@ -1,87 +1,114 @@
 
-# Fix: Canvas Zoom, Pan e Fit-to-View no UNBSFORMAT
+# Remover AI Review, Academy e Expandir Categorias de Formatos
 
-## Problema
+## O que muda
 
-O canvas SVG usa dimensoes fixas em pixels (`width={vbW} height={vbH}`), que para formatos como A4 geram um SVG de ~816x1145px. Isso ultrapassa a area visivel e o conteudo fica cortado.
+1. **Remover AI Technical Review** -- todo o painel direito (aside) com o Gemini analysis, paper recommendations, archive presets e system presets sera removido. Tambem remover os imports e estados relacionados (isAnalyzing, analysis, geminiService import, etc).
 
-## Solucao
+2. **Remover botao "GO TO ACADEMY"** da Sidebar (nao funciona).
 
-Adicionar navegacao completa ao TemplatePreview: **auto-fit**, **zoom** (scroll wheel), **pan** (Alt+drag ou middle-click) e **botoes de controle** -- seguindo o mesmo padrao do PreviewCanvas do unbsgrid.
+3. **Remover UPLOAD ART** do header (era vinculado ao AI review).
 
-## Mudancas
+4. **Expandir FORMAT_PRESETS** com muitas novas categorias e formatos.
 
-### Arquivo: `TemplatePreview.tsx`
+5. **Sidebar com categorias colapsaveis** usando estado local de toggle.
 
-**Auto-fit na montagem**: calcular o zoom inicial para que o SVG inteiro caiba na area visivel com padding, usando `Math.min(containerW / vbW, containerH / vbH) * 0.9`.
+---
 
-**Estado de navegacao**:
-- `zoom` (number, default calculado para fit)
-- `panOffset` ({x, y}, default {0, 0})
-- `isPanning` (boolean)
+## Novos formatos e categorias
 
-**SVG responsivo**: Em vez de `width={vbW} height={vbH}` fixo, usar `width={vbW * zoom} height={vbH * zoom}` com `transform: translate(panX, panY)` no container.
+### PRINT (existente, expandido)
+- A0-A6 (ja existem)
+- Business Card INTL / US (ja existem)
+- **Novos**: DL Envelope, C5 Envelope, A4 Landscape, A3 Landscape, Letter (US), Legal (US), Tabloid (US), Half Letter
 
-**Eventos**:
-- `onWheel`: zoom in/out (0.1 a 5x)
-- `onMouseDown` (Alt+click ou middle-click): inicia pan
-- `onMouseMove`: atualiza pan offset
-- `onMouseUp`: finaliza pan
-- `ResizeObserver`: recalcula fit quando o container muda de tamanho
+### EDITORIAL
+- Book Cover (156x234mm)
+- Pocket Book (110x178mm)
+- Magazine Spread (420x297mm)
+- CD Booklet (120x120mm)
+- Vinyl Cover (315x315mm)
+- DVD Cover (184x273mm)
 
-**Toolbar de navegacao** (acima do canvas, estilo unbsgrid):
-- Botoes: Zoom In (+), Zoom Out (-), Fit to Screen, Reset
-- Indicador de zoom atual (ex: "75%")
-- Dica "Alt+Drag" para pan
-- Coordenadas do cursor
+### PACKAGING
+- Label (100x50mm)
+- Hang Tag (55x90mm)
+- Box Lid (200x200mm)
+- Wine Label (90x120mm)
+- Soap Wrap (210x80mm)
 
-**Fit to Screen**: funcao que recalcula o zoom para o SVG caber inteiro na area visivel. Chamada automaticamente ao mudar de formato.
+### SIGNAGE
+- Banner (1000x500mm)
+- Roll-Up (850x2000mm)
+- Billboard 4-Sheet (1016x1524mm)
+- A-Frame (600x900mm)
+- Table Tent (100x210mm)
 
-### Estrutura do componente atualizado
+### SOCIAL MEDIA (existente, expandido)
+- Instagram Square / Portrait (ja existem)
+- **Novos**: Instagram Story (285.75x507.94mm @96dpi), Facebook Cover (222.25x82.02mm), Facebook Post (167.64x167.64mm), Twitter/X Header (396.88x132.29mm), Twitter/X Post (167.64x167.64mm), LinkedIn Banner (414.69x108.73mm), YouTube Thumbnail (340.36x191.45mm), Pinterest Pin (167.64x251.46mm), TikTok Cover (285.75x507.94mm)
 
-```text
-<div className="flex-1 flex flex-col">
-    <!-- Toolbar: [+] [-] [Fit] [Reset] | Alt+Drag | 75% -->
-    <div className="toolbar">...</div>
-    
-    <!-- Canvas area com overflow hidden -->
-    <div ref={containerRef} 
-         className="flex-1 overflow-hidden"
-         onWheel={handleWheel}
-         onMouseDown={handleMouseDown}
-         onMouseMove={handleMouseMove}
-         onMouseUp={handleMouseUp}>
-        
-        <!-- SVG com transform para zoom+pan -->
-        <div style={{ transform: translate(panX, panY) }}>
-            <svg width={vbW * zoom} height={vbH * zoom} 
-                 viewBox="0 0 {vbW} {vbH}">
-                ... (conteudo existente inalterado)
-            </svg>
-        </div>
-    </div>
-</div>
+### STATIONERY
+- Letterhead A4 (210x297mm)
+- Envelope DL (220x110mm)
+- Compliment Slip (210x99mm)
+- Notecard (A6 105x148mm)
+- Bookmark (50x150mm)
+- Certificate (297x210mm)
+
+---
+
+## Mudancas tecnicas
+
+### types.ts
+Expandir o tipo `category` para incluir todas as novas categorias:
+```
+category: 'PRINT' | 'SOCIAL MEDIA' | 'EDITORIAL' | 'PACKAGING' | 'SIGNAGE' | 'STATIONERY';
 ```
 
-### Comportamento
+### constants.ts
+Adicionar todos os novos presets ao array FORMAT_PRESETS.
 
-| Acao | Resultado |
-|------|-----------|
-| Abrir / mudar formato | Auto-fit: SVG cabe inteiro com margem |
-| Scroll wheel | Zoom in/out (10% por step, range 10%-500%) |
-| Alt + arrastar | Pan (mover canvas livremente) |
-| Middle-click + arrastar | Pan (alternativo) |
-| Botao Fit | Recentraliza e auto-fit |
-| Botao Reset | Zoom 100%, pan (0,0) |
-| Botao + / - | Zoom step de 25% |
+### Sidebar.tsx
+- Remover botao "GO TO ACADEMY" e a secao de dimensoes fixas no rodape.
+- Agrupar formatos por categoria dinamicamente.
+- Cada categoria e colapsavel com um toggle (estado local `openCategories` como Set).
+- Clicar no header da categoria abre/fecha a lista.
+- Icone de seta (ChevronDown/ChevronRight) indica estado.
 
-### Ordem de execucao
+### App.tsx
+- Remover o aside inteiro (painel direito com AI Review).
+- Remover estados: `isAnalyzing`, `analysis`, `uploadedImage`.
+- Remover `fileInputRef` e `handleFileChange`.
+- Remover import de `analyzePrintImage` do geminiService.
+- Remover botao UPLOAD ART do header.
+- Remover imports nao utilizados (Loader2, FileText, AlertTriangle, Settings, Upload).
+- O TemplatePreview agora ocupa toda a area disponivel sem o aside.
 
-| # | Tarefa |
-|---|--------|
-| 1 | Adicionar estados zoom, panOffset, isPanning ao TemplatePreview |
-| 2 | Adicionar containerRef e ResizeObserver para calcular fit inicial |
-| 3 | Mudar SVG de dimensoes fixas para zoom responsivo |
-| 4 | Adicionar handlers de wheel, mouseDown, mouseMove, mouseUp |
-| 5 | Adicionar toolbar com botoes de zoom, fit e reset |
-| 6 | Recalcular fit automaticamente ao mudar de formato (preset) |
+### geminiService.ts
+Manter o arquivo (nao deletar), pois pode ser reutilizado no futuro, mas nao sera mais importado.
+
+---
+
+## Resultado visual
+
+```text
++--SIDEBAR (colapsavel)------+---HEADER CONTROLS---+
+| FORMAT LAB                 | Cols | Gutter | Safe |
+|                            | [GRID] [SAFETY]     |
+| > PRINT (click to toggle)  | [EXPORT SVG]        |
+|   A0 POSTER     841x1189  |---------------------+
+|   A1 POSTER     594x841   |                     |
+|   ...                      |   TEMPLATE PREVIEW  |
+| > EDITORIAL                |   (full width now)  |
+|   Book Cover    156x234   |                     |
+|   ...                      |                     |
+| > PACKAGING                |                     |
+|   Label         100x50    |                     |
+| > SIGNAGE                  |                     |
+| > SOCIAL MEDIA             |                     |
+| > STATIONERY               |                     |
++----------------------------+---------------------+
+| FOOTER: UNITS MM | SCALE 1:1 | LIVE              |
++---------------------------------------------------+
+```
