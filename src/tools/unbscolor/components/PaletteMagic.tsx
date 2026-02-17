@@ -553,15 +553,19 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                           style={{ backgroundColor: c }}
                           onClick={() => {
                             if (selectedSourceColor) {
-                              // Inject source color into this slot and lock it
+                              // Inject source color into this slot and ALWAYS lock it
                               const newColors = [...palette.colors];
                               newColors[ci] = selectedSourceColor;
                               const contrast = avgContrast(newColors);
                               const best = bestPairContrast(newColors);
                               setPalettes(prev => prev.map(p => p.id === palette.id ? { ...p, colors: newColors, contrastRatio: contrast, wcagPass: best >= 4.5 } : p));
-                              toggleLock(palette.id, ci, selectedSourceColor);
+                              // Force lock (don't toggle — always set)
+                              setLockedColors(prev => ({
+                                ...prev,
+                                [palette.id]: { ...(prev[palette.id] || {}), [ci]: selectedSourceColor }
+                              }));
                               setSelectedSourceColor(null);
-                              showFeedback('Color injected ✓');
+                              showFeedback('Color injected & locked ✓');
                             } else {
                               setExpandedId(isExpanded ? null : palette.id);
                             }
