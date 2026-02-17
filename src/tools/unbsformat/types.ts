@@ -4,15 +4,15 @@ export interface FormatPreset {
   name: string;
   width: number;
   height: number;
-  category: 'PRINT' | 'SOCIAL MEDIA';
+  category: 'PRINT' | 'SOCIAL MEDIA' | 'EDITORIAL' | 'PACKAGING' | 'SIGNAGE' | 'STATIONERY';
 }
 
 export interface PrintSettings {
-  bleed: number; // mm
-  safeZone: number; // mm
+  bleed: number;
+  safeZone: number;
   columns: number;
   rows: number;
-  gutter: number; // mm
+  gutter: number;
 }
 
 export interface PaperRecommendation {
