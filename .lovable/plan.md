@@ -1,83 +1,103 @@
 
 
-# Correcoes: Upload de imagem global no UNBSCOLOR + Layout do header do UNBSFORMAT
+# Correcao e Expansao do UNBSMOCKUP
 
-## 1. UNBSCOLOR -- Upload de imagem (SVG + raster) disponivel globalmente
+## Problemas Identificados
 
-Atualmente o upload de SVG so esta disponivel via `PaletteGenerator` no header, e o upload de imagem raster so existe no Palette Magic. A mudanca e unificar ambos num unico componente de upload no header que aceita **SVG + JPG/PNG/WEBP**, e distribuir as cores extraidas para todas as abas (Matcher, Multi-Slot, Generated Palettes, Print Guide, etc.).
+1. **Templates sociais bugados**: O Twitter/X Post tem icones na posicao y=274 com viewBox de altura 280, cortando os icones. O Facebook Post tem icones na y=334 com viewBox de 360, tambem apertados.
+2. **Cards de preview muito grandes**: Padding p-3, grid 2 colunas, preview com maxHeight 60px ocupam espaco excessivo.
+3. **Categorias nao colapsaveis**: Com 23+ templates, a lista fica muito longa e dificil de navegar.
+4. **Poucos templates**: Faltam variantes populares.
 
-### Mudancas em `src/tools/unbscolor/components/PaletteGenerator.tsx`
+## Solucao
 
-- Expandir o `accept` do file input para aceitar tambem `image/jpeg, image/png, image/webp` alem de `.svg`
-- Ao receber um arquivo:
-  - Se for SVG: usar `extractColorsFromSvg` (logica atual)
-  - Se for imagem raster (JPG/PNG/WEBP): usar `extractDominantColors` do `imageExtraction.ts`
-- As cores extraidas sao injetadas via `onColorSelect` (primeiro cor) e `onPaletteDetected` (todas as cores)
-- Atualizar o label do botao para indicar que aceita SVG e imagens
-- Atualizar o `accept` para `.svg,image/svg+xml,image/jpeg,image/png,image/webp`
+### A) Correcao dos templates sociais bugados
 
-Isso garante que o upload no header funciona para SVG e imagens, e as cores sao distribuidas para todas as tabs porque `onPaletteDetected` chama `setBatchColors` e `handleHexChange` no `App.tsx`.
+**Twitter/X Post**: Aumentar viewBox para `0 0 500 300` (era 280), mover icones para y=284, ajustar screen height para 210. Isso da espaco para os icones renderizarem sem corte.
 
-### Mudancas em `src/tools/unbscolor/App.tsx`
+**Facebook Post**: Verificar que os icones de like/comment/share estao dentro do viewBox com margem. Ajustar viewBox para `0 0 500 380` se necessario.
 
-Nenhuma mudanca necessaria -- o `PaletteGenerator` ja esta conectado ao `handleHexChange` e `setBatchColors` que alimentam todas as abas.
+### B) TemplatePicker colapsavel + cards menores
 
----
+- Usar `Collapsible` do Radix (ja disponivel em `src/components/ui/collapsible.tsx`)
+- Cada categoria sera um `Collapsible` com seta de toggle
+- Categoria do template selecionado fica aberta por padrao
+- Grid muda de `grid-cols-2` para `grid-cols-3`
+- Padding do card reduz de `p-3` para `p-1.5`
+- maxHeight do SVG preview reduz de `60px` para `36px`
+- Nome do template reduz de `text-[10px]` para `text-[8px]`
+- Remove `aspect-[4/3]` e `mb-2` para compactar
 
-## 2. UNBSFORMAT -- Correcao do layout do header (sliders na mesma linha)
+### C) Novos templates (adicionar ~15 mais)
 
-O bug esta na estrutura HTML das linhas 73-98 do `App.tsx` do UNBSFORMAT. O `<div>` que envolve "Columns" nao esta fechado antes de "Rows" comecar, fazendo com que Rows fique aninhado dentro de Columns (um sobre o outro). Os 4 controles (Columns, Rows, Gutter, Safe Margin) devem estar todos no mesmo nivel como filhos diretos do flex container.
+**Mobile (novos):**
+- Google Pixel (390x844, camera pill centralizada, bordas finas)
+- Samsung Galaxy (392x850, camera punch-hole canto, bordas minimas)
 
-### Mudanca em `src/tools/unbsformat/App.tsx`
+**Laptop (novo):**
+- Chromebook (880x560, bordas arredondadas, sem trackpad, camera centralizada)
 
-Corrigir a estrutura HTML do header (linhas 73-98):
+**Tablet (novo):**
+- Android Tablet (800x534, bordas finas, camera lateral)
 
-**Antes (bugado):**
-```
-<div flex-col>  // Columns wrapper
-  <div flex>    // Columns slider
-    // Missing closing </div> for Columns wrapper here!
-    <div flex-col>  // Rows wrapper (nested inside Columns!)
-      ...
-    </div>
-  </div>        // This closes Columns slider div but is misplaced
-</div>          // This closes Columns wrapper
-```
+**Web (novos):**
+- Safari Browser (bordas arredondadas, barra unificada cinza clara)
+- Firefox Browser (barra compacta, tabs arredondadas)
 
-**Depois (corrigido):**
-```
-<div flex-col>   // Columns
-  <span>Columns</span>
-  <div flex>...</div>
-</div>           // Closed properly
+**Social (novos):**
+- LinkedIn Post (500x360, header corporativo, botoes Like/Comment/Repost/Send)
+- TikTok Video (360x640, icones laterais de coracao/comment/share/bookmark)
+- Pinterest Pin (340x510, borda arredondada, botao Save vermelho)
+- WhatsApp Status (360x640, header verde com seta e info)
+- Threads Post (500x300, estilo similar ao Twitter mas com bordas mais suaves)
+- Dribbble Shot (400x300, borda rosa, 4:3)
 
-<div flex-col>   // Rows
-  <span>Rows</span>
-  <div flex>...</div>
-</div>           // Separate sibling
+**Print (novos):**
+- A4 Landscape (594x420, margem de seguranca)
+- Letter Size (510x660, US standard)
+- CD Cover (480x480, jewel case com bordas)
 
-<div flex-col>   // Gutter
-  ...
-</div>
+**Wearable (novo):**
+- Fitness Band (180x400, tela longa e estreita)
 
-<div flex-col>   // Safe Margin
-  ...
-</div>
-```
-
-Todos os 4 controles ficam como filhos diretos do `<div className="flex gap-12 items-center">`, alinhados horizontalmente na mesma linha.
+Total estimado: ~23 existentes + ~15 novos = ~38 templates
 
 ---
 
-## Resumo de arquivos
+## Arquivos Modificados
+
+### `src/tools/unbsmockup/templates.ts`
+- Corrigir viewBox e posicao dos icones no Twitter/X Post (viewBox `0 0 500 300`)
+- Corrigir Facebook Post se necessario
+- Adicionar ~15 novos templates com SVG frames detalhados
+- Adicionar icones `send`, `repost`, `save` ao SVG_ICONS para LinkedIn/TikTok/Pinterest
+- Adicionar editableFields para novos templates sociais (LinkedIn, TikTok, etc.)
+
+### `src/tools/unbsmockup/components/TemplatePicker.tsx`
+- Importar `Collapsible, CollapsibleTrigger, CollapsibleContent` de `@/components/ui/collapsible`
+- Cada categoria vira um Collapsible com ChevronDown animado
+- Grid muda para 3 colunas
+- Cards ficam compactos: padding `p-1.5`, preview max `36px`, texto `text-[8px]`
+- Categoria do template selecionado abre automaticamente
+
+### `src/tools/unbsmockup/components/DeviceFrame.tsx`
+- Sem mudancas necessarias (ja suporta editableFields e avatarSrc)
+
+### `src/tools/unbsmockup/App.tsx`
+- Sem mudancas necessarias
+
+---
+
+## Resumo Tecnico
 
 | Arquivo | Mudanca |
 |---------|---------|
-| `src/tools/unbscolor/components/PaletteGenerator.tsx` | Aceitar SVG + imagens raster, usar extractDominantColors para JPG/PNG/WEBP |
-| `src/tools/unbsformat/App.tsx` | Corrigir aninhamento dos divs de Columns/Rows para ficarem na mesma linha horizontal |
+| `templates.ts` | Corrigir Twitter/Facebook viewBox/icones, +15 novos templates, novos SVG_ICONS |
+| `TemplatePicker.tsx` | Collapsible por categoria, grid 3 cols, cards compactos |
 
-## Ordem de execucao
+## Ordem de Execucao
 
-1. Corrigir layout do header do UNBSFORMAT
-2. Expandir PaletteGenerator para aceitar imagens raster
+1. Corrigir templates bugados (Twitter, Facebook)
+2. Adicionar novos SVG_ICONS e templates
+3. Refatorar TemplatePicker com Collapsible e cards menores
 
