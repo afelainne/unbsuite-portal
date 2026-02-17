@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import UnbsToolsLogo from "@/components/UnbsToolsLogo";
-import { Palette, LayoutGrid, Type, FileText, Plus, Shield } from "lucide-react";
+import { Palette, LayoutGrid, Type, FileText, Monitor, ALargeSmall, Plus, Shield } from "lucide-react";
 
 const tools = [
   {
@@ -29,6 +29,20 @@ const tools = [
     description: "Assistente de impressão",
     icon: FileText,
     path: "/unbsformat",
+    label: "NEW",
+  },
+  {
+    name: "UNBSMOCKUP",
+    description: "Gerador de mockups",
+    icon: Monitor,
+    path: "/unbsmockup",
+    label: "NEW",
+  },
+  {
+    name: "UNBSTYPE",
+    description: "Pares tipográficos",
+    icon: ALargeSmall,
+    path: "/unbstype",
     label: "NEW",
   },
 ];

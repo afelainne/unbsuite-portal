@@ -110,6 +110,22 @@ export const extractColorsFromSvg = (svgContent: string): string[] => {
   return Array.from(colorSet);
 };
 
+/**
+ * Extract dominant colors from a raster image File (JPG/PNG/WEBP).
+ * Reads as dataURL, draws to a small canvas, then clusters by proximity.
+ */
+export const extractDominantColors = (file: File, maxColors: number = 8): Promise<string[]> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (!e.target?.result) return reject('Failed to read file');
+      extractColorsFromImage(e.target.result as string, maxColors).then(resolve).catch(reject);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 // Keep legacy function for backward compatibility but it's no longer used
 export const extractColorsFromImage = (imageSrc: string, maxColors: number = 6): Promise<string[]> => {
   return new Promise((resolve, reject) => {
