@@ -80,7 +80,9 @@ export const measurePathBBox = (pathData: string): { x: number; y: number; width
     let match;
     
     while ((match = cmdRegex.exec(pathData)) !== null) {
-      const cmd = match[1].toUpperCase();
+      const rawCmd = match[1];
+      const cmd = rawCmd.toUpperCase();
+      const isRelative = rawCmd !== cmd;
       const args = match[2];
       if (!args && cmd !== 'Z') continue;
       
@@ -95,67 +97,68 @@ export const measurePathBBox = (pathData: string): { x: number; y: number; width
       if (cmd === 'M' || cmd === 'L') {
         for (let i = 0; i < nums.length; i += 2) {
           if (i + 1 < nums.length) {
-            currentX = nums[i];
-            currentY = nums[i + 1];
+            if (isRelative) { currentX += nums[i]; currentY += nums[i + 1]; }
+            else { currentX = nums[i]; currentY = nums[i + 1]; }
             coords.push({ x: currentX, y: currentY });
           }
         }
       } else if (cmd === 'H') {
-        // Horizontal line - só X muda
         for (const x of nums) {
-          currentX = x;
+          if (isRelative) currentX += x; else currentX = x;
           coords.push({ x: currentX, y: currentY });
         }
       } else if (cmd === 'V') {
-        // Vertical line - só Y muda
         for (const y of nums) {
-          currentY = y;
+          if (isRelative) currentY += y; else currentY = y;
           coords.push({ x: currentX, y: currentY });
         }
       } else if (cmd === 'C') {
         for (let i = 0; i < nums.length; i += 6) {
           if (i + 5 < nums.length) {
-            coords.push({ x: nums[i], y: nums[i + 1] });
-            coords.push({ x: nums[i + 2], y: nums[i + 3] });
-            currentX = nums[i + 4];
-            currentY = nums[i + 5];
+            const ox = isRelative ? currentX : 0;
+            const oy = isRelative ? currentY : 0;
+            coords.push({ x: ox + nums[i], y: oy + nums[i + 1] });
+            coords.push({ x: ox + nums[i + 2], y: oy + nums[i + 3] });
+            currentX = ox + nums[i + 4];
+            currentY = oy + nums[i + 5];
             coords.push({ x: currentX, y: currentY });
           }
         }
       } else if (cmd === 'S') {
-        // Smooth cubic - 4 argumentos por segmento
         for (let i = 0; i < nums.length; i += 4) {
           if (i + 3 < nums.length) {
-            coords.push({ x: nums[i], y: nums[i + 1] });
-            currentX = nums[i + 2];
-            currentY = nums[i + 3];
+            const ox = isRelative ? currentX : 0;
+            const oy = isRelative ? currentY : 0;
+            coords.push({ x: ox + nums[i], y: oy + nums[i + 1] });
+            currentX = ox + nums[i + 2];
+            currentY = oy + nums[i + 3];
             coords.push({ x: currentX, y: currentY });
           }
         }
       } else if (cmd === 'Q') {
         for (let i = 0; i < nums.length; i += 4) {
           if (i + 3 < nums.length) {
-            coords.push({ x: nums[i], y: nums[i + 1] });
-            currentX = nums[i + 2];
-            currentY = nums[i + 3];
+            const ox = isRelative ? currentX : 0;
+            const oy = isRelative ? currentY : 0;
+            coords.push({ x: ox + nums[i], y: oy + nums[i + 1] });
+            currentX = ox + nums[i + 2];
+            currentY = oy + nums[i + 3];
             coords.push({ x: currentX, y: currentY });
           }
         }
       } else if (cmd === 'T') {
-        // Smooth quadratic - 2 argumentos por segmento
         for (let i = 0; i < nums.length; i += 2) {
           if (i + 1 < nums.length) {
-            currentX = nums[i];
-            currentY = nums[i + 1];
+            if (isRelative) { currentX += nums[i]; currentY += nums[i + 1]; }
+            else { currentX = nums[i]; currentY = nums[i + 1]; }
             coords.push({ x: currentX, y: currentY });
           }
         }
       } else if (cmd === 'A') {
-        // Arc - 7 argumentos por segmento, pegar o ponto final
         for (let i = 0; i < nums.length; i += 7) {
           if (i + 6 < nums.length) {
-            currentX = nums[i + 5];
-            currentY = nums[i + 6];
+            if (isRelative) { currentX += nums[i + 5]; currentY += nums[i + 6]; }
+            else { currentX = nums[i + 5]; currentY = nums[i + 6]; }
             coords.push({ x: currentX, y: currentY });
           }
         }
@@ -401,7 +404,7 @@ const diagnoseGlyph = (
       message: `Advance width (${advanceWidth}) muito pequeno`,
       suggestion: `Aumentar width para pelo menos ${MIN_ADVANCE_WIDTH}`,
       autoFixAvailable: true,
-      autoFixAction: () => ({ advanceWidth: Math.round(bbox.width * scale + lsb * 2) })
+      autoFixAction: () => ({ advanceWidth: Math.round(bbox.width * scale + Math.abs(lsb) * 2) })
     });
   } else if (advanceWidth > MAX_ADVANCE_WIDTH) {
     diagnostics.push({
@@ -412,7 +415,7 @@ const diagnoseGlyph = (
       message: `Advance width (${advanceWidth}) muito grande`,
       suggestion: `Reduzir width para um valor razoável`,
       autoFixAvailable: true,
-      autoFixAction: () => ({ advanceWidth: Math.round(bbox.width * scale + lsb * 2) })
+      autoFixAction: () => ({ advanceWidth: Math.round(bbox.width * scale + Math.abs(lsb) * 2) })
     });
   }
   
@@ -441,31 +444,7 @@ const diagnoseGlyph = (
     });
   }
   
-  // 7. INFO: svgViewBox ausente (glyphs antigos)
-  if (!glyph.svgViewBox) {
-    diagnostics.push({
-      glyphChar: glyph.char,
-      glyphName: glyph.name,
-      severity: 'info',
-      code: 'NO_VIEWBOX',
-      message: 'Glyph sem svgViewBox (formato antigo)',
-      suggestion: 'Re-colar o SVG para atualizar o formato',
-      autoFixAvailable: false
-    });
-  }
-  
-  // 8. ERRO: Path não começa em origem
-  if (bbox && (bbox.x < -10 || bbox.y < -10 || bbox.x > 100 || bbox.y > 100)) {
-    diagnostics.push({
-      glyphChar: glyph.char,
-      glyphName: glyph.name,
-      severity: 'info',
-      code: 'PATH_NOT_AT_ORIGIN',
-      message: `Path não está na origem (x: ${bbox.x.toFixed(0)}, y: ${bbox.y.toFixed(0)})`,
-      suggestion: 'Re-colar o SVG para renormalizar o path',
-      autoFixAvailable: false
-    });
-  }
+  // Removed NO_VIEWBOX and PATH_NOT_AT_ORIGIN diagnostics - they generated noise without actionable value
   
   return diagnostics;
 };

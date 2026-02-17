@@ -777,15 +777,28 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         </div>
                         <div 
                             className={`p-4 rounded-xl border flex items-center justify-center overflow-auto ${cardBg}`}
-                            style={{ lineHeight: 1 + (lineGap / (metadata.unitsPerEm || 1000)), minHeight: '120px', maxHeight: '280px' }}
+                            style={{ minHeight: '120px', maxHeight: '280px' }}
                         >
-                        <div 
-                                className="flex flex-wrap items-end justify-center" 
-                                style={{ 
-                                    fontSize,
-                                    // Fix: NO letterSpacing/wordSpacing in CSS - handled manually per glyph
-                                }}
-                            >
+                        {(() => {
+                                const upm = metadata.unitsPerEm || 1000;
+                                const ascender = metadata.ascender || 800;
+                                const descender = Math.abs(metadata.descender || -200);
+                                const lineBodyHeight = fontSize * (ascender + descender) / upm;
+                                const lineSpacingPx = (lineGap / upm) * fontSize;
+                                const lines = previewText.split('\n').length > 1 ? previewText.split('\n') : [previewText];
+                                return (
+                                    <div style={{ overflow: 'visible' }}>
+                                    {lines.map((lineText, lineIdx) => (
+                                    <div 
+                                        key={lineIdx}
+                                        className="flex flex-wrap items-end justify-center" 
+                                        style={{ 
+                                            fontSize,
+                                            height: lineBodyHeight,
+                                            overflow: 'visible',
+                                            marginTop: lineIdx > 0 ? lineSpacingPx : 0,
+                                        }}
+                                    >
                                 {previewText.split('').map((char, idx) => {
                                     const g = getGlyph(char);
                                     // Fix: space width converts wordSpacing from design units to pixels
@@ -832,7 +845,6 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                                 width: Math.max(0, width), 
                                                 height: spanHeight,
                                                 marginLeft: spacingAdjust,
-                                                marginBottom: -(spanHeight - fontSize) * 0.2, // Compensar espaço extra
                                             }}
                                             className="inline-block relative"
                                         >
@@ -854,6 +866,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     );
                                 })}
                             </div>
+                                    ))}
+                                    </div>
+                                );
+                            })()}
                         </div>
                         <input
                             type="text"

@@ -337,14 +337,14 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
 
         if (draggingGuide) {
             if (draggingGuide === 'ASCENDER') {
-                onUpdateMetadata({ ...metadata, ascender: VISUAL_BASELINE_Y - svgY }); 
+                onUpdateMetadata(prev => ({ ...prev, ascender: VISUAL_BASELINE_Y - svgY })); 
             }
             else if (draggingGuide === 'BASELINE') {
                 const newShift = VISUAL_BASELINE_Y - svgY;
-                onUpdateMetadata({ ...metadata, baselineShift: newShift });
+                onUpdateMetadata(prev => ({ ...prev, baselineShift: newShift }));
             }
             else if (draggingGuide === 'DESCENDER') {
-                onUpdateMetadata({ ...metadata, descender: VISUAL_BASELINE_Y - svgY }); 
+                onUpdateMetadata(prev => ({ ...prev, descender: VISUAL_BASELINE_Y - svgY })); 
             }
             else if (draggingGuide === 'WIDTH') setData(prev => ({ ...prev, advanceWidth: Math.max(0, svgX) }));
             else if (draggingGuide === 'ORIGIN') setData(prev => ({ ...prev, leftSideBearing: prev.leftSideBearing + (svgX - 0) }));
