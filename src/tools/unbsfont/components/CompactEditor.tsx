@@ -133,7 +133,14 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
 
     // Helper para atualizar tracking/wordSpacing/kerning no metadata
     const setLetterSpacing = useCallback((val: number) => {
-        onUpdateMetadata(prev => ({ ...prev, tracking: val }));
+        onUpdateMetadata(prev => ({
+            ...prev,
+            tracking: val,
+            trackingProfile: {
+                ...(prev.trackingProfile || DEFAULT_TRACKING_PROFILES['body-text']),
+                defaultTracking: val,
+            }
+        }));
     }, [onUpdateMetadata]);
     
     const setWordSpacing = useCallback((val: number) => {
@@ -292,6 +299,13 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
 
     // Auto-Configuração da fonte
     const handleAutoConfig = useCallback(() => {
+        // Validar minimo de glyphs com path
+        const glyphsWithPath = glyphs.filter(g => g.pathData && g.pathData.trim().length > 0);
+        if (glyphsWithPath.length < 5) {
+            pushNotice(`Auto Config precisa de pelo menos 5 glifos com desenho (encontrados: ${glyphsWithPath.length}). Importe SVGs primeiro.`, 'warning');
+            return;
+        }
+        
         setIsAutoConfiguring(true);
         
         try {
@@ -485,6 +499,18 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         pushNotice('Kerning resetado.', 'info');
     }, [onUpdateMetadata, pushNotice]);
 
+    // Auto-reapply kerning when intensity changes (debounced)
+    const kerningIntensityRef = useRef(kerningIntensity);
+    useEffect(() => {
+        if (kerningIntensityRef.current === kerningIntensity) return;
+        kerningIntensityRef.current = kerningIntensity;
+        if (kerningPreset === 'none') return;
+        const timer = setTimeout(() => {
+            applyKerningPreset(kerningPreset);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [kerningIntensity, kerningPreset, applyKerningPreset]);
+
     // Obter valor de kerning para um par de caracteres
     const getKerning = useCallback((char1: string, char2: string): number => {
         const pairKey = `${char1}${char2}`;
@@ -600,14 +626,14 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             {/* Header */}
             <header className={`flex items-center justify-between px-6 py-3 border-b ${borderCol}`}>
                 <div className="flex items-center gap-4">
-                    <button onClick={onGoHome} className="opacity-70 hover:opacity-100 transition-opacity">
+                    <button onClick={onGoHome} className="hover:opacity-80 transition-opacity">
                         <AppLogo className={`h-8 w-auto ${isDarkMode ? 'text-white' : 'text-black'}`} />
                     </button>
                     <div className={`w-px h-6 ${isDarkMode ? 'bg-slate-700' : 'bg-neutral-300'}`} />
                     <input
                         type="text"
                         value={metadata.familyName}
-                        onChange={(e) => onUpdateMetadata({ ...metadata, familyName: e.target.value })}
+                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, familyName: e.target.value }))}
                         className={`text-xl font-black uppercase tracking-tight bg-transparent border-none outline-none ${textMain}`}
                         placeholder="Nome da Fonte"
                     />
@@ -1375,7 +1401,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     <input
                                         type="text"
                                         value={metadata.familyName}
-                                        onChange={(e) => onUpdateMetadata({ ...metadata, familyName: e.target.value })}
+                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, familyName: e.target.value }))}
                                         className={`w-full mt-1 px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
                                     />
                                 </div>
@@ -1384,7 +1410,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     <input
                                         type="text"
                                         value={metadata.styleName}
-                                        onChange={(e) => onUpdateMetadata({ ...metadata, styleName: e.target.value })}
+                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, styleName: e.target.value }))}
                                         className={`w-full mt-1 px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
                                     />
                                 </div>
@@ -1407,7 +1433,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         max="2000"
                                         step="100"
                                         value={metadata.unitsPerEm}
-                                        onChange={(e) => onUpdateMetadata({ ...metadata, unitsPerEm: parseInt(e.target.value) })}
+                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, unitsPerEm: parseInt(e.target.value) }))}
                                         className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
                                     />
                                 </div>
@@ -1421,7 +1447,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         min="500"
                                         max="1000"
                                         value={metadata.ascender}
-                                        onChange={(e) => onUpdateMetadata({ ...metadata, ascender: parseInt(e.target.value) })}
+                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, ascender: parseInt(e.target.value) }))}
                                         className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
                                     />
                                 </div>
@@ -1435,7 +1461,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         min="-500"
                                         max="0"
                                         value={metadata.descender}
-                                        onChange={(e) => onUpdateMetadata({ ...metadata, descender: parseInt(e.target.value) })}
+                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, descender: parseInt(e.target.value) }))}
                                         className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
                                     />
                                 </div>
