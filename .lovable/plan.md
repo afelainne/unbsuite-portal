@@ -1,121 +1,133 @@
 
 
-# Melhorias no UNBSMOCKUP e UNBSTYPE
+# Revisao do UNBSMOCKUP -- Textos Editaveis, Avatar e Icones Reais
 
-## 1. UNBSMOCKUP -- Ajuste manual da imagem + Mais templates
+## Problemas Atuais
 
-### A) Controles de posicionamento da imagem
-Adicionar na sidebar (entre "Background" e "Templates") uma secao **"Ajustar Imagem"** com 3 sliders:
-- **Zoom** (scale): 1x a 3x (default 1) -- altera o tamanho da imagem dentro do clip
-- **X offset**: -50% a +50% -- desloca horizontalmente
-- **Y offset**: -50% a +50% -- desloca verticalmente
+1. Templates sociais usam emojis como texto SVG (👍 Like, 💬 Comment, 🌎) -- renderizam mal ou nao renderizam
+2. Username e textos sao hardcoded no SVG (`frameSvg`) -- impossivel editar
+3. Sem opcao de avatar de perfil
+4. A UI nao oferece controle sobre o conteudo textual dos mockups
 
-No `DeviceFrame.tsx`, em vez de posicionar a `<image>` diretamente no screen.x/y com screen.width/height, calcular posicao e dimensoes baseadas no zoom e offset:
+## Solucao
 
-```text
-imageWidth  = screen.width  * scale
-imageHeight = screen.height * scale
-imageX = screen.x - (imageWidth - screen.width) / 2 + offsetX * screen.width
-imageY = screen.y - (imageHeight - screen.height) / 2 + offsetY * screen.height
+### A) Novo sistema de campos editaveis por template
+
+Adicionar ao tipo `MockupTemplate` um campo opcional `editableFields` que define quais textos e imagens o usuario pode customizar:
+
+```typescript
+interface EditableField {
+  id: string;           // ex: 'username', 'caption', 'location'
+  label: string;        // ex: 'Username'
+  type: 'text' | 'avatar';
+  defaultValue: string; // valor padrao
+  // posicao no SVG
+  x: number;
+  y: number;
+  fontSize?: number;
+  fontWeight?: string;
+  fill?: string;
+  textAnchor?: string;
+  // para avatar:
+  cx?: number;
+  cy?: number;
+  r?: number;
+}
 ```
 
-O clipPath ja garante que a imagem nao vaze para fora da tela.
+Cada template social tera seus campos. Exemplo para Instagram Post:
+- avatar (circle na posicao do perfil)
+- username (texto bold)
+- location (texto menor)
 
-Botao "Reset" para voltar zoom=1, offsets=0.
+### B) Icones SVG reais em vez de emojis
 
-### B) Novos templates (adicionar ao `templates.ts`)
+Remover todos os emojis dos templates e substituir por paths SVG reais:
+- **Like** (thumbs up): path SVG inline
+- **Comment** (balao de fala): path SVG inline
+- **Share** (seta de compartilhar): path SVG inline
+- **Globe** (globo terrestre): path SVG inline
+- **Heart** (coracao): path SVG inline para Instagram
 
-**Mobile:**
-- Android Phone (390x844, bordas mais finas, camera centralizada)
-- iPhone SE (320x568, bordas mais grossas, botao home)
+Os paths serao definidos como constantes reutilizaveis no `templates.ts`.
 
-**Laptop:**
-- Windows Laptop (900x580, bordas diferentes do MacBook, sem trackpad visivel)
+### C) Avatar de perfil
 
-**Tablet:**
-- iPad Landscape (780x560)
+- Novo `ImageUploader` para avatar (separado do principal)
+- O avatar e renderizado como `<image>` com `<clipPath>` circular no SVG
+- Se nao houver avatar, mostra circulo cinza (placeholder)
 
-**Web:**
-- Dark Browser (igual ao Browser mas com tema escuro invertido)
-- Mobile Browser (380x700, barra de navegacao no topo, barra inferior com controles)
+### D) Painel de edicao na sidebar
 
-**Social:**
-- Instagram Story (1080x1920 scaled, com UI do stories)
-- Twitter/X Post (500x280, com header de tweet)
-- Facebook Post (500x300, com header de post)
-- YouTube Thumbnail (640x360, com botao play)
-
-**Print:**
-- A4 Vertical (210x297mm scaled)
-- Album Cover (500x500, quadrado com sombra)
-- Book Cover (400x600, com lombada)
-
-**Wearable:**
-- Apple Watch (198x242, tela redonda-quadrada)
-- Smart TV (960x540, tela larga com base)
-
-Total: 8 existentes + ~15 novos = ~23 templates
-
-### Arquivos modificados
-- `src/tools/unbsmockup/App.tsx` -- adicionar state de zoom/offsetX/offsetY + sliders + passar para DeviceFrame
-- `src/tools/unbsmockup/components/DeviceFrame.tsx` -- receber zoom/offsets e calcular posicao da imagem
-- `src/tools/unbsmockup/templates.ts` -- adicionar os novos templates
+Nova secao "Content" na sidebar (visivel apenas para templates com `editableFields`) com:
+- Input de texto para cada campo de texto (username, location, caption)
+- Upload de avatar (pequeno, ao lado do nome)
 
 ---
 
-## 2. UNBSTYPE -- Upload de fontes + Shuffle de cores
+## Mudancas por Arquivo
 
-### A) Upload de fontes locais
-Adicionar ao `FontSelector.tsx` um botao "Upload .ttf/.otf/.woff2" no topo do dropdown. Ao clicar:
-1. Abre file picker para `.ttf, .otf, .woff, .woff2`
-2. Le o arquivo como ArrayBuffer, cria um `@font-face` via `FontFace API`:
-   ```typescript
-   const fontFace = new FontFace('CustomFont-1', arrayBuffer);
-   await fontFace.load();
-   document.fonts.add(fontFace);
-   ```
-3. Adiciona a fonte ao estado local com um nome gerado (ex: "Upload: MeuFont.ttf")
-4. A fonte aparece no topo da lista com badge "LOCAL"
-5. Selecionar aplica normalmente via `fontFamily`
+### `src/tools/unbsmockup/templates.ts`
 
-Estado das fontes locais gerenciado no `App.tsx` e passado ao `FontSelector` via prop `customFonts`.
+1. Adicionar interface `EditableField` e campo `editableFields?: EditableField[]` ao `MockupTemplate`
+2. Criar constantes de paths SVG para icones:
+   - `ICON_LIKE` (thumbs up)
+   - `ICON_COMMENT` (speech bubble)
+   - `ICON_SHARE` (arrow/share)
+   - `ICON_GLOBE` (globe)
+   - `ICON_HEART` (heart outline)
+   - `ICON_BOOKMARK` (bookmark)
+3. Atualizar templates sociais:
+   - **Instagram Post**: remover emojis do frameSvg, remover textos de username/location do frameSvg, adicionar icones SVG (heart, comment, share, bookmark), adicionar `editableFields` para username, location
+   - **Instagram Story**: remover texto username do frameSvg, adicionar `editableFields`
+   - **Twitter/X Post**: remover emoji e texto estatico do frameSvg, adicionar `editableFields` para displayName, handle, tweetText, usar icones SVG para reply/retweet/like
+   - **Facebook Post**: remover emojis (👍💬🌎) do frameSvg, adicionar icones SVG reais de like/comment/share, adicionar `editableFields` para username, timestamp
+   - **YouTube Thumbnail**: sem mudancas (nao tem texto social)
 
-### B) Shuffle de cores no preview
-Adicionar na sidebar uma secao **"Cores"** com:
-- **Botao Shuffle** que randomiza as cores do preview (foreground e background)
-- **Color pickers** para foreground e background
-- Paletas pre-definidas (Dark, Light, Warm, Cool, High Contrast, Pastel)
+### `src/tools/unbsmockup/components/DeviceFrame.tsx`
 
-No `PreviewPanel.tsx`, receber `fgColor` e `bgColor` como props e aplicar:
-- O container do preview usa `backgroundColor: bgColor`
-- Todos os textos usam `color: fgColor`
+1. Receber nova prop `fieldValues: Record<string, string>` e `avatarSrc: string | null`
+2. Apos renderizar o `frameSvg` e antes do final, renderizar os campos editaveis:
+   - Para campos tipo `text`: renderizar `<text>` com as coordenadas e estilo do campo
+   - Para campos tipo `avatar`: renderizar `<image>` com `<clipPath>` circular, ou circulo placeholder se nao houver avatar
 
-O shuffle gera cores aleatorias com contraste minimo WCAG AA (ratio >= 4.5:1).
+### `src/tools/unbsmockup/App.tsx`
 
-### Arquivos modificados
-- `src/tools/unbstype/App.tsx` -- adicionar state de customFonts, fgColor, bgColor + shuffle + color pickers
-- `src/tools/unbstype/components/FontSelector.tsx` -- adicionar botao upload + mostrar fontes locais no topo
-- `src/tools/unbstype/components/PreviewPanel.tsx` -- receber e aplicar fgColor/bgColor
-- `src/tools/unbstype/constants.ts` -- adicionar paletas de cores pre-definidas e funcao de contraste
+1. Adicionar state `fieldValues: Record<string, string>` (inicializado com defaultValues do template)
+2. Adicionar state `avatarSrc: string | null`
+3. Ao trocar de template, resetar fieldValues com os defaults do novo template
+4. Adicionar secao "Content" na sidebar com:
+   - Upload de avatar (pequeno, inline)
+   - Inputs de texto para cada campo editavel
+5. Passar `fieldValues` e `avatarSrc` ao `DeviceFrame`
 
 ---
 
-## Resumo tecnico
+## Templates Sociais Atualizados
 
-| Arquivo | Mudanca |
-|---------|---------|
-| `unbsmockup/App.tsx` | State zoom/offsetX/offsetY, sliders na sidebar, reset |
-| `unbsmockup/components/DeviceFrame.tsx` | Props zoom/offsets, calculo de posicao da imagem |
-| `unbsmockup/templates.ts` | +15 novos templates (Android, iPad Landscape, Stories, Twitter, YouTube, A4, Watch, TV, etc.) |
-| `unbstype/App.tsx` | State customFonts/fgColor/bgColor, shuffle, color pickers, paletas |
-| `unbstype/components/FontSelector.tsx` | Botao upload .ttf/.otf/.woff2, FontFace API, badge LOCAL |
-| `unbstype/components/PreviewPanel.tsx` | Props fgColor/bgColor aplicadas em todos os textos |
-| `unbstype/constants.ts` | Paletas de cores + funcao de contraste WCAG |
+### Instagram Post
+- Icones: heart outline, comment bubble, share arrow, bookmark (na barra inferior)
+- Campos: avatar, username, location
 
-## Ordem de execucao
+### Instagram Story
+- Campos: avatar, username
 
-1. Adicionar novos templates ao UNBSMOCKUP
-2. Implementar controles de zoom/offset da imagem no UNBSMOCKUP
-3. Adicionar upload de fontes locais ao UNBSTYPE
-4. Adicionar shuffle de cores e color pickers ao UNBSTYPE
+### Twitter/X Post
+- Icones: reply, retweet, heart, share (na barra inferior)
+- Campos: avatar, displayName, handle (@), tweetText
+
+### Facebook Post
+- Icones: like (thumbs up), comment (bubble), share (arrow)
+- Campos: avatar, username, timestamp
+- Globe icon no timestamp em vez de emoji
+
+---
+
+## Ordem de Execucao
+
+| # | Tarefa |
+|---|--------|
+| 1 | Atualizar `templates.ts`: adicionar tipo EditableField, constantes de icones SVG, atualizar templates sociais |
+| 2 | Atualizar `DeviceFrame.tsx`: renderizar campos editaveis e avatar |
+| 3 | Atualizar `App.tsx`: state de fields/avatar, secao Content na sidebar, upload de avatar |
 
