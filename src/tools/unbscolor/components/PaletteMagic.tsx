@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { hexToRgb, rgbToHex, rgbToHsl, hslToRgb, isValidHex, getClosestColorName, getContrastColor } from '../utils/colorMath';
 import { useLanguage } from '../i18n';
 
@@ -344,25 +344,39 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
   const [feedback, setFeedback] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<GeneratedPalette[]>([]);
+  const [selectedSourceColor, setSelectedSourceColor] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const baseHex = isValidHex(initialHex) ? initialHex : '#F7E043';
   const validBatch = batchColors.filter(c => isValidHex(c));
   const sources = validBatch.length > 0 ? validBatch : [baseHex];
 
-  const handleShuffle = useCallback(() => {
-    const newPalettes = generateBatch(sources, context, slotCount, palettes, lockedColors, 9);
+  const doShuffle = useCallback((ctx: DesignContext, existingPalettes: GeneratedPalette[], locks: Record<string, Record<number, string>>) => {
+    const newPalettes = generateBatch(sources, ctx, slotCount, existingPalettes, locks, 9);
     setPalettes(newPalettes);
-    // Migrate locks to new palette IDs where needed
     const newLocks: Record<string, Record<number, string>> = {};
     for (const p of newPalettes) {
-      if (lockedColors[p.id]) newLocks[p.id] = lockedColors[p.id];
+      if (locks[p.id]) newLocks[p.id] = locks[p.id];
     }
     setLockedColors(newLocks);
     setShuffleCount(c => c + 1);
     setExpandedId(null);
     setTimeout(() => gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-  }, [sources, context, slotCount, palettes, lockedColors]);
+  }, [sources, slotCount]);
+
+  const handleShuffle = useCallback(() => {
+    doShuffle(context, palettes, lockedColors);
+  }, [doShuffle, context, palettes, lockedColors]);
+
+  // Auto-shuffle when context changes (only if palettes already exist)
+  const prevContextRef = useRef(context);
+  useEffect(() => {
+    if (prevContextRef.current !== context && palettes.length > 0) {
+      // Clear locks when changing context for fresh generation
+      doShuffle(context, [], {});
+    }
+    prevContextRef.current = context;
+  }, [context, doShuffle, palettes.length]);
 
   const showFeedback = useCallback((msg: string) => {
     setFeedback(msg);
@@ -435,14 +449,20 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
           </p>
         </div>
 
-        {/* Source colors */}
-        <div className="flex justify-center gap-2 flex-wrap">
+        {/* Source colors — click to select for injection into slots */}
+        <div className="flex justify-center gap-2 flex-wrap items-center">
+          <span className="font-mono text-[8px] text-gray-400 uppercase tracking-wider mr-1">
+            {selectedSourceColor ? '← click a slot' : 'Source'}
+          </span>
           {sources.map((c, i) => (
             <div key={i} className="relative group">
               <div
-                className="w-10 h-10 rounded-lg shadow-sm border border-gray-100 cursor-pointer hover:scale-110 transition-transform"
+                className={`w-10 h-10 rounded-lg shadow-sm border-2 cursor-pointer hover:scale-110 transition-all ${
+                  selectedSourceColor === c ? 'border-yellow-400 ring-2 ring-yellow-300 scale-110' : 'border-gray-100'
+                }`}
                 style={{ backgroundColor: c }}
-                onClick={() => onHexChange(c)}
+                onClick={() => setSelectedSourceColor(prev => prev === c ? null : c)}
+                title={selectedSourceColor === c ? 'Deselect' : 'Select to inject into a slot'}
               />
               <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-mono text-[6px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{c}</span>
             </div>
@@ -527,9 +547,25 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                       return (
                         <div
                           key={ci}
-                          className="flex-1 relative group/swatch hover:flex-[2] transition-[flex] duration-300 cursor-pointer"
+                          className={`flex-1 relative group/swatch hover:flex-[2] transition-[flex] duration-300 cursor-pointer ${
+                            selectedSourceColor ? 'ring-inset hover:ring-2 hover:ring-yellow-400' : ''
+                          }`}
                           style={{ backgroundColor: c }}
-                          onClick={() => setExpandedId(isExpanded ? null : palette.id)}
+                          onClick={() => {
+                            if (selectedSourceColor) {
+                              // Inject source color into this slot and lock it
+                              const newColors = [...palette.colors];
+                              newColors[ci] = selectedSourceColor;
+                              const contrast = avgContrast(newColors);
+                              const best = bestPairContrast(newColors);
+                              setPalettes(prev => prev.map(p => p.id === palette.id ? { ...p, colors: newColors, contrastRatio: contrast, wcagPass: best >= 4.5 } : p));
+                              toggleLock(palette.id, ci, selectedSourceColor);
+                              setSelectedSourceColor(null);
+                              showFeedback('Color injected ✓');
+                            } else {
+                              setExpandedId(isExpanded ? null : palette.id);
+                            }
+                          }}
                         >
                           {/* Lock button */}
                           <button
