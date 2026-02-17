@@ -1,206 +1,179 @@
 
 
-# Revisao: Kerning Presets e Auto-Kerning
+# Revisao: Tracking, Tipografia, e Exportacao de Pesos
 
 ## Problemas Encontrados
 
-### 1. `glyphShapeAnalyzer.ts` ainda usa `svgPathData` (linha 395)
+### 1. TRACKING NAO FUNCIONA -- Desconexao entre slider e renderizacao
 
+Este e o problema principal. O slider de tracking no TestMode (linha 109-111) atualiza `metadata.tracking`, mas a renderizacao usa `getTrackingBetweenGlyphs` que le `activeProfile.defaultTracking` (trackingService.ts linha 35), NAO `metadata.tracking`. Sao dois valores diferentes e desconectados.
+
+Exemplo: O usuario move o slider para -60. O metadata.tracking vira -60. Mas o rendering continua usando `activeProfile.defaultTracking` que e 6 (profile "Body Text"). O texto NAO muda visualmente.
+
+A unica forma de o tracking mudar e selecionar outro profile (linha 44 do TestMode), que sincroniza `tracking: preset.defaultTracking`. O slider manual e completamente inutil.
+
+No CompactEditor (linha 812), o tracking e aplicado como `letterSpacing * scale` onde `letterSpacing = metadata.tracking`. Mas aqui tambem esta incorreto porque deveria usar o tracking contextual via `getTrackingBetweenGlyphs`.
+
+**Correcao:** O slider de tracking manual deve atualizar `activeProfile.defaultTracking`, nao apenas `metadata.tracking`. Quando o usuario move o slider, deve modificar o profile ativo:
 ```
-const pathData = glyph.svgPathData || glyph.pathData;
+onUpdateMetadata(prev => ({
+  ...prev,
+  tracking: val,
+  trackingProfile: { ...prev.trackingProfile, defaultTracking: val }
+}))
 ```
 
-Apesar de termos unificado `svgPathData -> pathData` em outros arquivos, o analisador geometrico -- que e o MOTOR de todo o auto-kerning -- ainda prioriza `svgPathData`. Se o glyph so tem `pathData` (caso comum apos importacao), funciona. Mas se tem `svgPathData` com dados diferentes de `pathData`, gera inconsistencia.
+### 2. LINE GAP min=-500 e excessivo
 
-**Correcao:** Mudar para `const pathData = glyph.pathData || '';`
+O slider de entrelinhas vai de -500 a 1000 (TestMode linha 146). Para um UPM de 1000, -500 significa 50% de sobreposicao -- linhas completamente sobrepostas. Nenhum cenario real precisa disso. O min razoavel e 0 (linhas coladas) ou no maximo -100 (leve sobreposicao para efeitos display).
 
----
+No CompactEditor, o lineGap NEM EXISTE como controle -- o `lineHeight` (linha 1054-1062) e um multiplicador CSS local que nao afeta o metadata nem a exportacao. E outra desconexao.
 
-### 2. `calculateOptimalKerning` descarta valores < 15 (linha 580)
+**Correcao:** Mudar o min do lineGap para 0 (ou -100). No CompactEditor, substituir o slider de `lineHeight` CSS por um slider de `lineGap` que atualiza o metadata diretamente, como ja feito no TestMode.
 
-```typescript
-if (Math.abs(kerningValue) < 15) {
-    return 0;
-}
+### 3. Tracking Rules funcionam, mas com ressalva
+
+Os controles de Punctuation Factor, Whitespace Factor e ALL CAPS Bonus estao corretos -- eles atualizam `activeProfile.rules` via `updateProfileRule` e sao usados por `getTrackingBetweenGlyphs`. O problema e que o efeito so e visivel se o tracking base (`defaultTracking`) for diferente de 0. Como o slider de tracking esta quebrado (problema #1), os rules parecem nao fazer nada.
+
+**Correcao:** Resolver o problema #1 automaticamente resolve este.
+
+### 4. CompactEditor usa tracking diferente do TestMode
+
+No CompactEditor (linha 812), o tracking e aplicado como:
 ```
+const trackingAdjust = letterSpacing * scale;
+```
+Isso usa `metadata.tracking` multiplicado pelo scale, aplicado uniformemente. NAO usa `getTrackingBetweenGlyphs` que considera contexto (caps, pontuacao, whitespace, size compensation).
 
-Apesar de termos corrigido o threshold no `kerningService.ts` para `>= 5`, o `calculateOptimalKerning` (que e chamado internamente pelo `generateSmartAutoKerning` e `generateCommonPairsKerning`) tem seu proprio threshold de 15. Isso significa que pares com kerning entre -14 e -5 sao descartados dentro do analisador antes de chegar ao threshold externo. Muitos pares uteis de minusculas (av=-10, ew=-10) perdem-se aqui.
+**Correcao:** No CompactEditor, substituir `trackingAdjust = letterSpacing * scale` por `getTrackingBetweenGlyphs` usando o `trackingProfile` do metadata, consistente com TestMode.
 
-**Correcao:** Reduzir para `< 5` para ser coerente com o threshold externo.
+### 5. Exportacao de pesos -- funciona mas metadata e compartilhado
 
----
+A exportacao em `handleExport` (App.tsx linhas 769-848) itera todos os estilos no `styleMap` e exporta cada um como OTF separado com o MESMO `familyName` e `styleName` diferente. O `getWeightAndWidth` mapeia nomes como "Bold", "Light" para os valores corretos de `usWeightClass` (700, 300 etc). Isso FUNCIONA para instalacao como mesma familia.
 
-### 3. `generateSmartAutoKerning` so gera pares entre "problematicos" (linhas 216-248)
+Porem, todos os pesos compartilham o MESMO metadata (tracking, kerning, lineGap, wordSpacing). Ao exportar, o kerning e tracking de um peso sao aplicados identicamente a todos. Isso nao e correto tipograficamente -- um "Bold" precisa de kerning diferente de um "Light".
 
-O algoritmo smart identifica glyphs "problematicos a esquerda" e "problematicos a direita" e so gera kerning entre eles. Isso e conservador demais -- pares como `Ac`, `Ke`, `Da` nunca sao gerados porque nenhum deles e identificado como "problematico" pelas heuristics (que exigem `rightNegativeSpace > 0.25` ou flags especificas).
+**Correcao nao-prioritaria:** Cada estilo deveria ter seu proprio metadata (tracking, kerning). Mas isso requer uma reestruturacao do modelo `Project`. Para agora, documentar a limitacao e garantir que o export funciona corretamente com o metadata atual.
 
-Quando o smart falha (0 pares), o CompactEditor faz fallback para `generateProfessionalKerning`, o que e bom. Mas no SpacingManager (Advanced), nao ha fallback -- retorna 0 pares silenciosamente.
+### 6. Criacao de pesos -- funciona mas gera slots vazios
 
-**Correcao:** No SpacingManager, adicionar fallback para professional quando smart retorna poucos pares (< 10). Tambem relaxar os thresholds de deteccao de "problematico" de `> 0.25` para `> 0.15` para capturar mais glyphs relevantes.
+`handleAddStyle` (App.tsx linha 452) cria um novo peso com `generateInitialGlyphs()` -- todos os slots vazios. O usuario precisa reimportar ou redesenhar todos os glyphs para cada peso. Nao ha opcao de duplicar um peso existente como base.
 
----
-
-### 4. Valores fixos de kerning no `calculateOptimalKerning` ignoram a geometria real
-
-A funcao `calculateOptimalKerning` recebe dois `GlyphProfile` com dados detalhados de perfil de borda, mas os valores de kerning sao constantes fixas (-70, -50, -35, etc.) baseadas apenas em flags booleanas. O parametro `targetDensity` e recebido mas nunca usado. O perfil de borda (`leftEdgeProfile`/`rightEdgeProfile`) tambem nao e utilizado no calculo.
-
-Isso significa que o "kerning geometrico inteligente" e na verdade uma tabela de lookup com 5 regras if/else, nao uma analise real da geometria.
-
-**Correcao:** Manter as regras de lookup como fallback, mas usar os perfis de borda para modular os valores. Calcular a "area de encaixe" entre o perfil direito do glyph esquerdo e o perfil esquerdo do glyph direito para gerar valores mais precisos.
-
----
-
-### 5. `generateGeometricKerning` (professionalKerningService) e duplicata de `calculateOptimalKerning`
-
-As funcoes `generateGeometricKerning` (linhas 557-627) e `calculateOptimalKerning` (glyphShapeAnalyzer 501-584) tem a MESMA logica de regras if/else com os MESMOS valores (-70, -50, -35, -60, -45, -40, -30, -25, -20). Isso e codigo duplicado. O `generateHybridKerning` chama ambos e pode gerar valores redundantes.
-
-**Correcao:** Remover `generateGeometricKerning` e usar `calculateOptimalKerning` diretamente no `generateHybridKerning`. Eliminar duplicacao.
-
----
-
-### 6. `applyKerningTemplate` gera duplicatas uppercase/lowercase desnecessarias (linhas 959-973)
-
-A funcao itera todos os pares do template e cria versoes uppercase e lowercase. Ex: `'TA': -90` gera tambem `'ta': -90`. Mas o template ja tem `'TA'` E `'ta'` com valores diferentes (-90 vs -nao existe). Resultado: `'ta'` recebe o valor uppercase -90 quando deveria nao existir ou ter um valor diferente.
-
-**Correcao:** Remover a geracao automatica de uppercase/lowercase. Os templates ja contem todas as combinacoes necessarias com valores apropriados para cada caixa.
-
----
-
-### 7. `KERNING_CLASSES` (professionalKerningService linhas 122-146) tem classificacoes incorretas
-
-- `'A'` esta em `rightDiagonal` mas seu lado ESQUERDO e diagonal; seu lado direito tambem e diagonal. OK.
-- `'d'` esta em `leftRound` -- correto (forma arredondada a esquerda)
-- `'u'` esta em `leftStraight` -- incorreto, `u` tem curva a esquerda
-- `'r'` esta em `rightStraight` -- incorreto, `r` tem overhang a direita
-- `'t'` esta em `rightOverhang` -- correto
-- `'b'` esta em `rightStraight` -- incorreto, `b` tem curva a direita
-- `'p'` esta em `rightStraight` -- incorreto, `p` tem curva a direita
-
-**Correcao:** Corrigir classificacoes: `'r'` -> `rightOverhang`, `'b'` e `'p'` -> `rightRound`, `'u'` -> `leftRound` (ou `leftStraight` se considerarmos so a haste).
-
----
-
-### 8. `AUTO_KERN_MATRIX_GENERIC` (kerningService) nunca e usada
-
-A funcao `getBaseKernFromShapes` e definida mas nunca e chamada em nenhum lugar do codebase. E a `AUTO_KERN_MATRIX_GENERIC` e as matrizes per-character (`AUTO_KERN_MATRIX_T_RIGHT`, etc.) tambem nao. Sao 55 linhas de codigo morto.
-
-**Correcao:** Remover `getBaseKernFromShapes`, `AUTO_KERN_MATRIX_GENERIC`, e todas as `AUTO_KERN_MATRIX_*` que nao sao usadas.
-
----
-
-### 9. CompactEditor sugere tracking junto com kerning de forma arbitraria
-
-Quando aplica um preset, o CompactEditor modifica `metadata.tracking` com valores hardcoded (linhas 362, 372, 382, 390, 408, 423, 434-436, 446-448, 461-468). Exemplos:
-- `tight` -> tracking = -20
-- `loose` -> tracking = 30
-- `auto-smart` -> tracking = `-10 * intensity`
-- Template Helvetica -> tracking = -15
-- Template Didot -> tracking = 15
-
-Esses valores sao arbitrarios e sobrescrevem o tracking do usuario sem aviso. Se o usuario ja ajustou tracking para 50, ao mudar preset de kerning perde o valor.
-
-**Correcao:** Nao modificar `metadata.tracking` ao aplicar presets de kerning. Kerning e tracking sao conceitos separados. Se quiser sugerir, mostrar como "sugestao" sem aplicar automaticamente.
-
----
-
-### 10. SpacingManager e CompactEditor tem logica de kerning duplicada e diferente
-
-O CompactEditor tem 7 presets (none, tight, normal, loose, auto-smart, auto-common, professional, hybrid + templates). O SpacingManager tem 3 modos (smart, professional, hybrid + templates). Os comportamentos sao diferentes:
-- CompactEditor: preset `auto-smart` faz fallback para professional se 0 pares
-- SpacingManager: modo `smart` nao faz fallback
-- CompactEditor: aplica tracking junto com kerning
-- SpacingManager: nao toca em tracking
-
-**Correcao:** Extrair a logica de geracao de kerning para uma funcao unica `applyKerningPreset(glyphs, preset, options)` que ambos os modos usam.
+**Correcao:** Adicionar opcao "Duplicar peso atual" que copia os glyphs do estilo ativo para o novo peso, permitindo ajustes em vez de recomecar do zero.
 
 ---
 
 ## Plano de Implementacao
 
-### Arquivo 1: glyphShapeAnalyzer.ts
+### Tarefa 1: Corrigir tracking slider (TestMode + CompactEditor)
 
-- Linha 395: `svgPathData || pathData` -> `pathData || ''`
-- Linha 580: threshold `< 15` -> `< 5`
-- Linhas 501-584: Usar `rightEdgeProfile`/`leftEdgeProfile` para modular valores de kerning (calcular area de encaixe entre perfis adjacentes)
+**TestMode.tsx:**
+- Linha 109-111: Alterar o onChange do slider de tracking para sincronizar `metadata.tracking` E `trackingProfile.defaultTracking`
+- O slider passa a ter efeito real na renderizacao
 
-### Arquivo 2: kerningService.ts
+**CompactEditor.tsx:**
+- Linha 812: Substituir `const trackingAdjust = letterSpacing * scale` por calculo contextual usando `getTrackingBetweenGlyphs` entre cada par de glyphs, consistente com TestMode
+- Importar `getTrackingBetweenGlyphs` e `isAllCapsWord` do trackingService
 
-- Remover linhas 63-139: `AUTO_KERN_MATRIX_GENERIC`, todas as `AUTO_KERN_MATRIX_*`, `getBaseKernFromShapes` (codigo morto)
-- Linhas 203, 208: relaxar threshold de "problematico" de `> 0.25` para `> 0.15`
+### Tarefa 2: Corrigir lineGap no TestMode e adicionar ao CompactEditor
 
-### Arquivo 3: professionalKerningService.ts
+**TestMode.tsx:**
+- Linha 146: Mudar min de -500 para 0
 
-- Remover `generateGeometricKerning` (linhas 557-627) -- duplicata
-- Atualizar `generateHybridKerning` para usar `calculateOptimalKerning` via `analyzeAllGlyphShapes`
-- Corrigir `KERNING_CLASSES` (linhas 122-146): mover `r` para `rightOverhang`, `b`/`p` para `rightRound`
+**CompactEditor.tsx:**
+- Linhas 1050-1063: Substituir o slider de `lineHeight` (estado local CSS) por um slider de `lineGap` que atualiza `metadata.lineGap` diretamente
+- Isso garante que entrelinhas do CompactEditor e TestMode sao consistentes e afetam a exportacao
 
-### Arquivo 4: kerningTemplates.ts
+### Tarefa 3: Adicionar "Duplicar peso" na criacao de estilos
 
-- Remover geracao automatica uppercase/lowercase de `applyKerningTemplate` (linhas 959-973)
+**App.tsx:**
+- Criar `handleDuplicateStyle(baseName: string, newName: string)` que copia os glyphs do estilo base para o novo
+- O metadata permanece compartilhado (limitacao documentada)
 
-### Arquivo 5: CompactEditor.tsx
+**Toolbar.tsx:**
+- Adicionar botao "Duplicar" ao lado de cada peso na lista de estilos, ou como opcao no modal de adicionar estilo
 
-- Remover atribuicao de `suggestedTracking` em todos os presets (linhas 362, 372, etc.)
-- Nao incluir `tracking` no metadata update ao aplicar kerning (linha 488)
+### Tarefa 4: Testar fluxo completo no browser
 
-### Arquivo 6: SpacingManager.tsx
-
-- Adicionar fallback para professional quando smart retorna < 10 pares (linha 166-173)
-
-### Arquivo 7 (novo): services/kerningPresetService.ts
-
-- Extrair funcao `applyKerningPreset(glyphs, preset, options)` usada por ambos os modos
-- Centralizar toda a logica de geracao/fallback num unico ponto
+- Criar fonte, importar SVG, ajustar tracking (verificar que o slider tem efeito visual)
+- Ajustar lineGap (verificar range correto)
+- Criar 2 pesos (Regular + Bold), exportar, verificar que instalam como mesma familia
 
 ---
 
 ## Detalhes Tecnicos
 
-### Calculo de area de encaixe (melhoria do calculateOptimalKerning)
+### Tracking slider corrigido
 
 ```text
-Para cada linha horizontal (das 20 linhas do perfil):
-  gap = (1 - rightEdgeProfile[i]) + leftEdgeProfile[i]
-  (espaco vazio entre a borda direita do glyph esquerdo e a borda esquerda do glyph direito)
-
-avgGap = media de todos os gaps
-kerningAdjust = -(avgGap - targetDensity) * 100
-
-Isso produz valores proporcionais ao espaco real entre os glyphs,
-em vez de valores fixos baseados em categorias booleanas.
+// TestMode.tsx - onChange do slider de tracking
+onChange={(e) => {
+    const val = parseInt(e.target.value);
+    onUpdateMetadata(prev => ({
+        ...prev,
+        tracking: val,
+        trackingProfile: {
+            ...(prev.trackingProfile || DEFAULT_TRACKING_PROFILES['body-text']),
+            defaultTracking: val
+        }
+    }));
+}}
 ```
 
-### Funcao centralizada de preset
+### CompactEditor tracking contextual
 
 ```text
-interface KerningPresetResult {
-  kerning: Record<string, number>;
-  pairCount: number;
-  quality?: KerningQualityReport;
-}
+// Em vez de:
+const trackingAdjust = letterSpacing * scale;
 
-applyKerningPreset(
-  glyphs: GlyphData[],
-  preset: string,
-  options: {
-    intensity: number;
-    fontStyle: FontStyle;
-    existingKerning?: Record<string, number>;
-    templateScale?: number;
-  }
-): KerningPresetResult
+// Usar:
+let trackingAdjust = 0;
+if (idx > 0) {
+    const prevG = getGlyph(previewText[idx - 1]);
+    if (prevG) {
+        const profile = metadata.trackingProfile || DEFAULT_TRACKING_PROFILES['body-text'];
+        trackingAdjust = getTrackingBetweenGlyphs(prevG, g, profile, fontSize, isAllCapsWord(previewText)) * scale;
+    }
+}
+```
+
+### LineGap no CompactEditor (substituindo lineHeight local)
+
+```text
+// Substituir:
+const [lineHeight, setLineHeight] = useState(1.2);
+
+// Por leitura direta do metadata:
+const lineGap = metadata.lineGap ?? 200;
+
+// Slider:
+<input type="range" min="0" max="1000" step="10" value={lineGap}
+  onChange={(e) => onUpdateMetadata(prev => ({ ...prev, lineGap: parseInt(e.target.value) }))}
+/>
+
+// No container de preview, usar lineGap para calcular marginTop entre linhas:
+style={{ lineHeight: 1 + (lineGap / (metadata.unitsPerEm || 1000)) }}
+```
+
+### Duplicar peso
+
+```text
+const handleDuplicateStyle = (newName: string) => {
+    if (styleMap[newName]) { pushNotice('Esse peso ja existe.', 'warning'); return; }
+    const clonedGlyphs = deepClone(glyphs); // copia do estilo ativo
+    setStyleMap(prev => ({ ...prev, [newName]: clonedGlyphs }));
+    handleSwitchStyle(newName);
+    pushNotice(`Peso "${newName}" criado como copia de "${currentStyle}".`, 'success');
+};
 ```
 
 ### Ordem de execucao
 
 | # | Tarefa | Arquivo |
 |---|--------|---------|
-| 1 | Corrigir svgPathData e threshold no analyzer | glyphShapeAnalyzer.ts |
-| 2 | Melhorar calculateOptimalKerning com perfis | glyphShapeAnalyzer.ts |
-| 3 | Remover codigo morto e relaxar thresholds | kerningService.ts |
-| 4 | Remover duplicata e corrigir classes | professionalKerningService.ts |
-| 5 | Corrigir applyKerningTemplate | kerningTemplates.ts |
-| 6 | Criar kerningPresetService centralizado | Novo arquivo |
-| 7 | Atualizar CompactEditor (sem tracking forcado) | CompactEditor.tsx |
-| 8 | Atualizar SpacingManager (fallback + usar preset service) | SpacingManager.tsx |
+| 1 | Sincronizar tracking slider com trackingProfile.defaultTracking | TestMode.tsx |
+| 2 | Aplicar tracking contextual no CompactEditor | CompactEditor.tsx |
+| 3 | Corrigir lineGap min e substituir lineHeight no CompactEditor | TestMode.tsx, CompactEditor.tsx |
+| 4 | Adicionar duplicacao de pesos | App.tsx, Toolbar.tsx |
+| 5 | Testar fluxo completo | Browser |
 
