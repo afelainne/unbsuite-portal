@@ -168,6 +168,7 @@ export interface GlyphData {
   anchors: GlyphAnchor[];
   anchorOverrides: Record<string, {x: number, y: number}>;
   kerningBias: number;
+  manualPosition?: boolean;
 }
 
 export interface FontMetadata {
@@ -179,6 +180,8 @@ export interface FontMetadata {
   ascender: number;
   descender: number;
   baselineShift?: number;
+  xHeight?: number;
+  capHeight?: number;
   lineGap: number;           // Entrelinhas (line gap) - espaço adicional entre linhas
   wordSpacing: number;       // Espaço entre palavras (multiplicador do espaço normal)
   tracking: number; // Keep for simple slider mapping
@@ -186,6 +189,12 @@ export interface FontMetadata {
   isUnicase: boolean;
   kerning: Record<string, number>; 
   kerningProfile?: string;
+  autoPosition?: {
+    scale: number;
+    baselineOffset: number;
+    leftSideBearing: number;
+    sourceChar: string;
+  };
 }
 
 // Alias semântico para fluxos “SVG-first”. Mantém compatibilidade com GlyphData e acrescenta campos de fidelidade SVG.
@@ -214,6 +223,8 @@ export const INITIAL_METADATA: FontMetadata = {
   ascender: 800,
   descender: -200,
   baselineShift: 0,
+  xHeight: 520,
+  capHeight: 720,
   lineGap: 200,            // Default line gap (20% of UPM)
   wordSpacing: 250,        // Default word spacing in font units
   tracking: DEFAULT_TRACKING_PROFILES['body-text'].defaultTracking,

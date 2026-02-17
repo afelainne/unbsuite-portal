@@ -565,6 +565,21 @@ const App: React.FC = () => {
     });
   }, [metadata.isUnicase]);
 
+  const applyAutoPositionToAll = useCallback((autoPos: FontMetadata['autoPosition']) => {
+      if (!autoPos) return;
+      setGlyphs(prev => prev.map(g => {
+          if (g.manualPosition) return g;
+          if (!g.pathData || g.char === ' ') return g;
+          if (g.char === autoPos.sourceChar) return g;
+          return {
+              ...g,
+              scale: autoPos.scale,
+              baselineOffset: autoPos.baselineOffset,
+              leftSideBearing: autoPos.leftSideBearing,
+          };
+      }));
+  }, []);
+
     // When toggling unicase on, immediately mirror uppercase glyphs (including accents) into lowercase slots.
     useEffect(() => {
         if (!metadata.isUnicase) return;
@@ -1674,7 +1689,7 @@ const App: React.FC = () => {
               </div>
           </div>
       )}
-    {selectedGlyph && <EditorModal glyph={selectedGlyph} allGlyphs={glyphs} isOpen={isEditorOpen} onClose={handleCloseEditor} onSave={handleUpdateGlyph} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateMembers={handleUpdateMembers} onBuildDerivatives={handleBuildDerivatives} isDarkMode={isDarkMode} onOpenKerningPanel={handleOpenKerningForGlyph} />}
+    {selectedGlyph && <EditorModal glyph={selectedGlyph} allGlyphs={glyphs} isOpen={isEditorOpen} onClose={handleCloseEditor} onSave={handleUpdateGlyph} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateMembers={handleUpdateMembers} onBuildDerivatives={handleBuildDerivatives} isDarkMode={isDarkMode} onOpenKerningPanel={handleOpenKerningForGlyph} onApplyAutoPosition={applyAutoPositionToAll} />}
     <SpacingManager isOpen={isSpacingManagerOpen} onClose={() => setIsSpacingManagerOpen(false)} glyphs={glyphs} onUpdateGlyphs={setGlyphs} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateMembers={handleUpdateMembers} isDarkMode={isDarkMode} focusGlyphChar={kerningFocusChar} onConsumeKerningFocus={() => setKerningFocusChar(null)} />
     <FontPreview glyphs={glyphs} metadata={metadata} isDarkMode={isDarkMode} isOpen={isFontPreviewOpen} onClose={() => setIsFontPreviewOpen(false)} />
     <GlyphDiagnostics glyphs={glyphs} metadata={metadata} isDarkMode={isDarkMode} isOpen={isDiagnosticsOpen} onClose={() => setIsDiagnosticsOpen(false)} onUpdateGlyph={handleUpdateGlyph} onEditGlyph={handleEditByChar} />
