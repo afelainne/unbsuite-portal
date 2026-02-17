@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { GlyphData, FontMetadata } from '../types';
+import { GlyphData, FontMetadata, DEFAULT_TRACKING_PROFILES } from '../types';
 import { useNotice } from '../contexts/NoticeContext';
 import { extractSingleGlyphFromSVG } from '../services/importService';
 import { generateSmartAutoKerning, generateCommonPairsKerning, getKerningStats } from '../services/kerningService';
 import { KERNING_TEMPLATES, applyKerningTemplate, getTemplateById } from '../services/kerningTemplates';
+import { getTrackingBetweenGlyphs, isAllCapsWord } from '../services/trackingService';
 import { 
     generateProfessionalKerning, 
     generateHybridKerning,
@@ -107,7 +108,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
     const letterSpacing = metadata.tracking || 0;
     const wordSpacing = metadata.wordSpacing || 250;
     const kerning = metadata.kerning || {};
-    const [lineHeight, setLineHeight] = useState(1.2);
+    const lineGap = metadata.lineGap ?? 200;
     const [kerningPreset, setKerningPreset] = useState<KerningPreset>(
         Object.keys(metadata.kerning || {}).length > 0 ? 'auto-smart' : 'none'
     );
@@ -776,7 +777,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         </div>
                         <div 
                             className={`p-4 rounded-xl border flex items-center justify-center overflow-auto ${cardBg}`}
-                            style={{ lineHeight, minHeight: '120px', maxHeight: '280px' }}
+                            style={{ lineHeight: 1 + (lineGap / (metadata.unitsPerEm || 1000)), minHeight: '120px', maxHeight: '280px' }}
                         >
                         <div 
                                 className="flex flex-wrap items-end justify-center" 
@@ -799,17 +800,19 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     const scale = fontSize / upm;
                                     const baseWidth = g.advanceWidth * scale;
                                     
-                                    // Kerning
-                                    let kernAdjust = 0;
+                                    // Kerning + contextual tracking
+                                    let spacingAdjust = 0;
                                     if (idx > 0) {
                                         const prevChar = previewText[idx - 1];
                                         if (prevChar !== ' ') {
-                                            kernAdjust = getKerning(prevChar, char) * scale;
+                                            spacingAdjust += getKerning(prevChar, char) * scale;
+                                        }
+                                        const prevG = getGlyph(prevChar);
+                                        if (prevG) {
+                                            const profile = metadata.trackingProfile || DEFAULT_TRACKING_PROFILES['body-text'];
+                                            spacingAdjust += getTrackingBetweenGlyphs(prevG, g, profile, fontSize, isAllCapsWord(previewText)) * scale;
                                         }
                                     }
-                                    
-                                    // Fix: tracking added as marginLeft, not in width
-                                    const trackingAdjust = letterSpacing * scale;
                                     const width = baseWidth;
                                     
                                     // Fix: viewBox includes descender
@@ -828,7 +831,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                             style={{ 
                                                 width: Math.max(0, width), 
                                                 height: spanHeight,
-                                                marginLeft: kernAdjust + trackingAdjust,
+                                                marginLeft: spacingAdjust,
                                                 marginBottom: -(spanHeight - fontSize) * 0.2, // Compensar espaço extra
                                             }}
                                             className="inline-block relative"
@@ -1045,19 +1048,19 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 />
                             </div>
 
-                            {/* Line Height */}
+                            {/* Line Gap (entrelinhas) */}
                             <div>
                                 <div className="flex justify-between items-center mb-1">
                                     <label className={`text-xs font-semibold ${textSub}`}>Entre Linhas</label>
-                                    <span className="text-xs font-mono">{lineHeight.toFixed(1)}</span>
+                                    <span className="text-xs font-mono">{lineGap} u ({Math.round((lineGap / (metadata.unitsPerEm || 1000)) * 100)}%)</span>
                                 </div>
                                 <input
                                     type="range"
-                                    min="0.8"
-                                    max="3"
-                                    step="0.1"
-                                    value={lineHeight}
-                                    onChange={(e) => setLineHeight(parseFloat(e.target.value))}
+                                    min="0"
+                                    max="1000"
+                                    step="10"
+                                    value={lineGap}
+                                    onChange={(e) => onUpdateMetadata(prev => ({ ...prev, lineGap: parseInt(e.target.value) }))}
                                     className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
                                 />
                             </div>

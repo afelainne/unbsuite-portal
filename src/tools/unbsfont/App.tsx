@@ -456,6 +456,16 @@ const App: React.FC = () => {
     handleSwitchStyle(styleName);
   };
 
+  const handleDuplicateStyle = useCallback((newName: string) => {
+    if (styleMap[newName]) { pushNotice('Esse peso já existe.', 'warning'); return; }
+    const clonedGlyphs = JSON.parse(JSON.stringify(glyphs)) as typeof glyphs;
+    setStyleMap(prev => ({ ...prev, [newName]: clonedGlyphs }));
+    setCurrentStyle(newName);
+    setGlyphs(clonedGlyphs);
+    setMetadata(prev => ({ ...prev, styleName: newName }));
+    pushNotice(`Peso "${newName}" criado como cópia de "${currentStyle}".`, 'success');
+  }, [styleMap, glyphs, currentStyle, pushNotice]);
+
     const handleRemoveStyle = useCallback((styleName: string) => {
       const styleKeys = Object.keys(styleMap);
       if (!styleMap[styleName]) return;
@@ -1698,7 +1708,7 @@ const App: React.FC = () => {
                     <Toolbar 
                         metadata={metadata} setMetadata={setMetadata} onExport={handleExport} onExportSvgFirst={handleExportSvgFirst} onExportFontEditor={handleExportFontEditor} onExportSvgSheet={handleExportSvgSheet} onExportEmptySvgSheet={handleExportEmptySvgSheet} isExporting={isExporting} exportProgress={exportProgress} onImportSheet={handleImportSheet}
                         availableStyles={Object.keys(styleMap)} currentStyle={currentStyle} onChangeStyle={handleSwitchStyle}
-                        onAddStyle={handleAddStyle} onRemoveStyle={handleRemoveStyle} onGoHome={handleGoHome}
+                        onAddStyle={handleAddStyle} onRemoveStyle={handleRemoveStyle} onDuplicateStyle={handleDuplicateStyle} onGoHome={handleGoHome}
                         onSaveProject={handleSaveProject} onDownloadProjectFile={handleDownloadProjectFile} onImportProjectFile={handleImportProjectFile}
                         isDarkMode={isDarkMode} onToggleTheme={() => setIsDarkMode(!isDarkMode)}
                         onSwitchToCompact={handleSwitchToCompact}

@@ -18,6 +18,7 @@ interface ToolbarProps {
     onChangeStyle: (style: string) => void;
     onAddStyle: (style: string) => void;
     onRemoveStyle: (style: string) => void;
+    onDuplicateStyle: (newName: string) => void;
     onGoHome: () => void;
     onSaveProject: () => void;
     onDownloadProjectFile: () => void;
@@ -49,6 +50,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
     onDownloadProjectFile,
     onImportProjectFile,
     onRemoveStyle,
+    onDuplicateStyle,
     isDarkMode,
     onToggleTheme,
     onSwitchToCompact,
@@ -158,6 +160,22 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                             {isActive ? 'ATIVO' : 'USAR'}
                                         </span>
                                     </button>
+                                    <button
+                                        type="button"
+                                        title={`Duplicar ${style}`}
+                                        aria-label={`Duplicar ${style}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            const newName = prompt(`Nome do novo peso (cópia de "${style}"):`);
+                                            if (newName && newName.trim()) onDuplicateStyle(newName.trim());
+                                        }}
+                                        className={`shrink-0 w-11 h-12 rounded-xl border flex items-center justify-center text-[10px] transition-colors ${isDarkMode ? 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-blue-400 hover:text-blue-300 hover:bg-blue-500/20' : 'bg-white border-neutral-300 text-neutral-600 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                    >
+                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                                        </svg>
+                                    </button>
                                     {availableStyles.length > 1 && (
                                         <button
                                             type="button"
@@ -169,19 +187,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                             }}
                                             className={`shrink-0 w-11 h-12 rounded-xl border flex items-center justify-center text-[10px] transition-colors ${isDarkMode ? 'bg-slate-950/70 border-slate-800 text-slate-300 hover:border-red-400 hover:text-red-300 hover:bg-red-500/20' : 'bg-white border-neutral-300 text-neutral-600 hover:border-red-400 hover:text-red-600 hover:bg-red-50'}`}
                                         >
-                                            <span className="sr-only">Excluir {style}</span>
-                                            <svg
-                                                className="w-4 h-4"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="1.8"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            >
-                                                <path d="M4 7h16" />
-                                                <path d="M10 11v6" />
-                                                <path d="M14 11v6" />
+                                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M4 7h16" /><path d="M10 11v6" /><path d="M14 11v6" />
                                                 <path d="M6 7l1 12c.1 1.1.9 2 2 2h6c1.1 0 1.9-.9 2-2l1-12" />
                                                 <path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2" />
                                             </svg>

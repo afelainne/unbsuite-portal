@@ -108,8 +108,15 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                 value={tracking} 
                 onChange={(e) => {
                     const val = parseInt(e.target.value);
-                    onUpdateMetadata(prev => ({ ...prev, tracking: val }));
-                }} 
+                    onUpdateMetadata(prev => ({
+                        ...prev,
+                        tracking: val,
+                        trackingProfile: {
+                            ...(prev.trackingProfile || DEFAULT_TRACKING_PROFILES['body-text']),
+                            defaultTracking: val
+                        }
+                    }));
+                }}
                 className={`w-full h-1 rounded-lg cursor-pointer ${sliderClass}`} 
             />
             </div>
@@ -143,13 +150,13 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                                   <span className={`text-xs font-mono ${textSub}`}>{lineGap} units ({Math.round((lineGap / upm) * 100)}%)</span>
                               </div>
                               <input 
-                                  type="range" min="-500" max="1000" step="10" 
+                                  type="range" min="0" max="1000" step="10" 
                                   value={lineGap} 
                                   onChange={(e) => onUpdateMetadata(prev => ({ ...prev, lineGap: parseInt(e.target.value) }))} 
                                   className={`w-full h-1.5 rounded-lg cursor-pointer ${sliderClass}`} 
                               />
                               <div className="flex justify-between text-[9px] font-mono">
-                                  <span className={textSub}>-500 (OVERLAP)</span>
+                                  <span className={textSub}>0 (COLADO)</span>
                                   <span className={textSub}>1000 (LOOSE)</span>
                               </div>
                               <p className={`text-[10px] ${textSub}`}>
