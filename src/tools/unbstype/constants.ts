@@ -4,12 +4,19 @@ export interface FontEntry {
   name: string;
   category: FontCategory;
   weights: number[];
+  isLocal?: boolean;
 }
 
 export interface FontPair {
   heading: string;
   body: string;
   label: string;
+}
+
+export interface ColorPalette {
+  name: string;
+  fg: string;
+  bg: string;
 }
 
 export const FONTS: FontEntry[] = [
@@ -124,6 +131,19 @@ export const CATEGORY_LABELS: Record<FontCategory, string> = {
   handwriting: 'Script',
 };
 
+export const COLOR_PALETTES: ColorPalette[] = [
+  { name: 'Dark', fg: '#f5f5f5', bg: '#0a0a0a' },
+  { name: 'Light', fg: '#1a1a1a', bg: '#ffffff' },
+  { name: 'Warm', fg: '#3d2b1f', bg: '#fdf6ec' },
+  { name: 'Cool', fg: '#1a2332', bg: '#eef4fa' },
+  { name: 'High Contrast', fg: '#000000', bg: '#ffff00' },
+  { name: 'Pastel', fg: '#4a3f5c', bg: '#f0e6f6' },
+  { name: 'Forest', fg: '#f0ebe3', bg: '#1b3a2d' },
+  { name: 'Navy', fg: '#e8dcc8', bg: '#0f1b33' },
+  { name: 'Cream', fg: '#2c1810', bg: '#f5e6d3' },
+  { name: 'Slate', fg: '#e2e8f0', bg: '#1e293b' },
+];
+
 export const loadGoogleFont = (fontName: string, weights: number[] = [400, 700]) => {
   const id = `gf-${fontName.replace(/\s+/g, '-').toLowerCase()}`;
   if (document.getElementById(id)) return;
@@ -133,3 +153,36 @@ export const loadGoogleFont = (fontName: string, weights: number[] = [400, 700])
   link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName)}:wght@${weights.join(';')}&display=swap`;
   document.head.appendChild(link);
 };
+
+// WCAG contrast ratio calculation
+function luminance(hex: string): number {
+  const rgb = hex.replace('#', '').match(/.{2}/g)!.map(c => {
+    const v = parseInt(c, 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+}
+
+export function contrastRatio(fg: string, bg: string): number {
+  const l1 = luminance(fg);
+  const l2 = luminance(bg);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function randomHex(): string {
+  return '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+}
+
+export function generateContrastingPair(): { fg: string; bg: string } {
+  for (let i = 0; i < 100; i++) {
+    const fg = randomHex();
+    const bg = randomHex();
+    if (contrastRatio(fg, bg) >= 4.5) return { fg, bg };
+  }
+  // fallback
+  return Math.random() > 0.5
+    ? { fg: '#f5f5f5', bg: '#0a0a0a' }
+    : { fg: '#1a1a1a', bg: '#ffffff' };
+}

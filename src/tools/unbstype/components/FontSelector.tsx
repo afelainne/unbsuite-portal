@@ -1,18 +1,21 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { FONTS, FontEntry, FontCategory, CATEGORY_LABELS, loadGoogleFont } from '../constants';
-import { Search } from 'lucide-react';
+import { Search, Upload } from 'lucide-react';
 
 interface FontSelectorProps {
   value: string;
   onChange: (fontName: string) => void;
   label: string;
+  customFonts?: FontEntry[];
+  onUploadFont?: (file: File) => void;
 }
 
-const FontSelector: React.FC<FontSelectorProps> = ({ value, onChange, label }) => {
+const FontSelector: React.FC<FontSelectorProps> = ({ value, onChange, label, customFonts = [], onUploadFont }) => {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [filterCat, setFilterCat] = useState<FontCategory | 'all'>('all');
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -24,28 +27,38 @@ const FontSelector: React.FC<FontSelectorProps> = ({ value, onChange, label }) =
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  const allFonts = useMemo(() => [...customFonts, ...FONTS], [customFonts]);
+
   const filtered = useMemo(() => {
-    return FONTS.filter(f => {
-      if (filterCat !== 'all' && f.category !== filterCat) return false;
+    return allFonts.filter(f => {
+      if (filterCat !== 'all' && f.category !== filterCat && !f.isLocal) return false;
+      if (filterCat !== 'all' && f.isLocal) return true; // always show local fonts
       if (search && !f.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [search, filterCat]);
+  }, [search, filterCat, allFonts]);
 
   const handleSelect = (font: FontEntry) => {
-    loadGoogleFont(font.name, font.weights);
+    if (!font.isLocal) loadGoogleFont(font.name, font.weights);
     onChange(font.name);
     setOpen(false);
     setSearch('');
   };
 
-  // Preload current font
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onUploadFont) {
+      onUploadFont(file);
+    }
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
   useEffect(() => {
     if (value) {
-      const f = FONTS.find(f => f.name === value);
-      if (f) loadGoogleFont(f.name, f.weights);
+      const f = allFonts.find(f => f.name === value);
+      if (f && !f.isLocal) loadGoogleFont(f.name, f.weights);
     }
-  }, [value]);
+  }, [value, allFonts]);
 
   return (
     <div ref={containerRef} className="relative">
@@ -61,9 +74,9 @@ const FontSelector: React.FC<FontSelectorProps> = ({ value, onChange, label }) =
 
       {open && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg max-h-[320px] overflow-hidden flex flex-col">
-          {/* Search */}
-          <div className="p-2 border-b border-border/50">
-            <div className="relative">
+          {/* Search + Upload */}
+          <div className="p-2 border-b border-border/50 flex gap-1">
+            <div className="relative flex-1">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
               <input
                 type="text"
@@ -74,6 +87,25 @@ const FontSelector: React.FC<FontSelectorProps> = ({ value, onChange, label }) =
                 autoFocus
               />
             </div>
+            {onUploadFont && (
+              <>
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="px-2 py-1 rounded bg-muted hover:bg-muted/80 transition-colors flex items-center gap-1"
+                  title="Upload .ttf / .otf / .woff2"
+                >
+                  <Upload className="h-3 w-3 text-muted-foreground" />
+                  <span className="font-mono text-[8px] text-muted-foreground">Upload</span>
+                </button>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".ttf,.otf,.woff,.woff2"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </>
+            )}
           </div>
           {/* Category filter */}
           <div className="flex gap-1 p-2 border-b border-border/50 flex-wrap">
@@ -95,11 +127,16 @@ const FontSelector: React.FC<FontSelectorProps> = ({ value, onChange, label }) =
               <button
                 key={f.name}
                 onClick={() => handleSelect(f)}
-                onMouseEnter={() => loadGoogleFont(f.name, f.weights)}
+                onMouseEnter={() => { if (!f.isLocal) loadGoogleFont(f.name, f.weights); }}
                 className={`w-full text-left px-3 py-2 hover:bg-muted/50 transition-colors flex items-center justify-between ${value === f.name ? 'bg-accent/10' : ''}`}
               >
                 <span className="text-[12px]" style={{ fontFamily: `'${f.name}', sans-serif` }}>{f.name}</span>
-                <span className="font-mono text-[8px] text-muted-foreground uppercase">{f.category}</span>
+                <div className="flex items-center gap-1">
+                  {f.isLocal && (
+                    <span className="font-mono text-[7px] px-1.5 py-0.5 rounded bg-accent text-accent-foreground uppercase">Local</span>
+                  )}
+                  <span className="font-mono text-[8px] text-muted-foreground uppercase">{f.category}</span>
+                </div>
               </button>
             ))}
             {filtered.length === 0 && (

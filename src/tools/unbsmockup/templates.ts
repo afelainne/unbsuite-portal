@@ -5,15 +5,13 @@ export interface MockupTemplate {
   viewBox: string;
   width: number;
   height: number;
-  // The area where the user's image will be clipped into
   screen: { x: number; y: number; width: number; height: number; rx?: number };
-  // SVG path/elements for the device frame (rendered AFTER the image)
   frameSvg: string;
-  // Optional background SVG rendered BEFORE the image
   bgSvg?: string;
 }
 
 export const TEMPLATES: MockupTemplate[] = [
+  // ─── Mobile ───
   {
     id: 'iphone-portrait',
     name: 'iPhone 15',
@@ -25,7 +23,6 @@ export const TEMPLATES: MockupTemplate[] = [
     frameSvg: `
       <rect x="4" y="4" width="372" height="772" rx="52" fill="none" stroke="#1a1a1a" stroke-width="8"/>
       <rect x="0" y="0" width="380" height="780" rx="56" fill="none" stroke="#2a2a2a" stroke-width="2"/>
-      <!-- Notch -->
       <rect x="120" y="10" width="140" height="28" rx="14" fill="#1a1a1a"/>
       <circle cx="190" cy="24" r="6" fill="#2a2a2a"/>
     `,
@@ -41,10 +38,41 @@ export const TEMPLATES: MockupTemplate[] = [
     frameSvg: `
       <rect x="4" y="4" width="772" height="372" rx="52" fill="none" stroke="#1a1a1a" stroke-width="8"/>
       <rect x="0" y="0" width="780" height="380" rx="56" fill="none" stroke="#2a2a2a" stroke-width="2"/>
-      <!-- Notch -->
       <rect x="10" y="120" width="28" height="140" rx="14" fill="#1a1a1a"/>
     `,
   },
+  {
+    id: 'android-phone',
+    name: 'Android Phone',
+    category: 'Mobile',
+    viewBox: '0 0 390 844',
+    width: 390,
+    height: 844,
+    screen: { x: 12, y: 12, width: 366, height: 820, rx: 28 },
+    frameSvg: `
+      <rect x="3" y="3" width="384" height="838" rx="36" fill="none" stroke="#1a1a1a" stroke-width="6"/>
+      <rect x="0" y="0" width="390" height="844" rx="40" fill="none" stroke="#333" stroke-width="2"/>
+      <circle cx="195" cy="22" r="5" fill="#2a2a2a"/>
+    `,
+  },
+  {
+    id: 'iphone-se',
+    name: 'iPhone SE',
+    category: 'Mobile',
+    viewBox: '0 0 340 640',
+    width: 340,
+    height: 640,
+    screen: { x: 20, y: 80, width: 300, height: 480, rx: 2 },
+    frameSvg: `
+      <rect x="4" y="4" width="332" height="632" rx="40" fill="none" stroke="#1a1a1a" stroke-width="8"/>
+      <rect x="0" y="0" width="340" height="640" rx="44" fill="none" stroke="#333" stroke-width="2"/>
+      <circle cx="170" cy="600" r="22" fill="none" stroke="#333" stroke-width="3"/>
+      <rect x="100" y="20" width="140" height="18" rx="9" fill="#1a1a1a"/>
+      <circle cx="170" cy="29" r="5" fill="#2a2a2a"/>
+    `,
+  },
+
+  // ─── Laptop ───
   {
     id: 'macbook',
     name: 'MacBook Pro',
@@ -54,19 +82,33 @@ export const TEMPLATES: MockupTemplate[] = [
     height: 580,
     screen: { x: 82, y: 22, width: 736, height: 460, rx: 4 },
     frameSvg: `
-      <!-- Screen bezel -->
       <rect x="62" y="8" width="776" height="490" rx="14" fill="none" stroke="#333" stroke-width="4"/>
       <rect x="58" y="4" width="784" height="498" rx="18" fill="none" stroke="#555" stroke-width="2"/>
-      <!-- Camera -->
       <circle cx="450" cy="16" r="3" fill="#444"/>
-      <!-- Base/hinge -->
       <path d="M 30 506 L 62 502 L 838 502 L 870 506 L 870 520 Q 870 530 860 530 L 40 530 Q 30 530 30 520 Z" fill="#2a2a2a" stroke="#444" stroke-width="1"/>
       <line x1="380" y1="516" x2="520" y2="516" stroke="#555" stroke-width="2" stroke-linecap="round"/>
     `,
   },
   {
+    id: 'windows-laptop',
+    name: 'Windows Laptop',
+    category: 'Laptop',
+    viewBox: '0 0 900 580',
+    width: 900,
+    height: 580,
+    screen: { x: 72, y: 18, width: 756, height: 470, rx: 2 },
+    frameSvg: `
+      <rect x="52" y="4" width="796" height="500" rx="8" fill="none" stroke="#444" stroke-width="6"/>
+      <rect x="48" y="0" width="804" height="508" rx="12" fill="none" stroke="#555" stroke-width="2"/>
+      <circle cx="450" cy="12" r="3" fill="#555"/>
+      <path d="M 20 512 L 52 508 L 848 508 L 880 512 L 880 528 Q 880 536 872 536 L 28 536 Q 20 536 20 528 Z" fill="#333" stroke="#444" stroke-width="1"/>
+    `,
+  },
+
+  // ─── Tablet ───
+  {
     id: 'ipad',
-    name: 'iPad',
+    name: 'iPad Portrait',
     category: 'Tablet',
     viewBox: '0 0 560 780',
     width: 560,
@@ -75,10 +117,25 @@ export const TEMPLATES: MockupTemplate[] = [
     frameSvg: `
       <rect x="4" y="4" width="552" height="772" rx="28" fill="none" stroke="#333" stroke-width="8"/>
       <rect x="0" y="0" width="560" height="780" rx="32" fill="none" stroke="#555" stroke-width="2"/>
-      <!-- Camera -->
       <circle cx="280" cy="18" r="4" fill="#444"/>
     `,
   },
+  {
+    id: 'ipad-landscape',
+    name: 'iPad Landscape',
+    category: 'Tablet',
+    viewBox: '0 0 780 560',
+    width: 780,
+    height: 560,
+    screen: { x: 32, y: 24, width: 716, height: 512, rx: 4 },
+    frameSvg: `
+      <rect x="4" y="4" width="772" height="552" rx="28" fill="none" stroke="#333" stroke-width="8"/>
+      <rect x="0" y="0" width="780" height="560" rx="32" fill="none" stroke="#555" stroke-width="2"/>
+      <circle cx="18" cy="280" r="4" fill="#444"/>
+    `,
+  },
+
+  // ─── Web ───
   {
     id: 'browser',
     name: 'Browser Window',
@@ -90,18 +147,150 @@ export const TEMPLATES: MockupTemplate[] = [
     bgSvg: `<rect x="0" y="0" width="900" height="600" rx="10" fill="#1e1e1e"/>`,
     frameSvg: `
       <rect x="0" y="0" width="900" height="600" rx="10" fill="none" stroke="#444" stroke-width="2"/>
-      <!-- Title bar -->
       <rect x="1" y="1" width="898" height="42" rx="10" fill="#2a2a2a"/>
       <line x1="0" y1="44" x2="900" y2="44" stroke="#444" stroke-width="1"/>
-      <!-- Traffic lights -->
       <circle cx="22" cy="22" r="6" fill="#ff5f57"/>
       <circle cx="42" cy="22" r="6" fill="#febc2e"/>
       <circle cx="62" cy="22" r="6" fill="#28c840"/>
-      <!-- URL bar -->
       <rect x="140" y="10" width="620" height="24" rx="6" fill="#3a3a3a"/>
       <text x="450" y="27" text-anchor="middle" font-family="monospace" font-size="10" fill="#888">unbserved.com</text>
     `,
   },
+  {
+    id: 'dark-browser',
+    name: 'Dark Browser',
+    category: 'Web',
+    viewBox: '0 0 900 600',
+    width: 900,
+    height: 600,
+    screen: { x: 2, y: 44, width: 896, height: 554, rx: 0 },
+    bgSvg: `<rect x="0" y="0" width="900" height="600" rx="10" fill="#0d0d0d"/>`,
+    frameSvg: `
+      <rect x="0" y="0" width="900" height="600" rx="10" fill="none" stroke="#222" stroke-width="2"/>
+      <rect x="1" y="1" width="898" height="42" rx="10" fill="#111"/>
+      <line x1="0" y1="44" x2="900" y2="44" stroke="#222" stroke-width="1"/>
+      <circle cx="22" cy="22" r="6" fill="#ff5f57"/>
+      <circle cx="42" cy="22" r="6" fill="#febc2e"/>
+      <circle cx="62" cy="22" r="6" fill="#28c840"/>
+      <rect x="140" y="10" width="620" height="24" rx="6" fill="#1a1a1a"/>
+      <text x="450" y="27" text-anchor="middle" font-family="monospace" font-size="10" fill="#555">unbserved.com</text>
+    `,
+  },
+  {
+    id: 'mobile-browser',
+    name: 'Mobile Browser',
+    category: 'Web',
+    viewBox: '0 0 380 700',
+    width: 380,
+    height: 700,
+    screen: { x: 2, y: 54, width: 376, height: 604, rx: 0 },
+    bgSvg: `<rect x="0" y="0" width="380" height="700" rx="20" fill="#1e1e1e"/>`,
+    frameSvg: `
+      <rect x="0" y="0" width="380" height="700" rx="20" fill="none" stroke="#333" stroke-width="2"/>
+      <rect x="1" y="1" width="378" height="52" rx="20" fill="#2a2a2a"/>
+      <rect x="50" y="16" width="280" height="24" rx="12" fill="#3a3a3a"/>
+      <text x="190" y="33" text-anchor="middle" font-family="monospace" font-size="9" fill="#888">unbserved.com</text>
+      <rect x="1" y="660" width="378" height="39" rx="0" fill="#2a2a2a"/>
+      <line x1="0" y1="660" x2="380" y2="660" stroke="#444" stroke-width="1"/>
+      <rect x="140" y="680" width="100" height="4" rx="2" fill="#555"/>
+    `,
+  },
+
+  // ─── Social ───
+  {
+    id: 'instagram-post',
+    name: 'Instagram Post',
+    category: 'Social',
+    viewBox: '0 0 500 580',
+    width: 500,
+    height: 580,
+    screen: { x: 0, y: 56, width: 500, height: 500, rx: 0 },
+    bgSvg: `<rect x="0" y="0" width="500" height="580" fill="#fafafa"/>`,
+    frameSvg: `
+      <rect x="0" y="0" width="500" height="580" rx="0" fill="none" stroke="#dbdbdb" stroke-width="1"/>
+      <rect x="0" y="0" width="500" height="56" fill="#fff" stroke="#dbdbdb" stroke-width="1"/>
+      <circle cx="28" cy="28" r="16" fill="#e0e0e0" stroke="#ccc" stroke-width="1.5"/>
+      <text x="54" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="#262626">username</text>
+      <text x="54" y="40" font-family="sans-serif" font-size="10" fill="#8e8e8e">Location</text>
+      <circle cx="470" cy="22" r="2" fill="#262626"/>
+      <circle cx="470" cy="28" r="2" fill="#262626"/>
+      <circle cx="470" cy="34" r="2" fill="#262626"/>
+      <line x1="0" y1="556" x2="500" y2="556" stroke="#dbdbdb" stroke-width="1"/>
+    `,
+  },
+  {
+    id: 'instagram-story',
+    name: 'Instagram Story',
+    category: 'Social',
+    viewBox: '0 0 360 640',
+    width: 360,
+    height: 640,
+    screen: { x: 0, y: 60, width: 360, height: 580, rx: 0 },
+    bgSvg: `<rect x="0" y="0" width="360" height="640" rx="16" fill="#111"/>`,
+    frameSvg: `
+      <rect x="0" y="0" width="360" height="640" rx="16" fill="none" stroke="#333" stroke-width="2"/>
+      <rect x="1" y="1" width="358" height="58" rx="16" fill="rgba(0,0,0,0.5)"/>
+      <circle cx="28" cy="30" r="16" fill="none" stroke="#fff" stroke-width="2"/>
+      <text x="54" y="34" font-family="sans-serif" font-size="13" font-weight="bold" fill="#fff">username</text>
+      <rect x="10" y="8" width="80" height="3" rx="1.5" fill="rgba(255,255,255,0.5)"/>
+      <rect x="96" y="8" width="80" height="3" rx="1.5" fill="rgba(255,255,255,0.2)"/>
+    `,
+  },
+  {
+    id: 'twitter-post',
+    name: 'Twitter / X Post',
+    category: 'Social',
+    viewBox: '0 0 500 280',
+    width: 500,
+    height: 280,
+    screen: { x: 60, y: 70, width: 420, height: 200, rx: 12 },
+    bgSvg: `<rect x="0" y="0" width="500" height="280" fill="#15202b"/>`,
+    frameSvg: `
+      <circle cx="30" cy="38" r="20" fill="#2a3a4a"/>
+      <text x="60" y="34" font-family="sans-serif" font-size="14" font-weight="bold" fill="#e7e9ea">User Name</text>
+      <text x="60" y="50" font-family="sans-serif" font-size="12" fill="#71767b">@username</text>
+      <text x="60" y="66" font-family="sans-serif" font-size="10" fill="#71767b">Check this out 👇</text>
+    `,
+  },
+  {
+    id: 'facebook-post',
+    name: 'Facebook Post',
+    category: 'Social',
+    viewBox: '0 0 500 360',
+    width: 500,
+    height: 360,
+    screen: { x: 0, y: 60, width: 500, height: 260, rx: 0 },
+    bgSvg: `<rect x="0" y="0" width="500" height="360" fill="#242526"/>`,
+    frameSvg: `
+      <rect x="0" y="0" width="500" height="60" fill="#242526"/>
+      <circle cx="30" cy="30" r="18" fill="#3a3b3c"/>
+      <text x="58" y="26" font-family="sans-serif" font-size="14" font-weight="bold" fill="#e4e6eb">User Name</text>
+      <text x="58" y="42" font-family="sans-serif" font-size="10" fill="#b0b3b8">Just now · 🌎</text>
+      <rect x="0" y="320" width="500" height="40" fill="#242526"/>
+      <line x1="0" y1="320" x2="500" y2="320" stroke="#3e4042" stroke-width="1"/>
+      <text x="85" y="344" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#b0b3b8">👍 Like</text>
+      <text x="250" y="344" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#b0b3b8">💬 Comment</text>
+      <text x="415" y="344" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#b0b3b8">↗ Share</text>
+    `,
+  },
+  {
+    id: 'youtube-thumbnail',
+    name: 'YouTube Thumbnail',
+    category: 'Social',
+    viewBox: '0 0 640 360',
+    width: 640,
+    height: 360,
+    screen: { x: 0, y: 0, width: 640, height: 360, rx: 8 },
+    frameSvg: `
+      <rect x="0" y="0" width="640" height="360" rx="8" fill="none" stroke="#333" stroke-width="2"/>
+      <circle cx="320" cy="180" r="32" fill="rgba(0,0,0,0.7)"/>
+      <polygon points="310,160 310,200 345,180" fill="#fff"/>
+      <rect x="540" y="330" width="90" height="24" rx="4" fill="rgba(0,0,0,0.8)"/>
+      <text x="585" y="347" text-anchor="middle" font-family="monospace" font-size="12" fill="#fff">12:34</text>
+    `,
+  },
+
+  // ─── Print ───
   {
     id: 'business-card',
     name: 'Business Card',
@@ -112,7 +301,6 @@ export const TEMPLATES: MockupTemplate[] = [
     screen: { x: 20, y: 20, width: 600, height: 340, rx: 8 },
     frameSvg: `
       <rect x="0" y="0" width="640" height="380" rx="12" fill="none" stroke="#ccc" stroke-width="2"/>
-      <!-- Shadow effect -->
       <rect x="6" y="6" width="640" height="380" rx="12" fill="none" stroke="#eee" stroke-width="1" opacity="0.3"/>
     `,
   },
@@ -126,36 +314,83 @@ export const TEMPLATES: MockupTemplate[] = [
     screen: { x: 40, y: 40, width: 420, height: 620, rx: 0 },
     bgSvg: `<rect x="0" y="0" width="500" height="700" fill="#f5f0eb"/>`,
     frameSvg: `
-      <!-- Mat -->
       <rect x="20" y="20" width="460" height="660" fill="none" stroke="#ddd" stroke-width="2"/>
-      <!-- Inner frame -->
       <rect x="38" y="38" width="424" height="624" fill="none" stroke="#222" stroke-width="3"/>
-      <!-- Outer frame -->
       <rect x="0" y="0" width="500" height="700" fill="none" stroke="#333" stroke-width="6"/>
     `,
   },
   {
-    id: 'instagram-post',
-    name: 'Instagram Post',
-    category: 'Social',
-    viewBox: '0 0 500 580',
-    width: 500,
-    height: 580,
-    screen: { x: 0, y: 56, width: 500, height: 500, rx: 0 },
-    bgSvg: `<rect x="0" y="0" width="500" height="580" fill="#fafafa"/>`,
+    id: 'a4-vertical',
+    name: 'A4 Vertical',
+    category: 'Print',
+    viewBox: '0 0 420 594',
+    width: 420,
+    height: 594,
+    screen: { x: 10, y: 10, width: 400, height: 574, rx: 0 },
     frameSvg: `
-      <rect x="0" y="0" width="500" height="580" rx="0" fill="none" stroke="#dbdbdb" stroke-width="1"/>
-      <!-- Header bar -->
-      <rect x="0" y="0" width="500" height="56" fill="#fff" stroke="#dbdbdb" stroke-width="1"/>
-      <circle cx="28" cy="28" r="16" fill="#e0e0e0" stroke="#ccc" stroke-width="1.5"/>
-      <text x="54" y="24" font-family="sans-serif" font-size="13" font-weight="bold" fill="#262626">username</text>
-      <text x="54" y="40" font-family="sans-serif" font-size="10" fill="#8e8e8e">Location</text>
-      <!-- Dots menu -->
-      <circle cx="470" cy="22" r="2" fill="#262626"/>
-      <circle cx="470" cy="28" r="2" fill="#262626"/>
-      <circle cx="470" cy="34" r="2" fill="#262626"/>
-      <!-- Bottom interaction bar -->
-      <line x1="0" y1="556" x2="500" y2="556" stroke="#dbdbdb" stroke-width="1"/>
+      <rect x="0" y="0" width="420" height="594" fill="none" stroke="#ccc" stroke-width="1"/>
+      <line x1="30" y1="0" x2="30" y2="594" stroke="#eee" stroke-width="0.5" stroke-dasharray="4"/>
+    `,
+  },
+  {
+    id: 'album-cover',
+    name: 'Album Cover',
+    category: 'Print',
+    viewBox: '0 0 500 500',
+    width: 500,
+    height: 500,
+    screen: { x: 0, y: 0, width: 500, height: 500, rx: 4 },
+    frameSvg: `
+      <rect x="0" y="0" width="500" height="500" rx="4" fill="none" stroke="#333" stroke-width="3"/>
+      <rect x="4" y="4" width="492" height="492" rx="2" fill="none" stroke="#555" stroke-width="1"/>
+    `,
+  },
+  {
+    id: 'book-cover',
+    name: 'Book Cover',
+    category: 'Print',
+    viewBox: '0 0 430 600',
+    width: 430,
+    height: 600,
+    screen: { x: 30, y: 0, width: 400, height: 600, rx: 0 },
+    bgSvg: `<rect x="0" y="0" width="430" height="600" fill="#f5f0eb"/>`,
+    frameSvg: `
+      <rect x="30" y="0" width="400" height="600" fill="none" stroke="#333" stroke-width="2"/>
+      <rect x="0" y="0" width="28" height="600" fill="#2a2a2a"/>
+      <line x1="28" y1="0" x2="28" y2="600" stroke="#444" stroke-width="2"/>
+    `,
+  },
+
+  // ─── Wearable / Display ───
+  {
+    id: 'apple-watch',
+    name: 'Apple Watch',
+    category: 'Wearable',
+    viewBox: '0 0 230 300',
+    width: 230,
+    height: 300,
+    screen: { x: 25, y: 55, width: 180, height: 190, rx: 36 },
+    frameSvg: `
+      <rect x="15" y="40" width="200" height="220" rx="44" fill="none" stroke="#333" stroke-width="8"/>
+      <rect x="10" y="35" width="210" height="230" rx="48" fill="none" stroke="#555" stroke-width="2"/>
+      <rect x="218" y="110" width="12" height="40" rx="4" fill="#333"/>
+      <rect x="80" y="10" width="70" height="28" rx="6" fill="#2a2a2a"/>
+      <rect x="80" y="262" width="70" height="28" rx="6" fill="#2a2a2a"/>
+    `,
+  },
+  {
+    id: 'smart-tv',
+    name: 'Smart TV',
+    category: 'Wearable',
+    viewBox: '0 0 960 600',
+    width: 960,
+    height: 600,
+    screen: { x: 20, y: 16, width: 920, height: 520, rx: 4 },
+    frameSvg: `
+      <rect x="6" y="6" width="948" height="540" rx="10" fill="none" stroke="#222" stroke-width="10"/>
+      <rect x="0" y="0" width="960" height="552" rx="14" fill="none" stroke="#444" stroke-width="2"/>
+      <path d="M 380 556 L 400 580 L 560 580 L 580 556" fill="none" stroke="#444" stroke-width="3"/>
+      <line x1="380" y1="580" x2="580" y2="580" stroke="#444" stroke-width="4"/>
     `,
   },
 ];

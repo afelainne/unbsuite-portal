@@ -4,14 +4,24 @@ import TemplatePicker from './components/TemplatePicker';
 import ImageUploader from './components/ImageUploader';
 import DeviceFrame from './components/DeviceFrame';
 import ExportControls from './components/ExportControls';
+import { RotateCcw } from 'lucide-react';
 
 const UnbsMockupApp: React.FC = () => {
   const [selectedId, setSelectedId] = useState(TEMPLATES[0].id);
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [bgColor, setBgColor] = useState('#f5f0eb');
+  const [zoom, setZoom] = useState(1);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const template = TEMPLATES.find(t => t.id === selectedId) || TEMPLATES[0];
+
+  const resetAdjustments = () => {
+    setZoom(1);
+    setOffsetX(0);
+    setOffsetY(0);
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4">
@@ -43,6 +53,69 @@ const UnbsMockupApp: React.FC = () => {
             </div>
           </div>
 
+          {/* Image adjustment */}
+          {imageSrc && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">Adjust Image</span>
+                <button
+                  onClick={resetAdjustments}
+                  className="p-1 rounded hover:bg-muted/50 transition-colors"
+                  title="Reset"
+                >
+                  <RotateCcw className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="font-mono text-[8px] text-muted-foreground">Zoom</span>
+                    <span className="font-mono text-[8px] text-muted-foreground">{zoom.toFixed(1)}x</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.1"
+                    value={zoom}
+                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                    className="w-full h-1 rounded-full appearance-none bg-border accent-foreground"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="font-mono text-[8px] text-muted-foreground">X Offset</span>
+                    <span className="font-mono text-[8px] text-muted-foreground">{(offsetX * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-0.5"
+                    max="0.5"
+                    step="0.01"
+                    value={offsetX}
+                    onChange={(e) => setOffsetX(parseFloat(e.target.value))}
+                    className="w-full h-1 rounded-full appearance-none bg-border accent-foreground"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between mb-1">
+                    <span className="font-mono text-[8px] text-muted-foreground">Y Offset</span>
+                    <span className="font-mono text-[8px] text-muted-foreground">{(offsetY * 100).toFixed(0)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-0.5"
+                    max="0.5"
+                    step="0.01"
+                    value={offsetY}
+                    onChange={(e) => setOffsetY(parseFloat(e.target.value))}
+                    className="w-full h-1 rounded-full appearance-none bg-border accent-foreground"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Templates */}
           <div>
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Templates</span>
@@ -59,7 +132,7 @@ const UnbsMockupApp: React.FC = () => {
         {/* Preview */}
         <div className="flex items-center justify-center order-1 lg:order-2 min-h-[400px] rounded-xl bg-muted/30 p-8">
           {imageSrc ? (
-            <DeviceFrame ref={svgRef} template={template} imageSrc={imageSrc} bgColor={bgColor} />
+            <DeviceFrame ref={svgRef} template={template} imageSrc={imageSrc} bgColor={bgColor} zoom={zoom} offsetX={offsetX} offsetY={offsetY} />
           ) : (
             <div className="text-center space-y-3">
               <div className="w-24 h-24 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center">
@@ -76,9 +149,8 @@ const UnbsMockupApp: React.FC = () => {
                 </svg>
               </div>
               <p className="font-mono text-[10px] text-muted-foreground">Upload an image to preview</p>
-              {/* Hidden SVG for export even without image */}
               <div className="hidden">
-                <DeviceFrame ref={svgRef} template={template} imageSrc={null} bgColor={bgColor} />
+                <DeviceFrame ref={svgRef} template={template} imageSrc={null} bgColor={bgColor} zoom={zoom} offsetX={offsetX} offsetY={offsetY} />
               </div>
             </div>
           )}
