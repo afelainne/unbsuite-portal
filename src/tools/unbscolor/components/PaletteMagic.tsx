@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { hexToRgb, rgbToHex, rgbToHsl, hslToRgb, isValidHex, getClosestColorName, getContrastColor } from '../utils/colorMath';
+import { extractDominantColors } from '../utils/imageExtraction';
 import { useLanguage } from '../i18n';
 
 interface PaletteMagicProps {
@@ -467,6 +468,35 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
               <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-mono text-[6px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{c}</span>
             </div>
           ))}
+          {/* Extract from image button */}
+          <div className="relative">
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              id="palette-image-upload"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const colors = await extractDominantColors(file, 8);
+                  if (colors.length > 0) {
+                    onBatchColorsChange(colors);
+                  }
+                } catch (err) {
+                  console.warn('Image extraction failed:', err);
+                }
+                e.target.value = '';
+              }}
+            />
+            <label
+              htmlFor="palette-image-upload"
+              className="w-10 h-10 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-yellow-400 hover:bg-yellow-50 transition-all"
+              title="Extract palette from image (JPG/PNG/WEBP)"
+            >
+              <span className="text-[14px]">🖼</span>
+            </label>
+          </div>
         </div>
 
         {/* Context pills */}
