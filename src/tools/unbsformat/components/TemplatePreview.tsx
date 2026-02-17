@@ -32,7 +32,9 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   const vbH = heightPx + (bleedPx * 2);
 
   const contentW = widthPx - (safePx * 2);
+  const contentH = heightPx - (safePx * 2);
   const colW = (contentW - (gutterPx * (settings.columns - 1))) / settings.columns;
+  const rowH = settings.rows > 1 ? (contentH - (gutterPx * (settings.rows - 1))) / settings.rows : contentH;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(1);
@@ -147,9 +149,15 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
             {showSafety && (
               <rect x={bleedPx + safePx} y={bleedPx + safePx} width={widthPx - (safePx * 2)} height={heightPx - (safePx * 2)} fill="none" stroke="#ff4444" strokeWidth="1" />
             )}
-            {showOverlay && Array.from({ length: settings.columns }).map((_, i) => (
-              <rect key={`col-${i}`} x={bleedPx + safePx + (i * (colW + gutterPx))} y={bleedPx + safePx} width={colW} height={heightPx - (safePx * 2)}
-                fill="rgba(0, 150, 255, 0.05)" stroke="rgba(0, 150, 255, 0.2)" strokeWidth="0.5" />
+            {showOverlay && Array.from({ length: settings.columns }).map((_, ci) => (
+              Array.from({ length: Math.max(1, settings.rows) }).map((_, ri) => (
+                <rect key={`cell-${ci}-${ri}`}
+                  x={bleedPx + safePx + (ci * (colW + gutterPx))}
+                  y={bleedPx + safePx + (ri * (rowH + gutterPx))}
+                  width={colW}
+                  height={rowH}
+                  fill="rgba(0, 150, 255, 0.05)" stroke="rgba(0, 150, 255, 0.2)" strokeWidth="0.5" />
+              ))
             ))}
             <g stroke="#000" strokeWidth="0.5">
               <line x1="0" y1={bleedPx} x2={bleedPx/2} y2={bleedPx} />

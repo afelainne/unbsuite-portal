@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { TemplatePreview } from './components/TemplatePreview';
-import { FormatPreset, PrintSettings } from './types';
+import { GridStylePicker } from './components/GridStylePicker';
+import { FormatPreset, PrintSettings, GridStylePreset } from './types';
 import { FORMAT_PRESETS } from './constants';
-import { Download } from 'lucide-react';
+import { Download, LayoutGrid } from 'lucide-react';
 
 const App: React.FC = () => {
   const [selectedFormat, setSelectedFormat] = useState<FormatPreset>(FORMAT_PRESETS.find(f => f.id === 'a4') || FORMAT_PRESETS[0]);
@@ -17,6 +18,29 @@ const App: React.FC = () => {
   });
   const [showOverlay, setShowOverlay] = useState(true);
   const [showSafety, setShowSafety] = useState(true);
+  const [showGridPicker, setShowGridPicker] = useState(false);
+  const gridPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (gridPickerRef.current && !gridPickerRef.current.contains(e.target as Node)) {
+        setShowGridPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const applyGridStyle = (preset: GridStylePreset) => {
+    setSettings({
+      columns: preset.columns,
+      rows: preset.rows,
+      gutter: preset.gutter,
+      safeZone: preset.safeZone,
+      bleed: preset.bleed,
+    });
+    setShowGridPicker(false);
+  };
 
   const downloadSVG = () => {
     const svg = document.querySelector('svg');
@@ -82,6 +106,23 @@ const App: React.FC = () => {
           </div>
 
           <div className="flex gap-4 items-center">
+             <div className="relative" ref={gridPickerRef}>
+               <button
+                 onClick={() => setShowGridPicker(!showGridPicker)}
+                 className={`flex items-center gap-2 px-3 py-1.5 text-[10px] mono font-bold rounded-sm transition-all ${
+                   showGridPicker ? 'bg-black text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                 }`}
+               >
+                 <LayoutGrid size={12} />
+                 GRID STYLES
+               </button>
+               {showGridPicker && (
+                 <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded shadow-xl z-50">
+                   <GridStylePicker onApply={applyGridStyle} currentSettings={settings} />
+                 </div>
+               )}
+             </div>
+
              <div className="flex bg-gray-100 p-1 rounded-sm text-[10px] mono font-bold">
                 <button 
                   onClick={() => setShowOverlay(!showOverlay)}

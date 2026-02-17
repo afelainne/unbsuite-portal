@@ -145,3 +145,56 @@ export const FORMAT_PRESETS: FormatPreset[] = [
 ];
 
 export const MM_TO_PX = 3.7795275591; // 96 DPI
+
+import { GridStylePreset } from './types';
+
+export const GRID_STYLE_PRESETS: GridStylePreset[] = [
+  // CLASSIC
+  { id: 'gs-12col', name: '12-Column Standard', columns: 12, rows: 1, gutter: 5, safeZone: 5, bleed: 3, category: 'CLASSIC', description: 'Default multi-purpose grid' },
+  { id: 'gs-6col', name: '6-Column Half', columns: 6, rows: 1, gutter: 8, safeZone: 10, bleed: 3, category: 'CLASSIC', description: 'Balanced editorial layout' },
+  { id: 'gs-3col', name: '3-Column Editorial', columns: 3, rows: 1, gutter: 10, safeZone: 15, bleed: 3, category: 'CLASSIC', description: 'Classic magazine layout' },
+  { id: 'gs-2col', name: '2-Column Split', columns: 2, rows: 1, gutter: 12, safeZone: 10, bleed: 3, category: 'CLASSIC', description: 'Simple two-column division' },
+  { id: 'gs-1col', name: 'Single Column', columns: 1, rows: 1, gutter: 0, safeZone: 15, bleed: 3, category: 'CLASSIC', description: 'Full-width single column' },
+  { id: 'gs-4col', name: '4-Column Quarter', columns: 4, rows: 1, gutter: 6, safeZone: 8, bleed: 3, category: 'CLASSIC', description: 'Versatile quarter layout' },
+  { id: 'gs-8col', name: '8-Column Flexible', columns: 8, rows: 1, gutter: 4, safeZone: 6, bleed: 3, category: 'CLASSIC', description: 'Flexible multi-column grid' },
+  { id: 'gs-16col', name: '16-Column Dense', columns: 16, rows: 1, gutter: 3, safeZone: 4, bleed: 3, category: 'CLASSIC', description: 'High-density data layout' },
+  { id: 'gs-24col', name: '24-Column Micro', columns: 24, rows: 1, gutter: 2, safeZone: 3, bleed: 3, category: 'CLASSIC', description: 'Ultra-fine subgrid system' },
+
+  // EDITORIAL
+  { id: 'gs-book1', name: 'Book Standard', columns: 1, rows: 1, gutter: 0, safeZone: 20, bleed: 3, category: 'EDITORIAL', description: 'Single-column book page' },
+  { id: 'gs-book2', name: 'Book Two-Column', columns: 2, rows: 1, gutter: 8, safeZone: 18, bleed: 3, category: 'EDITORIAL', description: 'Academic or reference book' },
+  { id: 'gs-mag3', name: 'Magazine 3-Column', columns: 3, rows: 1, gutter: 5, safeZone: 10, bleed: 5, category: 'EDITORIAL', description: 'Standard magazine layout' },
+  { id: 'gs-mag4', name: 'Magazine 4-Column', columns: 4, rows: 1, gutter: 4, safeZone: 8, bleed: 5, category: 'EDITORIAL', description: 'Dense magazine content' },
+  { id: 'gs-news5', name: 'Newspaper 5-Column', columns: 5, rows: 1, gutter: 3, safeZone: 6, bleed: 3, category: 'EDITORIAL', description: 'Traditional broadsheet' },
+  { id: 'gs-news6', name: 'Newspaper 6-Column', columns: 6, rows: 1, gutter: 3, safeZone: 5, bleed: 3, category: 'EDITORIAL', description: 'Compact tabloid format' },
+  { id: 'gs-academ', name: 'Academic Journal', columns: 2, rows: 1, gutter: 6, safeZone: 20, bleed: 3, category: 'EDITORIAL', description: 'Scholarly publication' },
+  { id: 'gs-catalog', name: 'Catalog Grid', columns: 3, rows: 1, gutter: 8, safeZone: 12, bleed: 5, category: 'EDITORIAL', description: 'Product catalog layout' },
+
+  // DIGITAL
+  { id: 'gs-social', name: 'Social No-Bleed', columns: 1, rows: 1, gutter: 0, safeZone: 8, bleed: 0, category: 'DIGITAL', description: 'Social media safe zone' },
+  { id: 'gs-web2', name: 'Web 2-Column', columns: 2, rows: 1, gutter: 5, safeZone: 5, bleed: 0, category: 'DIGITAL', description: 'Simple web layout' },
+  { id: 'gs-web3', name: 'Web 3-Column', columns: 3, rows: 1, gutter: 5, safeZone: 5, bleed: 0, category: 'DIGITAL', description: 'Content-rich web page' },
+  { id: 'gs-app4', name: 'App Layout 4-Col', columns: 4, rows: 1, gutter: 4, safeZone: 4, bleed: 0, category: 'DIGITAL', description: 'Mobile app interface' },
+  { id: 'gs-dash6', name: 'Dashboard 6-Col', columns: 6, rows: 1, gutter: 3, safeZone: 3, bleed: 0, category: 'DIGITAL', description: 'Data dashboard grid' },
+  { id: 'gs-present', name: 'Presentation', columns: 1, rows: 1, gutter: 0, safeZone: 12, bleed: 0, category: 'DIGITAL', description: 'Slide deck layout' },
+
+  // POSTER
+  { id: 'gs-postbold', name: 'Poster Bold', columns: 4, rows: 1, gutter: 10, safeZone: 15, bleed: 5, category: 'POSTER', description: 'Impact-driven poster' },
+  { id: 'gs-postmin', name: 'Poster Minimal', columns: 2, rows: 1, gutter: 15, safeZone: 20, bleed: 5, category: 'POSTER', description: 'Clean minimalist poster' },
+  { id: 'gs-postden', name: 'Poster Dense', columns: 6, rows: 1, gutter: 5, safeZone: 10, bleed: 5, category: 'POSTER', description: 'Info-heavy poster' },
+  { id: 'gs-billb', name: 'Billboard', columns: 3, rows: 1, gutter: 20, safeZone: 30, bleed: 10, category: 'POSTER', description: 'Large-format billboard' },
+  { id: 'gs-bannerh', name: 'Banner Horizontal', columns: 6, rows: 1, gutter: 4, safeZone: 8, bleed: 3, category: 'POSTER', description: 'Wide horizontal banner' },
+
+  // MINIMAL
+  { id: 'gs-breathe', name: 'Breathe', columns: 1, rows: 1, gutter: 0, safeZone: 25, bleed: 3, category: 'MINIMAL', description: 'Maximum whitespace' },
+  { id: 'gs-centwide', name: 'Centered Wide', columns: 2, rows: 1, gutter: 20, safeZone: 20, bleed: 3, category: 'MINIMAL', description: 'Generous centered split' },
+  { id: 'gs-swiss', name: 'Swiss Style', columns: 4, rows: 1, gutter: 8, safeZone: 15, bleed: 3, category: 'MINIMAL', description: 'Swiss International Style' },
+  { id: 'gs-whitesp', name: 'Whitespace Focus', columns: 3, rows: 1, gutter: 12, safeZone: 18, bleed: 5, category: 'MINIMAL', description: 'Elegant spacing emphasis' },
+
+  // MODULAR
+  { id: 'gs-mod3x3', name: '3×3 Module', columns: 3, rows: 3, gutter: 6, safeZone: 8, bleed: 3, category: 'MODULAR', description: 'Square modular grid' },
+  { id: 'gs-mod4x4', name: '4×4 Module', columns: 4, rows: 4, gutter: 5, safeZone: 6, bleed: 3, category: 'MODULAR', description: 'Dense modular system' },
+  { id: 'gs-mod6x6', name: '6×6 Module', columns: 6, rows: 6, gutter: 4, safeZone: 5, bleed: 3, category: 'MODULAR', description: 'Ultra-fine modular grid' },
+  { id: 'gs-card2x3', name: '2×3 Card Grid', columns: 2, rows: 3, gutter: 8, safeZone: 10, bleed: 3, category: 'MODULAR', description: 'Card-based layout' },
+  { id: 'gs-photo3x2', name: 'Photo Grid', columns: 3, rows: 2, gutter: 3, safeZone: 5, bleed: 3, category: 'MODULAR', description: 'Photo gallery layout' },
+];
