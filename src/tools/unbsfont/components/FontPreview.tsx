@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FontMetadata, GlyphData } from '../types';
 import { exportFontWithFontEditor } from '../services/fontEditorExporter';
 
@@ -20,18 +20,19 @@ const SAMPLE_TEXTS = [
   'AV AW AT LT VA WA TA YA',
 ];
 
+// Fix #11: Fixed font family name (no timestamp)
+const FONT_FAMILY_NAME = 'FontPreview_UnbsFont';
+
 const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode, isOpen, onClose }) => {
   const [fontUrl, setFontUrl] = useState<string | null>(null);
-  const [fontFamily, setFontFamily] = useState<string>('');
+  const [fontLoaded, setFontLoaded] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customText, setCustomText] = useState('');
   const [previewSize, setPreviewSize] = useState(48);
 
-  // Generate unique font family name
-  const uniqueFontFamily = useMemo(() => {
-    return `FontPreview_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }, []);
+  // Fix #9: Count kerning pairs for footer info
+  const kerningPairsCount = Object.keys(metadata.kerning || {}).length;
 
   // Export and load font
   const loadFont = useCallback(async () => {
@@ -46,25 +47,32 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
       const blob = new Blob([buffer], { type: 'font/ttf' });
       const url = URL.createObjectURL(blob);
       
-      // Clean up old URL
+      // Fix #10: Clean up old FontFace before adding new one
+      document.fonts.forEach(f => {
+        if (f.family === FONT_FAMILY_NAME) {
+          document.fonts.delete(f);
+        }
+      });
+      
+      // Clean up old blob URL
       if (fontUrl) {
         URL.revokeObjectURL(fontUrl);
       }
       
       // Create @font-face rule
-      const fontFace = new FontFace(uniqueFontFamily, `url(${url})`);
+      const fontFace = new FontFace(FONT_FAMILY_NAME, `url(${url})`);
       await fontFace.load();
       document.fonts.add(fontFace);
       
       setFontUrl(url);
-      setFontFamily(uniqueFontFamily);
+      setFontLoaded(true);
     } catch (err) {
       console.error('Failed to load font preview:', err);
       setError(err instanceof Error ? err.message : 'Falha ao carregar preview');
     } finally {
       setIsLoading(false);
     }
-  }, [metadata, glyphs, uniqueFontFamily, fontUrl]);
+  }, [metadata, glyphs, fontUrl]);
 
   // Load font when modal opens
   useEffect(() => {
@@ -77,6 +85,12 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
       if (fontUrl) {
         URL.revokeObjectURL(fontUrl);
       }
+      // Clean up FontFace on unmount
+      document.fonts.forEach(f => {
+        if (f.family === FONT_FAMILY_NAME) {
+          document.fonts.delete(f);
+        }
+      });
     };
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -176,7 +190,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
                 <p className={textSub}>Exportando e carregando fonte...</p>
               </div>
             </div>
-          ) : fontFamily ? (
+          ) : fontLoaded ? (
             <div className="space-y-6">
               {/* Custom text */}
               {customText && (
@@ -184,7 +198,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
                   <p className={`text-xs font-bold uppercase mb-2 ${textSub}`}>Texto Personalizado</p>
                   <p 
                     style={{ 
-                      fontFamily: `"${fontFamily}", sans-serif`, 
+                      fontFamily: `"${FONT_FAMILY_NAME}", sans-serif`, 
                       fontSize: previewSize 
                     }}
                     className="break-words"
@@ -203,7 +217,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
                       <span className={`text-xs font-mono w-12 text-right ${textSub}`}>{size}px</span>
                       <p 
                         style={{ 
-                          fontFamily: `"${fontFamily}", sans-serif`, 
+                          fontFamily: `"${FONT_FAMILY_NAME}", sans-serif`, 
                           fontSize: size 
                         }}
                       >
@@ -219,7 +233,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
                 <div key={idx} className={`p-4 rounded-xl border ${borderCol}`}>
                   <p 
                     style={{ 
-                      fontFamily: `"${fontFamily}", sans-serif`, 
+                      fontFamily: `"${FONT_FAMILY_NAME}", sans-serif`, 
                       fontSize: previewSize 
                     }}
                     className="break-words"
@@ -229,15 +243,15 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
                 </div>
               ))}
 
-              {/* Waterfall - like Windows font viewer */}
+              {/* Waterfall */}
               <div className={`p-4 rounded-xl border ${borderCol}`}>
-                <p className={`text-xs font-bold uppercase mb-4 ${textSub}`}>Cascata de Tamanhos (estilo Windows)</p>
+                <p className={`text-xs font-bold uppercase mb-4 ${textSub}`}>Cascata de Tamanhos</p>
                 <div className="space-y-2">
                   {[8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72].map((size) => (
                     <p 
                       key={size}
                       style={{ 
-                        fontFamily: `"${fontFamily}", sans-serif`, 
+                        fontFamily: `"${FONT_FAMILY_NAME}", sans-serif`, 
                         fontSize: size 
                       }}
                     >
@@ -252,7 +266,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
                 <p className={`text-xs font-bold uppercase mb-4 ${textSub}`}>Todos os Caracteres</p>
                 <div 
                   className="flex flex-wrap gap-2"
-                  style={{ fontFamily: `"${fontFamily}", sans-serif` }}
+                  style={{ fontFamily: `"${FONT_FAMILY_NAME}", sans-serif` }}
                 >
                   {glyphs
                     .filter(g => g.pathData && g.char !== ' ')
@@ -277,16 +291,19 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
           )}
         </div>
 
-        {/* Footer info */}
+        {/* Footer info - Fix #9: show kerning pairs count */}
         <div className={`px-6 py-3 border-t text-xs ${borderCol} ${textSub} flex items-center justify-between`}>
           <span>
             {glyphs.filter(g => g.pathData).length} glyphs • 
             UPM: {metadata.unitsPerEm || 1000} • 
             Ascender: {metadata.ascender || 800} • 
-            Descender: {metadata.descender || -200}
+            Descender: {metadata.descender || -200} •
+            Kerning: {kerningPairsCount} pares
           </span>
           <span>
-            💡 Este preview usa a fonte TTF real exportada
+            {kerningPairsCount > 0 
+              ? '✓ Fonte exportada com kerning embutido'
+              : '⚠ Sem pares de kerning na fonte'}
           </span>
         </div>
       </div>
