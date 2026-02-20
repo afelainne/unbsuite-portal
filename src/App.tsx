@@ -11,6 +11,7 @@ import UnbsFont from "./pages/UnbsFont";
 import UnbsFormat from "./pages/UnbsFormat";
 import UnbsMockup from "./pages/UnbsMockup";
 import UnbsType from "./pages/UnbsType";
+import UnbsId from "./pages/UnbsId";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/unbsformat/*" element={<UnbsFormat />} />
           <Route path="/unbsmockup/*" element={<UnbsMockup />} />
           <Route path="/unbstype/*" element={<UnbsType />} />
+          <Route path="/unbsid/*" element={<UnbsId />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
