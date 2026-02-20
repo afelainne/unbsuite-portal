@@ -13,30 +13,24 @@ interface PageSlideProps {
 }
 
 const PageSlide = ({ children, className, bgColor, id, noPadding = false, theme }: PageSlideProps) => {
-  const bg = bgColor || theme?.slideBackground || undefined;
-  const textColor = theme?.slideTextColor || undefined;
+  const bg = bgColor || theme?.slideBackground || '#FFFFFF';
+  const textColor = theme?.slideTextColor || '#111111';
 
   return (
     <div
       id={id}
-      className={cn(
-        'unbsid-slide relative w-full overflow-hidden',
-        !noPadding && 'px-12 py-10',
-        className
-      )}
+      className={cn('unbsid-slide absolute inset-0 overflow-hidden', className)}
       style={{
-        aspectRatio: '16/9',
         backgroundColor: bg,
         color: textColor,
         fontFamily: theme?.headingFont,
-        // Grid base de 8pt como guia visual sutil
-        backgroundImage: bg
-          ? undefined
-          : 'radial-gradient(circle, hsl(var(--foreground)/0.04) 1px, transparent 1px)',
-        backgroundSize: bg ? undefined : '8px 8px',
       }}
     >
-      {children}
+      {noPadding ? children : (
+        <div className="absolute inset-0 px-10 py-8 overflow-hidden">
+          {children}
+        </div>
+      )}
     </div>
   );
 };
