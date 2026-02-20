@@ -1,111 +1,175 @@
 
-# Correcoes no UnbsID: Cards de Cores no padrao UNBSCOLOR + Grid de Logo real via UNBSGRID
+# UnbsID — Melhorias Funcionais + Sistema de Temas de Design
 
-## Problema 1 — Cards de cores nao seguem o padrao do Multi-Slot do UNBSCOLOR
+## Analise das paginas atuais
 
-### O que esta errado
-O `ColorEntryCard` do UnbsID exibe os codigos de cor (RGB, HSL, CMYK) escondidos atras de um botao "Ver codigos" (collapsed). Isso diverge do padrao estabelecido no `BatchAnalyzer.tsx` do UNBSCOLOR, onde:
-- O swatch de cor e maior e quadrado
-- Os codigos HEX, RGB, CMYK, HSL ficam sempre **visiveis** numa caixa `bg-white/50 p-5 rounded-xl border`
-- O estilo e `font-mono text-[11px] text-gray-500`
-- HEX aparece em `font-bold text-black/80`
-- CMYK separado visualmente do RGB/HSL
-- O nome da cor usa `getClosestColorName` para mostrar nome natural
+Apos leitura completa de todos os capitulos, identifiquei as seguintes oportunidades:
 
-### Solucao — Refatorar `ColorEntryCard.tsx`
-Substituir o card atual pelo padrao do Multi-Slot:
+### Capa (CoverPage)
+- **Problema:** Layout fixo de 2 zonas (60/40). Sem variacao de estilo visual entre diferentes projetos.
+- **Melhoria:** Aplicar o tema ativo (background, accentColor, fontFamily, borderRadius do tema) nos slides.
 
-**Estrutura do novo card:**
-```
-[Swatch grande h-24 com color picker no hover]
-[Nome editavel + role badge]
-[Caixa de codigos sempre visivel (bg-white/50 rounded-xl)]
-  HEX bold em destaque
-  RGB: r, g, b
-  CMYK: c, m, y, k
-  HSL: h°, s%, l%
-[usageNote editavel em italico]
-```
+### Introducao (IntroPage)
+- **Problema:** Os "beneficios fixos" (Consistencia, Agilidade, Escalabilidade) sao estaticos e nao editaveis.
+- **Melhoria:** Tornar os bullets de beneficios editaveis inline com EditableText.
 
-**Mudancas no `src/tools/unbsid/components/ColorEntryCard.tsx`:**
-- Remover o toggle "Ver codigos" / `expanded` state
-- Exibir HEX, RGB, CMYK, HSL **sempre visiveis** na caixa com estilo `bg-white/50 p-4 rounded-xl border border-black/5`
-- HEX recebe destaque: `font-bold text-foreground text-[13px]`
-- RGB, CMYK, HSL em `font-mono text-[10px] text-muted-foreground`
-- Swatch aumenta de `h-20` para `h-24`
-- Adicionar campo `usageNote` editavel (EditableText) abaixo dos codigos
-- O `AddColorButton` permanece igual
+### Logo (LogoPage)
+- **Problema:** Slide `donts` usa textos fixos hardcoded que nao sao editaveis.
+- **Melhoria:** Tornar os `donts` editaveis (adicionar/remover via chips).
+
+### Cores (ColorsPage)
+- **Problema:** A paleta de neutros nao tem botao para adicionar/remover tons. O slide de gradientes nao permite editar angle ou color stops inline.
+- **Melhorias:**
+  - Adicionar `+` e `-` na paleta de neutros para escalar de 5 a 9 tons.
+  - Adicionar inputs de angulo e color-picker de stops nos gradientes.
+  - Na paleta principal mostrar preview de texto branco/preto sobre a cor.
+
+### Tipografia (TypographyPage)
+- **Problema:** Slide `typefaces` nao permite adicionar ou remover fontes. Nao tem preview editavel por fonte.
+- **Melhorias:**
+  - Botao `+ Fonte` para adicionar nova typeface.
+  - Botao de remover em cada card de fonte.
+  - Campo `previewText` editavel diretamente no preview grande.
+
+### Elementos Graficos (GraphicsPage)
+- **Ja esta razoavelmente funcional** — sem melhorias criticas identificadas.
+
+### Layout & Grid (LayoutPage)
+- **Problema:** Slide de grid responsivo e apenas visual/estatico, sem campos editaveis de colunas/gutter/margem.
+- **Melhoria:** Tornar os valores de colunas, gutter e margem de cada breakpoint editaveis.
+
+### Tom de Voz (VoicePage)
+- **Problema:** Nao ha como adicionar novos templates de mensagem com contexto customizado.
+- **Melhoria:** Botao `+ Template` que adiciona novo card com campo de contexto e exemplo editaveis.
+
+### Aplicacoes (ApplicationsPage)
+- **Problema:** Picker de mockup e uma lista plana sem categorias. Ao fechar o picker (clicar fora), ele nao fecha.
+- **Melhorias:**
+  - Picker agrupado por categoria (Mobile, Social, Web…).
+  - Click-outside para fechar o picker.
+
+### Entregaveis (DeliverablesPage)
+- **Problema:** O checklist nao tem item para "Tema do manual definido" nem para "Tom de voz completo".
+- **Melhoria:** Adicionar esses itens e incluir percentual de conclusao mais granular.
 
 ---
 
-## Problema 2 — Grid do logo nao usa o UNBSGRID real
+## Sistema de Temas
 
-### O que esta errado
-O slide `grid` do `LogoPage.tsx` usa apenas um CSS `background-image` com `linear-gradient` para simular um grid — nao existe analise geometrica real, nao usa Paper.js, nao usa os renderers do UNBSGRID.
+### Conceito
 
-### Solucao — Novo componente `LogoGridCanvas.tsx` + slide de grid expandido
+Um tema define a **estetica visual dos slides do manual**, nao dos dados da marca. O mesmo conteudo de marca pode ser apresentado em diferentes estilos visuais, tornando o manual mais adequado para diferentes segmentos (tech, luxo, editorial, minimal etc).
 
-A solucao tem dois niveis:
+Cada tema controla:
+- `bgColor` dos slides (fundo do slide 16:9)
+- `accentColor` (cor dos headers, capitulos, marcas d'agua)
+- `fontFamily` usada nos titulos e labels do manual (nao da marca)
+- `borderRadius` dos cards e swatches
+- `headingStyle` (uppercase bold / italic serif / light sans / etc.)
+- `decoratorChar` (o numero grande da marca d'agua, ex: "01" vs "I" vs um simbolo)
+- `slideLayout` (margin, padding padrao do PageSlide)
+- `coverLayout` (variante de layout da capa: vertical, horizontal, diagonal, magazine)
 
-**A) Componente `LogoGridCanvas.tsx`**
+### Temas Propostos (8 no total)
 
-Um novo componente `src/tools/unbsid/components/LogoGridCanvas.tsx` que:
-- Aceita `svgContent: string` e `preset: GeometryPreset`
-- Usa um `<canvas>` + `paper.setup()` para renderizar o SVG + overlay geometrico
-- Importa diretamente `parseSVG` do `unbsgrid/lib/svg-engine.ts`
-- Importa os renderers do `unbsgrid/components/renderers/index.ts`
-- Aplica as opcoes e estilos do `GeometryPreset` selecionado
-- Suporta fundo claro (white) adequado para o manual
+| # | Nome | Estetica | Cover | Fundo slides | Accent | Fonte manual |
+|---|------|----------|-------|-------------|--------|-------------|
+| 1 | **Studio** (default) | Minimalista industrial, sem serifas | Split 60/40 escuro | Branco puro | Preto | Inter |
+| 2 | **Luxe** | Editorial de moda, alto contraste bege/preto | Vertical invertida, serif grande | Creme #F5F0E8 | Preto profundo #0A0A0A | Playfair Display |
+| 3 | **Tech** | Interface escura tipo dark mode, detalhe neon | Horizontal com borda neon | Cinza escuro #141414 | Verde-limao #CCFF00 | JetBrains Mono / Inter |
+| 4 | **Pastel** | Suave, startup SaaS, arredondado | Canto com formas suaves | Rosa/lavanda claros | Roxo suave | DM Sans |
+| 5 | **Bold** | Tipografia expressiva, cores saturadas | Diagonal com grande tipografia | Amarelo vibrante #FFF500 | Preto | Space Grotesk |
+| 6 | **Editorial** | Revista/jornal, colunas, reguas | Colunas com regua horizontal | Branco | Preto com detalhe vermelho | Merriweather |
+| 7 | **Neon** | Cyberpunk/gaming, gradientes vivos | Fundo preto com gradiente neon | Preto #0D0D0D | Magenta/ciano | Rajdhani / Inter |
+| 8 | **Eco** | Sustentavel, organico, tons de terra | Textura de papel, cor natural | Areia #F9F4EC | Verde escuro #2D4A2D | Lora |
 
-**Importante:** O `PreviewCanvas` do UNBSGRID tem toda a logica de zoom/pan/toolbar que nao e adequada para embed no manual. O `LogoGridCanvas` sera uma versao **lite** e sem toolbar, apenas o canvas de renderizacao.
+### Estrutura de dados do tema
 
-**B) Slide de Grid expandido no `LogoPage.tsx`**
+Sera adicionado ao `BrandData` (sem quebrar dados existentes):
 
-O slide `grid` sera reformulado com:
-- Upload do SVG do logo (se nao houver o do variant primary)
-- **Seletor de preset**: grid de botoes com os 13 presets do `getBuiltinPresets()` — Verificacao Rapida, Proporcao Aurea, Anatomia Estrutural, Equilibrio & Simetria, Grid & Espacamento, Tipografia & Baseline, Manual de Marca, Geometria Avancada, Apresentacao, Fluxo Dinamico, Circulos Construtivos, Diagonal & Perspectiva, Skeleton & Curvas
-- Canvas 16:9 com o logo + overlay do preset ativo
-- Parametros editaveis do grid (gridType, gridUnits, keyRatios)
-- Badge do preset ativo com descricao
+```typescript
+// Em types.ts — novo campo
+themeId: string; // 'studio' | 'luxe' | 'tech' | 'pastel' | 'bold' | 'editorial' | 'neon' | 'eco'
+
+// Novo arquivo: src/tools/unbsid/themes.ts
+export interface ManualTheme {
+  id: string;
+  name: string;
+  description: string;
+  slideBackground: string;
+  slideTextColor: string;
+  accentColor: string;
+  accentTextColor: string;
+  headingFont: string;
+  borderRadius: string;        // CSS value, ex: '0px' | '8px' | '16px'
+  cardBackground: string;
+  decoratorOpacity: number;    // ex: 0.03
+  coverLayout: 'split' | 'centered' | 'diagonal' | 'magazine';
+  coverBg: string;
+  coverAccent: string;
+}
+```
+
+### Como o tema e aplicado
+
+- `PageSlide.tsx` recebera um prop opcional `theme?: ManualTheme` e aplicara o background, textColor e borderRadius.
+- Os capitulos receberao `theme` via prop do `ManualViewer`, que le `data.themeId` e passa o tema resolvido para os slides.
+- O selector de tema ficara na toolbar principal (App.tsx), com preview visual em mini-card.
 
 ---
 
 ## Arquivos a Modificar / Criar
 
-| Arquivo | Acao | Mudanca |
-|---------|------|---------|
-| `src/tools/unbsid/components/ColorEntryCard.tsx` | Modificar | Remover toggle, exibir todos os codigos sempre visiveis no padrao UNBSCOLOR |
-| `src/tools/unbsid/components/LogoGridCanvas.tsx` | Criar | Canvas lite Paper.js com preset UNBSGRID aplicado ao SVG do logo |
-| `src/tools/unbsid/chapters/LogoPage.tsx` | Modificar | Slide `grid` usa LogoGridCanvas + seletor de 13 presets do UNBSGRID |
+| Arquivo | Acao | O que muda |
+|---------|------|-----------|
+| `src/tools/unbsid/themes.ts` | **Criar** | Definicao dos 8 temas com todos os tokens visuais |
+| `src/tools/unbsid/types.ts` | **Modificar** | Adicionar campo `themeId: string` ao BrandData e DEFAULT_BRAND_DATA |
+| `src/tools/unbsid/components/PageSlide.tsx` | **Modificar** | Aceitar prop `theme` e aplicar background, textColor, borderRadius do tema |
+| `src/tools/unbsid/components/ManualViewer.tsx` | **Modificar** | Resolver tema pelo `data.themeId`, passar `theme` para cada slide |
+| `src/tools/unbsid/components/ThemePicker.tsx` | **Criar** | Componente seletor de temas com preview visual de cada um |
+| `src/tools/unbsid/App.tsx` | **Modificar** | Adicionar `ThemePicker` na toolbar (entre nome da marca e ExportPanel) |
+| `src/tools/unbsid/chapters/CoverPage.tsx` | **Modificar** | Aplicar `coverLayout` do tema + alternativa `centered` e `magazine` |
+| `src/tools/unbsid/chapters/IntroPage.tsx` | **Modificar** | Tornar bullets de beneficios editaveis |
+| `src/tools/unbsid/chapters/ColorsPage.tsx` | **Modificar** | Adicionar +/- neutros, inputs editaveis no gradiente (angle + stops) |
+| `src/tools/unbsid/chapters/TypographyPage.tsx` | **Modificar** | Adicionar/remover fontes, previewText editavel |
+| `src/tools/unbsid/chapters/ApplicationsPage.tsx` | **Modificar** | Picker agrupado por categoria, click-outside fecha |
+| `src/tools/unbsid/chapters/VoicePage.tsx` | **Modificar** | Botao `+ Template` com contexto customizado |
+| `src/tools/unbsid/chapters/LogoPage.tsx` | **Modificar** | Slide `donts` com itens editaveis/removiveis |
+| `src/tools/unbsid/chapters/DeliverablesPage.tsx` | **Modificar** | Novos itens no checklist + status de tema |
 
 ---
 
-## Detalhes tecnicos do LogoGridCanvas
+## Como sera o ThemePicker
 
-O componente:
-1. Recebe `svgContent: string` (o SVG inline do logo) e `preset: GeometryPreset`
-2. Cria um `<canvas>` via `useRef`, chama `paper.setup(canvas)` no `useEffect`
-3. Importa `parseSVG` de `../../unbsgrid/lib/svg-engine` para analisar o SVG
-4. Importa todos os renderers de `../../unbsgrid/components/renderers`
-5. Executa a logica de escala/posicao igual ao `PreviewCanvas` original (sem zoom/pan)
-6. Aplica cada renderer habilitado no `preset.geometryOptions` com os estilos do `preset.geometryStyles`
-7. Fundo branco por default (adequado para o manual de identidade)
-8. Re-renderiza quando `svgContent` ou `preset` mudam
+Um dropdown/popover na toolbar com 8 cards de preview:
 
-O canvas fica embutido no slide do manual em 16:9, ocupando a area esquerda (~65%), enquanto o seletor de presets fica na coluna direita (~35%).
+```text
+[Studio] [Luxe] [Tech] [Pastel]
+[Bold] [Editorial] [Neon] [Eco]
+```
 
-### Seletor de Presets
-
-Grid de cards compactos para os 13 presets builtin:
-- Card ativo: borda colorida com `border-primary`
-- Cada card mostra: nome do preset, descricao curta
-- Ao clicar, muda o `activePreset` e re-renderiza o canvas
-- Badges coloridos indicando o tipo de analise
+Cada card:
+- Mini retangulo (60x40px) com o fundo do tema + uma linha de texto simulada
+- Nome do tema abaixo
+- Borda primary quando ativo
+- Clique: `onChange({ themeId: theme.id })`
 
 ---
 
-## Ordem de execucao
+## Ordem de Execucao
 
-1. Refatorar `ColorEntryCard.tsx` — remover toggle, exibir codigos sempre visiveis
-2. Criar `LogoGridCanvas.tsx` — canvas lite com Paper.js + renderers do UNBSGRID
-3. Modificar `LogoPage.tsx` slide `grid` — integrar LogoGridCanvas + seletor de presets
+1. Criar `themes.ts` com os 8 temas completos
+2. Modificar `types.ts` — adicionar `themeId` ao BrandData e DEFAULT
+3. Modificar `PageSlide.tsx` — prop `theme` com estilos aplicados via style inline
+4. Modificar `ManualViewer.tsx` — resolver e passar tema para cada slide
+5. Criar `ThemePicker.tsx` — seletor visual de temas
+6. Modificar `App.tsx` — inserir ThemePicker na toolbar
+7. Modificar `CoverPage.tsx` — suporte a `coverLayout` ('split'/'centered'/'magazine'/'diagonal')
+8. Melhorias funcionais nos capitulos (em paralelo):
+   - `IntroPage.tsx` — bullets editaveis
+   - `ColorsPage.tsx` — +/- neutros, gradiente editavel
+   - `TypographyPage.tsx` — adicionar/remover fontes
+   - `ApplicationsPage.tsx` — picker categorizado + click-outside
+   - `VoicePage.tsx` — + Template customizado
+   - `LogoPage.tsx` — donts editaveis
+   - `DeliverablesPage.tsx` — checklist expandido
