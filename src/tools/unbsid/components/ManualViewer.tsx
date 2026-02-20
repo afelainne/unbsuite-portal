@@ -1,6 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { BrandData } from '../types';
 import { SLIDE_MAP } from './ChapterNav';
+import { getTheme, ManualTheme } from '../themes';
 import CoverPage from '../chapters/CoverPage';
 import IntroPage from '../chapters/IntroPage';
 import LogoPage from '../chapters/LogoPage';
@@ -22,7 +23,12 @@ interface ManualViewerProps {
 }
 
 // Renderiza o slide correto baseado no SLIDE_MAP
-function renderSlide(idx: number, data: BrandData, onChange: (u: Partial<BrandData>) => void) {
+function renderSlide(
+  idx: number,
+  data: BrandData,
+  onChange: (u: Partial<BrandData>) => void,
+  theme: ManualTheme
+) {
   const entry = SLIDE_MAP[idx];
   if (!entry) return null;
 
@@ -30,15 +36,14 @@ function renderSlide(idx: number, data: BrandData, onChange: (u: Partial<BrandDa
 
   switch (chapterId) {
     case 'cover':
-      return <CoverPage data={data} onChange={onChange} />;
+      return <CoverPage data={data} onChange={onChange} theme={theme} />;
 
     case 'intro':
       return slideTitle === 'Objetivo'
-        ? <IntroPage data={data} onChange={onChange} slide="objective" />
-        : <IntroPage data={data} onChange={onChange} slide="personality" />;
+        ? <IntroPage data={data} onChange={onChange} slide="objective" theme={theme} />
+        : <IntroPage data={data} onChange={onChange} slide="personality" theme={theme} />;
 
     case 'logo': {
-      const logoSlides = ['Variações', 'Grid & Construção', 'Área de Proteção', 'Tamanho Mínimo', 'Usos Incorretos'];
       const slideMap: Record<string, 'gallery' | 'grid' | 'clearspace' | 'minsize' | 'donts'> = {
         'Variações': 'gallery',
         'Grid & Construção': 'grid',
@@ -46,7 +51,7 @@ function renderSlide(idx: number, data: BrandData, onChange: (u: Partial<BrandDa
         'Tamanho Mínimo': 'minsize',
         'Usos Incorretos': 'donts',
       };
-      return <LogoPage data={data} onChange={onChange} slide={slideMap[slideTitle] || 'gallery'} />;
+      return <LogoPage data={data} onChange={onChange} slide={slideMap[slideTitle] || 'gallery'} theme={theme} />;
     }
 
     case 'colors': {
@@ -56,7 +61,7 @@ function renderSlide(idx: number, data: BrandData, onChange: (u: Partial<BrandDa
         'Contraste A11y': 'a11y',
         'Gradientes': 'gradients',
       };
-      return <ColorsPage data={data} onChange={onChange} slide={map[slideTitle] || 'palette'} />;
+      return <ColorsPage data={data} onChange={onChange} slide={map[slideTitle] || 'palette'} theme={theme} />;
     }
 
     case 'typography': {
@@ -64,7 +69,7 @@ function renderSlide(idx: number, data: BrandData, onChange: (u: Partial<BrandDa
         'Fontes': 'typefaces',
         'Hierarquia': 'hierarchy',
       };
-      return <TypographyPage data={data} onChange={onChange} slide={map[slideTitle] || 'typefaces'} />;
+      return <TypographyPage data={data} onChange={onChange} slide={map[slideTitle] || 'typefaces'} theme={theme} />;
     }
 
     case 'graphics': {
@@ -72,7 +77,7 @@ function renderSlide(idx: number, data: BrandData, onChange: (u: Partial<BrandDa
         'Linguagem Visual': 'visual',
         'Ícones': 'icons',
       };
-      return <GraphicsPage data={data} onChange={onChange} slide={map[slideTitle] || 'visual'} />;
+      return <GraphicsPage data={data} onChange={onChange} slide={map[slideTitle] || 'visual'} theme={theme} />;
     }
 
     case 'layout': {
@@ -80,17 +85,17 @@ function renderSlide(idx: number, data: BrandData, onChange: (u: Partial<BrandDa
         'Espaçamento': 'spacing',
         'Grid Responsivo': 'grid',
       };
-      return <LayoutPage data={data} onChange={onChange} slide={map[slideTitle] || 'spacing'} />;
+      return <LayoutPage data={data} onChange={onChange} slide={map[slideTitle] || 'spacing'} theme={theme} />;
     }
 
     case 'voice':
-      return <VoicePage data={data} onChange={onChange} />;
+      return <VoicePage data={data} onChange={onChange} theme={theme} />;
 
     case 'applications':
-      return <ApplicationsPage data={data} onChange={onChange} />;
+      return <ApplicationsPage data={data} onChange={onChange} theme={theme} />;
 
     case 'deliverables':
-      return <DeliverablesPage data={data} />;
+      return <DeliverablesPage data={data} theme={theme} />;
 
     default:
       return null;
@@ -100,6 +105,7 @@ function renderSlide(idx: number, data: BrandData, onChange: (u: Partial<BrandDa
 const ManualViewer = ({ data, onChange, currentSlide, onSlideChange }: ManualViewerProps) => {
   const totalSlides = SLIDE_MAP.length;
   const containerRef = useRef<HTMLDivElement>(null);
+  const theme = getTheme(data.themeId ?? 'studio');
 
   // Navegação por teclado
   const handleKeyDown = useCallback(
@@ -119,7 +125,7 @@ const ManualViewer = ({ data, onChange, currentSlide, onSlideChange }: ManualVie
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  const slideContent = renderSlide(currentSlide, data, onChange);
+  const slideContent = renderSlide(currentSlide, data, onChange, theme);
   const entry = SLIDE_MAP[currentSlide];
 
   return (
@@ -131,7 +137,10 @@ const ManualViewer = ({ data, onChange, currentSlide, onSlideChange }: ManualVie
       </div>
 
       {/* Slide 16:9 */}
-      <div className="relative w-full bg-background border border-foreground/10 rounded-xl overflow-hidden shadow-sm" style={{ aspectRatio: '16/9' }}>
+      <div
+        className="relative w-full border border-foreground/10 rounded-xl overflow-hidden shadow-sm"
+        style={{ aspectRatio: '16/9' }}
+      >
         {slideContent}
       </div>
 

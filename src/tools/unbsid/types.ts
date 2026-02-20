@@ -93,6 +93,21 @@ export interface MockupRef {
 }
 
 export interface BrandData {
+  // ── Tema do manual ─────────────────────────────────────────────
+  themeId: string;
+
+  // ── Layout customizável ────────────────────────────────────────
+  gridBreakpoints: {
+    label: string;
+    cols: number;
+    gutter: number;
+    margin: number;
+    width: string;
+  }[];
+
+  // ── Donts do logo ──────────────────────────────────────────────
+  logoDonts: string[];
+
   // ── Capa ───────────────────────────────────────────────────────
   name: string;
   tagline: string;
@@ -143,6 +158,23 @@ export interface BrandData {
 }
 
 export const DEFAULT_BRAND_DATA: BrandData = {
+  themeId: 'studio',
+
+  gridBreakpoints: [
+    { label: 'Mobile', cols: 4, gutter: 16, margin: 16, width: '375px' },
+    { label: 'Tablet', cols: 8, gutter: 20, margin: 24, width: '768px' },
+    { label: 'Desktop', cols: 12, gutter: 24, margin: 48, width: '1440px' },
+  ],
+
+  logoDonts: [
+    'Não distorça ou deforme o logo',
+    'Não aplique sombras ou efeitos',
+    'Não altere as proporções',
+    'Não use cores fora do sistema',
+    'Não aplique sobre fundos conflitantes',
+    'Não adicione elementos extras ao logo',
+  ],
+
   name: 'Minha Marca',
   tagline: 'Uma tagline memorável',
   version: 'v1.0',

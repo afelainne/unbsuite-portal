@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { ManualTheme } from '../themes';
 
 interface PageSlideProps {
   children: ReactNode;
@@ -8,9 +9,13 @@ interface PageSlideProps {
   id?: string;
   /** Se true, remove o padding padrão para slides que controlam o próprio layout */
   noPadding?: boolean;
+  theme?: ManualTheme;
 }
 
-const PageSlide = ({ children, className, bgColor, id, noPadding = false }: PageSlideProps) => {
+const PageSlide = ({ children, className, bgColor, id, noPadding = false, theme }: PageSlideProps) => {
+  const bg = bgColor || theme?.slideBackground || undefined;
+  const textColor = theme?.slideTextColor || undefined;
+
   return (
     <div
       id={id}
@@ -21,12 +26,14 @@ const PageSlide = ({ children, className, bgColor, id, noPadding = false }: Page
       )}
       style={{
         aspectRatio: '16/9',
-        backgroundColor: bgColor || undefined,
+        backgroundColor: bg,
+        color: textColor,
+        fontFamily: theme?.headingFont,
         // Grid base de 8pt como guia visual sutil
-        backgroundImage: bgColor
+        backgroundImage: bg
           ? undefined
           : 'radial-gradient(circle, hsl(var(--foreground)/0.04) 1px, transparent 1px)',
-        backgroundSize: bgColor ? undefined : '8px 8px',
+        backgroundSize: bg ? undefined : '8px 8px',
       }}
     >
       {children}
