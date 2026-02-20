@@ -1,175 +1,237 @@
 
-# UnbsID — Melhorias Funcionais + Sistema de Temas de Design
+# UnbsID — Correções Completas: Layout, Minimalismo, Upload Universal e Drag-to-Move
 
-## Analise das paginas atuais
+## Diagnóstico dos Problemas
 
-Apos leitura completa de todos os capitulos, identifiquei as seguintes oportunidades:
+### 1. Conteúdo cortado (principal causa)
+O `PageSlide` tem `aspectRatio: '16/9'` **dentro** do próprio componente, e o `ManualViewer` também envolve o slide com `aspectRatio: '16/9'`. Isso cria **duplo aspect-ratio**: o `PageSlide` é forçado a ter proporção 16:9 mas já está dentro de um container 16:9 — resultado: o conteúdo interno usa `h-full` que aponta para a altura real do elemento (que é calculada pela proporção) mas os layouts com `flex flex-col` e `flex-1` fazem overflow.
 
-### Capa (CoverPage)
-- **Problema:** Layout fixo de 2 zonas (60/40). Sem variacao de estilo visual entre diferentes projetos.
-- **Melhoria:** Aplicar o tema ativo (background, accentColor, fontFamily, borderRadius do tema) nos slides.
+**Solução:** O `PageSlide` deve ser um container simples `w-full h-full absolute inset-0` sem definir seu próprio `aspectRatio`. Só o wrapper externo no `ManualViewer` mantém o `aspectRatio: 16/9`.
 
-### Introducao (IntroPage)
-- **Problema:** Os "beneficios fixos" (Consistencia, Agilidade, Escalabilidade) sao estaticos e nao editaveis.
-- **Melhoria:** Tornar os bullets de beneficios editaveis inline com EditableText.
+### 2. Templates "horríveis" — estética minimalista
+- O tema **Bold** tem fundo amarelo `#FFF500` para os slides — ilegível e feio.
+- O tema **Pastel** tem fundo `#FDF8FF` (lilás) que fica visualmente pesado.
+- O decorator (número 80px) é muito intrusivo.
+- Os cards de cor têm bordas muito pesadas.
+- Os layouts de capas `diagonal` e `magazine` são excessivamente barrocos.
 
-### Logo (LogoPage)
-- **Problema:** Slide `donts` usa textos fixos hardcoded que nao sao editaveis.
-- **Melhoria:** Tornar os `donts` editaveis (adicionar/remover via chips).
+**Solução:** Refinar todos os 8 temas com estética minimalista: slides sempre com fundo **branco ou quase-branco** (exceto Tech/Neon que são dark por natureza). Capas mantêm as variações visuais ricas, mas os **slides internos** são clean e tipográficos. Decorator opacity reduzida para `0.03` no máximo.
 
-### Cores (ColorsPage)
-- **Problema:** A paleta de neutros nao tem botao para adicionar/remover tons. O slide de gradientes nao permite editar angle ou color stops inline.
-- **Melhorias:**
-  - Adicionar `+` e `-` na paleta de neutros para escalar de 5 a 9 tons.
-  - Adicionar inputs de angulo e color-picker de stops nos gradientes.
-  - Na paleta principal mostrar preview de texto branco/preto sobre a cor.
+### 3. Upload faltando no slide de Grid
+No slide `grid` do `LogoPage`, quando não há SVG, aparece uma mensagem de texto — mas não há um **botão de upload de SVG** visível. O usuário precisa ir para o slide "Galeria" para fazer upload. Isso é não-intuitivo.
 
-### Tipografia (TypographyPage)
-- **Problema:** Slide `typefaces` nao permite adicionar ou remover fontes. Nao tem preview editavel por fonte.
-- **Melhorias:**
-  - Botao `+ Fonte` para adicionar nova typeface.
-  - Botao de remover em cada card de fonte.
-  - Campo `previewText` editavel diretamente no preview grande.
+**Solução:** Adicionar zona de upload de SVG direto no slide `grid`, que ao receber o arquivo atualiza `logoVariants` com `svgContent` e `dataUrl` como na `VariantCard`.
 
-### Elementos Graficos (GraphicsPage)
-- **Ja esta razoavelmente funcional** — sem melhorias criticas identificadas.
+### 4. Drag-to-move nos elementos dos slides
+Os elementos de texto e logos ficam em posições fixas. O usuário quer poder reposicionar elementos dentro do slide.
 
-### Layout & Grid (LayoutPage)
-- **Problema:** Slide de grid responsivo e apenas visual/estatico, sem campos editaveis de colunas/gutter/margem.
-- **Melhoria:** Tornar os valores de colunas, gutter e margem de cada breakpoint editaveis.
-
-### Tom de Voz (VoicePage)
-- **Problema:** Nao ha como adicionar novos templates de mensagem com contexto customizado.
-- **Melhoria:** Botao `+ Template` que adiciona novo card com campo de contexto e exemplo editaveis.
-
-### Aplicacoes (ApplicationsPage)
-- **Problema:** Picker de mockup e uma lista plana sem categorias. Ao fechar o picker (clicar fora), ele nao fecha.
-- **Melhorias:**
-  - Picker agrupado por categoria (Mobile, Social, Web…).
-  - Click-outside para fechar o picker.
-
-### Entregaveis (DeliverablesPage)
-- **Problema:** O checklist nao tem item para "Tema do manual definido" nem para "Tom de voz completo".
-- **Melhoria:** Adicionar esses itens e incluir percentual de conclusao mais granular.
+**Solução:** Adicionar um sistema simples de drag-to-move com `position: absolute` e estado de posição salvo no `BrandData`. Criar um hook `useDraggable` que retorna handlers de `onMouseDown` e aplica `transform: translate(x, y)`. Implementar nos blocos principais da capa (logo, título, tagline) e nos slides de introdução.
 
 ---
 
-## Sistema de Temas
+## Arquitetura das Correções
 
-### Conceito
+### A) Fix crítico: `PageSlide` e altura dos slides
 
-Um tema define a **estetica visual dos slides do manual**, nao dos dados da marca. O mesmo conteudo de marca pode ser apresentado em diferentes estilos visuais, tornando o manual mais adequado para diferentes segmentos (tech, luxo, editorial, minimal etc).
+**`PageSlide.tsx`:** Remover `aspectRatio` de dentro do componente. O slide passa a ser `position: absolute; inset: 0` para preencher o container pai que já tem 16:9.
 
-Cada tema controla:
-- `bgColor` dos slides (fundo do slide 16:9)
-- `accentColor` (cor dos headers, capitulos, marcas d'agua)
-- `fontFamily` usada nos titulos e labels do manual (nao da marca)
-- `borderRadius` dos cards e swatches
-- `headingStyle` (uppercase bold / italic serif / light sans / etc.)
-- `decoratorChar` (o numero grande da marca d'agua, ex: "01" vs "I" vs um simbolo)
-- `slideLayout` (margin, padding padrao do PageSlide)
-- `coverLayout` (variante de layout da capa: vertical, horizontal, diagonal, magazine)
+**`ManualViewer.tsx`:** Mantém o wrapper com `aspectRatio: '16/9'` e `position: relative`. O `PageSlide` preenche com `absolute inset-0`.
 
-### Temas Propostos (8 no total)
+Todos os layouts de capítulo devem usar a estrutura:
+```tsx
+<div className="absolute inset-0 px-10 py-8 flex flex-col gap-4 overflow-hidden">
+  {/* conteúdo */}
+</div>
+```
+Em vez de:
+```tsx
+<div className="h-full flex flex-col gap-5">  {/* PROBLEMA: h-full sem referência */}
+```
 
-| # | Nome | Estetica | Cover | Fundo slides | Accent | Fonte manual |
-|---|------|----------|-------|-------------|--------|-------------|
-| 1 | **Studio** (default) | Minimalista industrial, sem serifas | Split 60/40 escuro | Branco puro | Preto | Inter |
-| 2 | **Luxe** | Editorial de moda, alto contraste bege/preto | Vertical invertida, serif grande | Creme #F5F0E8 | Preto profundo #0A0A0A | Playfair Display |
-| 3 | **Tech** | Interface escura tipo dark mode, detalhe neon | Horizontal com borda neon | Cinza escuro #141414 | Verde-limao #CCFF00 | JetBrains Mono / Inter |
-| 4 | **Pastel** | Suave, startup SaaS, arredondado | Canto com formas suaves | Rosa/lavanda claros | Roxo suave | DM Sans |
-| 5 | **Bold** | Tipografia expressiva, cores saturadas | Diagonal com grande tipografia | Amarelo vibrante #FFF500 | Preto | Space Grotesk |
-| 6 | **Editorial** | Revista/jornal, colunas, reguas | Colunas com regua horizontal | Branco | Preto com detalhe vermelho | Merriweather |
-| 7 | **Neon** | Cyberpunk/gaming, gradientes vivos | Fundo preto com gradiente neon | Preto #0D0D0D | Magenta/ciano | Rajdhani / Inter |
-| 8 | **Eco** | Sustentavel, organico, tons de terra | Textura de papel, cor natural | Areia #F9F4EC | Verde escuro #2D4A2D | Lora |
+### B) Temas refinados — estética minimalista
 
-### Estrutura de dados do tema
+Os **slides internos** de todos os temas passam a ter fundo **neutro/branco**:
 
-Sera adicionado ao `BrandData` (sem quebrar dados existentes):
+| Tema | Slide BG (antes) | Slide BG (depois) |
+|------|-----------------|-------------------|
+| Studio | #FFFFFF | #FFFFFF (inalterado) |
+| Luxe | #F5F0E8 | #FAFAF8 |
+| Tech | #141414 | #0F0F0F (mantém dark) |
+| Pastel | #FDF8FF | #FDFCFF |
+| **Bold** | **#FFF500** | **#FFFFFF** |
+| Editorial | #FFFFFF | #FFFFFF (inalterado) |
+| Neon | #0D0D0D | #0D0D0D (mantém dark) |
+| Eco | #F9F4EC | #F8F5EF |
+
+Capas mantêm seus fundos expressivos — elas são o "cartão de visita".
+
+Decorator opacity: máximo `0.03`, reduzido de `0.04-0.10`.
+
+Cards internos: bordas `1px solid` com `opacity: 0.06` — bem discretas.
+
+### C) Upload universal de logo
+
+No slide `grid`, adicionar uma zona de upload de arquivo `.svg` que funciona da mesma forma que `VariantCard`:
+- Lê o SVG como texto (para `svgContent`) E como dataURL
+- Atualiza o variant `primary` com os dados
+- Exibe o canvas imediatamente após upload
+
+Também adicionar upload no slide `clearspace` (para mostrar o logo real no exemplo de área de proteção) e `donts`.
+
+### D) Hook `useDraggable` — mover elementos
+
+Criar um hook simples:
 
 ```typescript
-// Em types.ts — novo campo
-themeId: string; // 'studio' | 'luxe' | 'tech' | 'pastel' | 'bold' | 'editorial' | 'neon' | 'eco'
+// src/tools/unbsid/hooks/useDraggable.ts
+interface DragPos { x: number; y: number }
 
-// Novo arquivo: src/tools/unbsid/themes.ts
-export interface ManualTheme {
-  id: string;
-  name: string;
-  description: string;
-  slideBackground: string;
-  slideTextColor: string;
-  accentColor: string;
-  accentTextColor: string;
-  headingFont: string;
-  borderRadius: string;        // CSS value, ex: '0px' | '8px' | '16px'
-  cardBackground: string;
-  decoratorOpacity: number;    // ex: 0.03
-  coverLayout: 'split' | 'centered' | 'diagonal' | 'magazine';
-  coverBg: string;
-  coverAccent: string;
+function useDraggable(
+  initial: DragPos,
+  onPositionChange: (p: DragPos) => void
+) {
+  // retorna { style, onMouseDown }
+  // usa mousemove/mouseup no document durante drag
 }
 ```
 
-### Como o tema e aplicado
+Adicionar ao `BrandData` um campo `elementPositions: Record<string, {x: number, y: number}>` para persistir posições dos elementos.
 
-- `PageSlide.tsx` recebera um prop opcional `theme?: ManualTheme` e aplicara o background, textColor e borderRadius.
-- Os capitulos receberao `theme` via prop do `ManualViewer`, que le `data.themeId` e passa o tema resolvido para os slides.
-- O selector de tema ficara na toolbar principal (App.tsx), com preview visual em mini-card.
+Aplicar nos elementos da **Capa** (logo, título, tagline, metadata) e no slide de **Introdução** (objetivo, benefícios).
 
----
-
-## Arquivos a Modificar / Criar
-
-| Arquivo | Acao | O que muda |
-|---------|------|-----------|
-| `src/tools/unbsid/themes.ts` | **Criar** | Definicao dos 8 temas com todos os tokens visuais |
-| `src/tools/unbsid/types.ts` | **Modificar** | Adicionar campo `themeId: string` ao BrandData e DEFAULT_BRAND_DATA |
-| `src/tools/unbsid/components/PageSlide.tsx` | **Modificar** | Aceitar prop `theme` e aplicar background, textColor, borderRadius do tema |
-| `src/tools/unbsid/components/ManualViewer.tsx` | **Modificar** | Resolver tema pelo `data.themeId`, passar `theme` para cada slide |
-| `src/tools/unbsid/components/ThemePicker.tsx` | **Criar** | Componente seletor de temas com preview visual de cada um |
-| `src/tools/unbsid/App.tsx` | **Modificar** | Adicionar `ThemePicker` na toolbar (entre nome da marca e ExportPanel) |
-| `src/tools/unbsid/chapters/CoverPage.tsx` | **Modificar** | Aplicar `coverLayout` do tema + alternativa `centered` e `magazine` |
-| `src/tools/unbsid/chapters/IntroPage.tsx` | **Modificar** | Tornar bullets de beneficios editaveis |
-| `src/tools/unbsid/chapters/ColorsPage.tsx` | **Modificar** | Adicionar +/- neutros, inputs editaveis no gradiente (angle + stops) |
-| `src/tools/unbsid/chapters/TypographyPage.tsx` | **Modificar** | Adicionar/remover fontes, previewText editavel |
-| `src/tools/unbsid/chapters/ApplicationsPage.tsx` | **Modificar** | Picker agrupado por categoria, click-outside fecha |
-| `src/tools/unbsid/chapters/VoicePage.tsx` | **Modificar** | Botao `+ Template` com contexto customizado |
-| `src/tools/unbsid/chapters/LogoPage.tsx` | **Modificar** | Slide `donts` com itens editaveis/removiveis |
-| `src/tools/unbsid/chapters/DeliverablesPage.tsx` | **Modificar** | Novos itens no checklist + status de tema |
+Um ícone de drag `⠿` (GripVertical) aparece no hover de cada elemento arrastável.
 
 ---
 
-## Como sera o ThemePicker
+## Arquivos a Modificar
 
-Um dropdown/popover na toolbar com 8 cards de preview:
+| Arquivo | Mudança |
+|---------|---------|
+| `src/tools/unbsid/components/PageSlide.tsx` | Remover `aspectRatio` interno; usar `absolute inset-0` |
+| `src/tools/unbsid/components/ManualViewer.tsx` | Manter apenas o wrapper externo com `aspectRatio: 16/9 relative` |
+| `src/tools/unbsid/themes.ts` | Refinar slideBackground de Bold/Pastel/Luxe/Eco; reduzir decoratorOpacity |
+| `src/tools/unbsid/types.ts` | Adicionar `elementPositions?: Record<string, {x: number, y: number}>` |
+| `src/tools/unbsid/hooks/useDraggable.ts` | Criar hook de arrastar elementos |
+| `src/tools/unbsid/chapters/CoverPage.tsx` | Aplicar useDraggable nos blocos de logo/título/tagline |
+| `src/tools/unbsid/chapters/LogoPage.tsx` | Adicionar zona de upload de SVG no slide `grid`; upload também em `clearspace` |
+| `src/tools/unbsid/chapters/IntroPage.tsx` | Fix layout com `absolute inset-0`; aplicar drag nos blocos |
+| `src/tools/unbsid/chapters/ColorsPage.tsx` | Fix layout; cards de cor mais compactos no espaço correto |
+| `src/tools/unbsid/chapters/TypographyPage.tsx` | Fix layout |
+| `src/tools/unbsid/chapters/GraphicsPage.tsx` | Fix layout |
+| `src/tools/unbsid/chapters/LayoutPage.tsx` | Fix layout |
+| `src/tools/unbsid/chapters/VoicePage.tsx` | Fix layout |
+| `src/tools/unbsid/chapters/ApplicationsPage.tsx` | Fix layout |
+| `src/tools/unbsid/chapters/DeliverablesPage.tsx` | Fix layout |
 
-```text
-[Studio] [Luxe] [Tech] [Pastel]
-[Bold] [Editorial] [Neon] [Eco]
+---
+
+## Detalhamento do Fix de Layout
+
+### Problema raiz — duplo aspect-ratio
+
+Situação atual:
+```
+ManualViewer: <div style="aspectRatio: 16/9"> ← define altura
+  PageSlide: <div style="aspectRatio: 16/9; position: relative"> ← REDEFINE altura = 0 ou overflow
+    <div className="h-full">  ← h-full aponta para o PageSlide interno (altura calculada como 0)
 ```
 
-Cada card:
-- Mini retangulo (60x40px) com o fundo do tema + uma linha de texto simulada
-- Nome do tema abaixo
-- Borda primary quando ativo
-- Clique: `onChange({ themeId: theme.id })`
+Correção:
+```
+ManualViewer: <div style="aspectRatio: 16/9; position: relative"> ← define altura
+  PageSlide: <div style="position: absolute; inset: 0; overflow: hidden"> ← preenche
+    <div className="absolute inset-0 px-10 py-8">  ← layout com padding
+```
+
+### Mudança em cada capítulo
+
+Todos os slides passam de:
+```tsx
+<PageSlide theme={theme}>
+  <div className="h-full flex flex-col gap-5">
+```
+
+Para:
+```tsx
+<PageSlide theme={theme}>
+  <div className="absolute inset-0 px-10 py-8 flex flex-col gap-4 overflow-hidden">
+```
+
+Isso garante que o espaço disponível é **todo o slide** (menos padding) e nada transborda.
+
+O grande número decorativo (watermark) muda de `absolute bottom-8 right-10` (correto) para `absolute bottom-6 right-8` com tamanho reduzido para `text-[60px]`.
 
 ---
 
-## Ordem de Execucao
+## Detalhamento do Sistema de Drag
 
-1. Criar `themes.ts` com os 8 temas completos
-2. Modificar `types.ts` — adicionar `themeId` ao BrandData e DEFAULT
-3. Modificar `PageSlide.tsx` — prop `theme` com estilos aplicados via style inline
-4. Modificar `ManualViewer.tsx` — resolver e passar tema para cada slide
-5. Criar `ThemePicker.tsx` — seletor visual de temas
-6. Modificar `App.tsx` — inserir ThemePicker na toolbar
-7. Modificar `CoverPage.tsx` — suporte a `coverLayout` ('split'/'centered'/'magazine'/'diagonal')
-8. Melhorias funcionais nos capitulos (em paralelo):
-   - `IntroPage.tsx` — bullets editaveis
-   - `ColorsPage.tsx` — +/- neutros, gradiente editavel
-   - `TypographyPage.tsx` — adicionar/remover fontes
-   - `ApplicationsPage.tsx` — picker categorizado + click-outside
-   - `VoicePage.tsx` — + Template customizado
-   - `LogoPage.tsx` — donts editaveis
-   - `DeliverablesPage.tsx` — checklist expandido
+### `useDraggable` hook
+
+```typescript
+export function useDraggable(key: string, positions: Record<string, {x:number,y:number}>, onSave: (k: string, p: {x:number,y:number}) => void) {
+  const pos = positions?.[key] ?? { x: 0, y: 0 };
+  // mouse handlers para mover
+  // retorna: style com transform, onMouseDown, isDragging
+}
+```
+
+### Aplicação na Capa (exemplo)
+
+```tsx
+// No CoverPage — bloco do logo na capa split
+const { style: logoStyle, onMouseDown: logoDragStart } = useDraggable(
+  'cover-logo', data.elementPositions ?? {}, 
+  (k, p) => onChange({ elementPositions: { ...data.elementPositions, [k]: p } })
+);
+
+<div style={logoStyle} onMouseDown={logoDragStart} className="group cursor-move">
+  <GripVertical className="opacity-0 group-hover:opacity-30 absolute -left-4 top-1/2 -translate-y-1/2 h-3 w-3" />
+  {/* logo content */}
+</div>
+```
+
+### Quais elementos são draggable
+
+- **Capa**: bloco do logo, bloco de título+tagline, bloco de metadata (versão/estúdio)
+- **Introdução**: bloco de objetivo, bloco de benefícios
+- **Logo > Galeria**: não — os cards ficam no grid
+- Outros slides: não draggable nesta iteração (foco na capa e intro que têm mais liberdade criativa)
+
+---
+
+## Estética Minimalista — Refinamentos Adicionais
+
+### Tipografia dos slides internos
+- Títulos de capítulo: `text-lg font-semibold` (menor que o atual `text-2xl font-bold`)
+- Labels de seção: `text-[9px] font-mono uppercase tracking-[0.2em] opacity-40`
+- Corpo: `text-[11px]` (menor, mais editorial)
+
+### Cards de cor
+- Swatch: `h-16` (menor que `h-24`) — mais compacto dentro do slide 16:9
+- Bloco de códigos: `text-[9px]` para RGB/HSL/CMYK, `text-[11px]` apenas para HEX
+- Remover `shadow-sm` — zero-elevation no espírito minimalista
+
+### Preset selector no Grid de Logo
+- Substituir os cards coloridos por uma lista clean de texto com `text-[9px]` e linha sublinhada no ativo
+- Sem cores de categoria nos itens não-ativos — apenas texto `opacity-50`
+
+---
+
+## Ordem de Execução
+
+1. **Fix `PageSlide.tsx`** — remover `aspectRatio` interno (correção crítica que afeta tudo)
+2. **Fix `ManualViewer.tsx`** — `position: relative` no wrapper, `overflow: hidden`
+3. **Refinar `themes.ts`** — Bold slides brancos, decoratorOpacity uniforme em `0.03`
+4. **Criar `hooks/useDraggable.ts`** — hook simples de drag
+5. **Atualizar `types.ts`** — campo `elementPositions`
+6. **Fix de layout em todos os capítulos** (em paralelo):
+   - `CoverPage.tsx` — layout + drag no logo/título
+   - `IntroPage.tsx` — layout + drag
+   - `LogoPage.tsx` — layout + upload SVG no slide grid
+   - `ColorsPage.tsx` — layout + cards compactos
+   - `TypographyPage.tsx` — layout
+   - `GraphicsPage.tsx` — layout
+   - `LayoutPage.tsx` — layout
+   - `VoicePage.tsx` — layout
+   - `ApplicationsPage.tsx` — layout
+   - `DeliverablesPage.tsx` — layout
