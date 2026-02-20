@@ -136,7 +136,7 @@ const ManualViewer = ({ data, onChange, currentSlide, onSlideChange }: ManualVie
         <span>{currentSlide + 1} / {totalSlides}</span>
       </div>
 
-      {/* Slide 16:9 */}
+      {/* Slide 16:9 — wrapper único com aspect-ratio; PageSlide usa absolute inset-0 */}
       <div
         className="relative w-full border border-foreground/10 rounded-xl overflow-hidden shadow-sm"
         style={{ aspectRatio: '16/9' }}
