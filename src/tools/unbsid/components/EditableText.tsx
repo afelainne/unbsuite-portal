@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 
 interface EditableTextProps {
@@ -8,6 +8,7 @@ interface EditableTextProps {
   className?: string;
   placeholder?: string;
   multiline?: boolean;
+  style?: CSSProperties;
 }
 
 const EditableText = ({
@@ -17,26 +18,20 @@ const EditableText = ({
   className,
   placeholder = 'Clique para editar…',
   multiline = false,
+  style,
 }: EditableTextProps) => {
   const [editing, setEditing] = useState(false);
   const [localValue, setLocalValue] = useState(value);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
+  useEffect(() => { setLocalValue(value); }, [value]);
 
   useEffect(() => {
     if (editing && inputRef.current) {
       inputRef.current.focus();
-      // Selecionar tudo
-      if (inputRef.current instanceof HTMLInputElement) {
-        inputRef.current.select();
-      }
+      if (inputRef.current instanceof HTMLInputElement) inputRef.current.select();
     }
   }, [editing]);
-
-  const handleDoubleClick = () => setEditing(true);
 
   const commit = () => {
     setEditing(false);
@@ -44,14 +39,8 @@ const EditableText = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !multiline) {
-      e.preventDefault();
-      commit();
-    }
-    if (e.key === 'Escape') {
-      setLocalValue(value);
-      setEditing(false);
-    }
+    if (e.key === 'Enter' && !multiline) { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { setLocalValue(value); setEditing(false); }
   };
 
   if (editing) {
@@ -63,10 +52,8 @@ const EditableText = ({
           onChange={(e) => setLocalValue(e.target.value)}
           onBlur={commit}
           onKeyDown={handleKeyDown}
-          className={cn(
-            'bg-transparent border-b border-dashed border-foreground/40 outline-none resize-none w-full',
-            className
-          )}
+          style={style}
+          className={cn('bg-transparent border-b border-dashed border-foreground/40 outline-none resize-none w-full', className)}
           rows={3}
         />
       );
@@ -78,23 +65,18 @@ const EditableText = ({
         onChange={(e) => setLocalValue(e.target.value)}
         onBlur={commit}
         onKeyDown={handleKeyDown}
-        className={cn(
-          'bg-transparent border-b border-dashed border-foreground/40 outline-none w-full',
-          className
-        )}
+        style={style}
+        className={cn('bg-transparent border-b border-dashed border-foreground/40 outline-none w-full', className)}
       />
     );
   }
 
   return (
     <Tag
-      onDoubleClick={handleDoubleClick}
+      onDoubleClick={() => setEditing(true)}
       title="Clique duplo para editar"
-      className={cn(
-        'cursor-text group relative',
-        !value && 'opacity-40',
-        className
-      )}
+      style={style}
+      className={cn('cursor-text group relative', !value && 'opacity-40', className)}
     >
       {value || placeholder}
       <span className="absolute -top-4 left-0 text-[8px] uppercase tracking-widest text-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">

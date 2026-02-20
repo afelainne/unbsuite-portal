@@ -1,16 +1,40 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BrandData, MockupRef } from '../types';
 import PageSlide from '../components/PageSlide';
+import { ManualTheme } from '../themes';
 import { TEMPLATES } from '../../unbsmockup/templates';
 import { Plus, X } from 'lucide-react';
 
 interface ApplicationsPageProps {
   data: BrandData;
   onChange: (updated: Partial<BrandData>) => void;
+  theme?: ManualTheme;
 }
 
-const ApplicationsPage = ({ data, onChange }: ApplicationsPageProps) => {
+// Group templates by category
+const TEMPLATE_GROUPS = TEMPLATES.reduce<Record<string, typeof TEMPLATES>>((acc, tpl) => {
+  const cat = tpl.category || 'Other';
+  if (!acc[cat]) acc[cat] = [];
+  acc[cat].push(tpl);
+  return acc;
+}, {});
+
+const ApplicationsPage = ({ data, onChange, theme }: ApplicationsPageProps) => {
   const [showPicker, setShowPicker] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const accent = theme?.accentColor || 'hsl(var(--primary))';
+
+  // Click-outside to close picker
+  useEffect(() => {
+    if (!showPicker) return;
+    const handleClick = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showPicker]);
 
   const addMockup = (templateId: string) => {
     const tpl = TEMPLATES.find((t) => t.id === templateId);
@@ -25,49 +49,44 @@ const ApplicationsPage = ({ data, onChange }: ApplicationsPageProps) => {
   };
 
   return (
-    <PageSlide>
+    <PageSlide theme={theme}>
       <div className="h-full flex flex-col gap-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">08 — Aplicações</p>
-            <h2 className="text-2xl font-bold mt-1">Mockups</h2>
+            <p className="text-[10px] font-mono uppercase tracking-widest opacity-50">08 — Aplicações</p>
+            <h2 className="text-2xl font-bold mt-1" style={{ fontFamily: theme?.headingFont }}>Mockups</h2>
           </div>
           <button
             onClick={() => setShowPicker((v) => !v)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-foreground/20 text-xs hover:border-primary hover:text-primary transition-colors"
           >
-            <Plus className="h-3.5 w-3.5" />
-            Adicionar mockup
+            <Plus className="h-3.5 w-3.5" /> Adicionar mockup
           </button>
         </div>
 
-        {/* Template picker dropdown */}
+        {/* Template picker — grouped by category, click-outside closes */}
         {showPicker && (
-          <div className="absolute top-16 right-8 z-50 bg-background border border-foreground/20 rounded-xl shadow-xl w-72 max-h-64 overflow-y-auto p-2">
-            {TEMPLATES.map((tpl) => (
-              <button
-                key={tpl.id}
-                onClick={() => addMockup(tpl.id)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted rounded-lg text-left transition-colors"
-              >
-                <div
-                  className="w-8 h-8 rounded border border-foreground/10 bg-muted flex-shrink-0 overflow-hidden"
-                  dangerouslySetInnerHTML={{
-                    __html: `<svg viewBox="${tpl.viewBox}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">${tpl.frameSvg}</svg>`,
-                  }}
-                />
-                <div>
-                  <p className="font-medium">{tpl.name}</p>
-                  <p className="text-muted-foreground capitalize">{tpl.category}</p>
-                </div>
-              </button>
+          <div ref={pickerRef} className="absolute top-16 right-8 z-50 bg-background border border-foreground/20 rounded-xl shadow-xl w-80 max-h-72 overflow-y-auto p-2">
+            {Object.entries(TEMPLATE_GROUPS).map(([category, templates]) => (
+              <div key={category} className="mb-2">
+                <p className="text-[9px] uppercase tracking-widest font-bold opacity-40 px-2 py-1 sticky top-0 bg-background">{category}</p>
+                {templates.map((tpl) => (
+                  <button key={tpl.id} onClick={() => addMockup(tpl.id)} className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted rounded-lg text-left transition-colors">
+                    <div className="w-8 h-8 rounded border border-foreground/10 bg-muted flex-shrink-0 overflow-hidden" dangerouslySetInnerHTML={{ __html: `<svg viewBox="${tpl.viewBox}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">${tpl.frameSvg}</svg>` }} />
+                    <div>
+                      <p className="font-medium">{tpl.name}</p>
+                      <p className="opacity-50 capitalize">{tpl.category}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         )}
 
         {/* Mockup grid */}
         {data.mockupRefs.length === 0 ? (
-          <div className="flex-1 border-2 border-dashed border-foreground/10 rounded-xl flex flex-col items-center justify-center gap-2 text-muted-foreground">
+          <div className="flex-1 border-2 border-dashed border-foreground/10 rounded-xl flex flex-col items-center justify-center gap-2 opacity-50">
             <Plus className="h-8 w-8 opacity-30" />
             <p className="text-sm">Adicione mockups para mostrar a marca em contexto</p>
             <p className="text-xs opacity-60">Use os templates do UNBSMOCKUP</p>
@@ -79,21 +98,12 @@ const ApplicationsPage = ({ data, onChange }: ApplicationsPageProps) => {
               if (!tpl) return null;
               return (
                 <div key={i} className="relative group border border-foreground/10 rounded-lg overflow-hidden">
-                  <div
-                    className="w-full bg-muted/30"
-                    style={{ aspectRatio: '4/3' }}
-                    dangerouslySetInnerHTML={{
-                      __html: `<svg viewBox="${tpl.viewBox}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">${tpl.frameSvg}${tpl.bgSvg || ''}</svg>`,
-                    }}
-                  />
+                  <div className="w-full bg-muted/30" style={{ aspectRatio: '4/3' }} dangerouslySetInnerHTML={{ __html: `<svg viewBox="${tpl.viewBox}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%">${tpl.frameSvg}${tpl.bgSvg || ''}</svg>` }} />
                   <div className="p-2">
                     <p className="text-[11px] font-medium truncate">{ref.label || tpl.name}</p>
-                    <p className="text-[10px] text-muted-foreground capitalize">{tpl.category}</p>
+                    <p className="text-[10px] opacity-50 capitalize">{tpl.category}</p>
                   </div>
-                  <button
-                    onClick={() => removeMockup(i)}
-                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-background/80 rounded text-muted-foreground hover:text-destructive"
-                  >
+                  <button onClick={() => removeMockup(i)} className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-background/80 rounded hover:text-destructive">
                     <X className="h-3 w-3" />
                   </button>
                 </div>
@@ -102,7 +112,7 @@ const ApplicationsPage = ({ data, onChange }: ApplicationsPageProps) => {
           </div>
         )}
 
-        <div className="absolute bottom-8 right-10 text-[80px] font-black text-foreground/3 pointer-events-none select-none">08</div>
+        <div className="absolute bottom-8 right-10 text-[80px] font-black pointer-events-none select-none" style={{ opacity: theme?.decoratorOpacity ?? 0.04 }}>08</div>
       </div>
     </PageSlide>
   );

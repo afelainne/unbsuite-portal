@@ -3,6 +3,7 @@ import { BrandData, DEFAULT_BRAND_DATA } from './types';
 import ChapterNav from './components/ChapterNav';
 import ManualViewer from './components/ManualViewer';
 import ExportPanel from './components/ExportPanel';
+import ThemePicker from './components/ThemePicker';
 import { BookOpen, RotateCcw } from 'lucide-react';
 
 const STORAGE_KEY = 'unbsid_brand_data';
@@ -89,7 +90,13 @@ const UnbsIdApp = () => {
               {data.version}
             </span>
           </div>
-          <ExportPanel data={data} />
+          <div className="flex items-center gap-2">
+            <ThemePicker
+              currentThemeId={data.themeId ?? 'studio'}
+              onChange={(themeId) => handleChange({ themeId })}
+            />
+            <ExportPanel data={data} />
+          </div>
         </div>
 
         {/* Viewer */}
