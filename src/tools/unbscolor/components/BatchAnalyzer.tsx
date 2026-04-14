@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { hexToRgb, rgbToHsl, rgbToHsv, rgbToCmyk, hexToLab, findReferenceMatches } from '../utils/colorMath';
+import { hexToRgb, rgbToHsl, rgbToHsv, rgbToCmyk, hexToLab, findReferenceMatches, isValidHex } from '../utils/colorMath';
 import { ReferenceColor } from '../types';
 
 interface BatchAnalyzerProps {
@@ -58,6 +58,7 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 {batchColors.map((c, idx) => {
+                    if (!isValidHex(c)) return null;
                     const rBatch = hexToRgb(c);
                     const hBatch = rgbToHsl(rBatch);
                     const sBatch = rgbToHsv(rBatch);
@@ -126,9 +127,9 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
                                 {settings.showHex && <p className="font-bold text-black/80 mb-2">{c}</p>}
                                 {settings.showRgb && <p className="mb-1">{formatRgbDisplay(rBatch.r, rBatch.g, rBatch.b)}</p>}
                                 {settings.showCmyk && <p className="mb-1 uppercase">CMYK: {realCmykBatch.c}, {realCmykBatch.m}, {realCmykBatch.y}, {realCmykBatch.k}</p>}
-                                {settings.showHsb && <p className="mb-1">hsb(${sBatch.h}, ${sBatch.s}, ${sBatch.v})</p>}
-                                {settings.showHsl && <p className="mb-1">hsl(${hBatch.h}, ${hBatch.s}%, ${hBatch.l}%)</p>}
-                                {settings.showLab && <p>lab(${Math.round(lBatch.l)}, ${Math.round(lBatch.a)}, ${Math.round(lBatch.b)})</p>}
+                                {settings.showHsb && <p className="mb-1">{`hsb(${sBatch.h}, ${sBatch.s}, ${sBatch.v})`}</p>}
+                                {settings.showHsl && <p className="mb-1">{`hsl(${hBatch.h}, ${hBatch.s}%, ${hBatch.l}%)`}</p>}
+                                {settings.showLab && <p>{`lab(${Math.round(lBatch.l)}, ${Math.round(lBatch.a)}, ${Math.round(lBatch.b)})`}</p>}
                             </div>
 
                             <div className="p-4 bg-white rounded-2xl shadow-sm border border-black/5 space-y-4">

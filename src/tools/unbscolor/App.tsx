@@ -347,7 +347,7 @@ const App: React.FC = () => {
         const matchBlock = payload.matches
             .map((match, idx) => {
                 const y = cursor + idx * 72;
-                const isOutOfGamut = match.code === 'OUT OF GAMUT';
+                const isOutOfGamut = match.code === t.outOfGamut.toUpperCase();
                 return `
                 <g transform="translate(${padding}, ${y})">
                     <rect width="${width - padding * 2}" height="60" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="1" />
@@ -561,9 +561,12 @@ const App: React.FC = () => {
     const triggerAiAnalysis = async () => {
         if (!matches[0]) return;
         setLoadingAi(true);
-        const result = await analyzeColor(hex, matches[0].reference.code, language);
-        setAnalysis(result);
-        setLoadingAi(false);
+        try {
+            const result = await analyzeColor(hex, matches[0].reference.code, language);
+            setAnalysis(result);
+        } finally {
+            setLoadingAi(false);
+        }
     };
 
     const getPmsC = () => findReferenceMatches(hex, bridgeCoatedLibrary, 1)[0];
