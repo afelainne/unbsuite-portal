@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import UnbsToolsLogo from "@/components/UnbsToolsLogo";
-import { Palette, LayoutGrid, Type, FileText, Monitor, ALargeSmall, Plus, Shield, BookOpen } from "lucide-react";
+import { Palette, LayoutGrid, FileText, Monitor, ALargeSmall, Plus, Shield } from "lucide-react";
 
 const tools = [
   {
@@ -16,13 +16,6 @@ const tools = [
     icon: LayoutGrid,
     path: "/unbsgrid",
     label: "PROJECT",
-  },
-  {
-    name: "UNBSFONT",
-    description: "Editor de fontes",
-    icon: Type,
-    path: "/unbsfont",
-    label: "NEW",
   },
   {
     name: "UNBSFORMAT",
@@ -43,13 +36,6 @@ const tools = [
     description: "Pares tipográficos",
     icon: ALargeSmall,
     path: "/unbstype",
-    label: "NEW",
-  },
-  {
-    name: "UNBSID",
-    description: "Manual de identidade visual",
-    icon: BookOpen,
-    path: "/unbsid",
     label: "NEW",
   },
 ];
