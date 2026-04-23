@@ -30,10 +30,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedId, onSelect }) => {
 
   return (
     <div className="w-64 border-r border-border h-full overflow-y-auto bg-card flex flex-col p-4 font-mono text-[10px] tracking-[0.18em] uppercase">
-      <div className="mb-6 border-b border-border pb-2">
-        <h1 className="font-bold text-sm">FORMAT LAB</h1>
-      </div>
-
       <div className="flex-1 overflow-y-auto space-y-1">
         {grouped.map(({ category, items }) => {
           const isOpen = openCategories.has(category);
