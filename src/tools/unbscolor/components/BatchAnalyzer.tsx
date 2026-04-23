@@ -52,7 +52,7 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
             <div className="flex justify-between items-center mb-8 border-b border-border/60 pb-4">
                 <h2 className="font-mono text-xs font-bold text-muted-foreground uppercase tracking-widest">{t.multiSlotMatchAnalysis}</h2>
                 <div className="flex items-center gap-3">
-                    <button onClick={onCopyAll} className="bg-foreground text-background px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-gray-800 transition-all shadow-lg">{t.copyAllSlotsData}</button>
+                    <button onClick={onCopyAll} className="bg-foreground text-background px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-widest hover:bg-foreground/80 transition-all shadow-lg">{t.copyAllSlotsData}</button>
                 </div>
             </div>
 
@@ -89,7 +89,7 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
                                         appearance: 'none' as any,
                                         WebkitAppearance: 'none',
                                         padding: 0,
-                                        border: '1px solid #e5e7eb',
+                                        border: '1px solid hsl(var(--border))',
                                         borderRadius: '12px',
                                         background: 'transparent',
                                         boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.02)'

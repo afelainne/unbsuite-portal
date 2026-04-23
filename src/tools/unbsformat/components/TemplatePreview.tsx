@@ -96,7 +96,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   const handleMouseUp = useCallback(() => setIsPanning(false), []);
 
   const BtnIcon: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
-    <button onClick={onClick} className="h-6 w-6 flex items-center justify-center rounded hover:bg-black/5 transition-colors"
+    <button onClick={onClick} className="h-6 w-6 flex items-center justify-center rounded hover:bg-foreground/5 transition-colors"
       style={{ color: TOOLBAR_THEME.text }}>
       {children}
     </button>

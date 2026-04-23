@@ -1118,7 +1118,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                         <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground/80">Upload SVG</span>
                         <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
                     </label>
-                    <button onClick={suggestNewCombination} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">
+                    <button onClick={suggestNewCombination} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">
                         <span>🎲</span> Sugerir Combinação
                     </button>
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -1190,7 +1190,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                 </div>
                 <div className="flex gap-2">
                     <input type="text" value={newColorInput} onChange={(e) => setNewColorInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addColor()} className="flex-1 px-4 py-3 font-mono text-sm border-2 border-dashed border-border rounded-xl focus:outline-none focus:border-foreground" placeholder={t.addColorPlaceholder} />
-                    <button onClick={addColor} disabled={!isValidHex(newColorInput)} className="px-6 py-3 bg-foreground text-background rounded-xl font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all">{t.addColorButton}</button>
+                    <button onClick={addColor} disabled={!isValidHex(newColorInput)} className="px-6 py-3 bg-foreground text-background rounded-xl font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all">{t.addColorButton}</button>
                 </div>
             </section>
 
@@ -1259,19 +1259,19 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                         )}
                         <button 
                             onClick={() => setShowVariationCodes((prev) => !prev)}
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariationCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-gray-800'}`}
+                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariationCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
                         >
                             {showVariationCodes ? t.showVariationCodesOn : t.showVariationCodesOff}
                         </button>
                         <button 
                             onClick={() => setShowCodes((prev) => !prev)}
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-gray-800'}`}
+                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
                         >
                             {showCodes ? t.showCodesOn : t.showCodesOff}
                         </button>
                         <div className="flex gap-2">
                             <button onClick={() => downloadSvg(getCurrentPaletteSvg(), 'palette-sheet.svg')} className="px-4 py-2 border border-border rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-secondary/40 transition-all">↓ SVG</button>
-                            <button onClick={() => downloadPng(getCurrentPaletteSvg(), 'palette-sheet.png')} className="px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">↓ PNG</button>
+                            <button onClick={() => downloadPng(getCurrentPaletteSvg(), 'palette-sheet.png')} className="px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">↓ PNG</button>
                         </div>
                     </div>
                 </div>
@@ -1337,7 +1337,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                 🔀 {t.shuffleAlbers}
                             </button>
                             <button onClick={() => downloadSvg(getCurrentAlbersSvg(), 'albers-grid.svg')} className="px-4 py-2 border border-border rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-secondary/40 transition-all">↓ SVG</button>
-                            <button onClick={() => downloadPng(getCurrentAlbersSvg(), 'albers-grid.png')} className="px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">↓ PNG</button>
+                            <button onClick={() => downloadPng(getCurrentAlbersSvg(), 'albers-grid.png')} className="px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">↓ PNG</button>
                         </div>
                     </div>
                 </div>
@@ -1372,7 +1372,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                         >
                             {fullContrastMode ? '◉' : '○'} FULL CONTRAST
                         </button>
-                        <button onClick={() => { shuffleAlbers(); setCustomCombos({}); }} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">
+                        <button onClick={() => { shuffleAlbers(); setCustomCombos({}); }} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">
                             🔀 {t.shuffleAlbers}
                         </button>
                     </div>

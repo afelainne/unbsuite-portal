@@ -9,7 +9,7 @@ const THEME = {
   text: 'hsl(var(--foreground))',
   accent: 'hsl(var(--accent))',
   border: 'hsl(var(--border))',
-  muted: '#888',
+  muted: 'hsl(var(--muted-foreground))',
 };
 
 interface Props {
@@ -38,7 +38,7 @@ const PresetManager: React.FC<Props> = ({ activePreset, isModified, onSaveClick,
           <div className="flex items-center gap-1">
             <span className="text-[9px]" style={{ color: THEME.muted }}>Active:</span>
             <span className="text-[10px] font-medium truncate" style={{ color: THEME.text }}>{activePreset.name}</span>
-            {isModified && <span className="text-[8px] italic" style={{ color: '#d4a017' }}>· Modified</span>}
+            {isModified && <span className="text-[8px] italic" style={{ color: 'hsl(var(--accent))' }}>· Modified</span>}
           </div>
         )}
         <div className="flex gap-1.5">

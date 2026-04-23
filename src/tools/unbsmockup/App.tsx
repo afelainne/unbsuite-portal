@@ -243,14 +243,14 @@ const UnbsMockupApp: React.FC = () => {
             <div className="text-center space-y-3">
               <div className="w-24 h-24 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center">
                 <svg viewBox={template.viewBox} className="h-16 w-auto opacity-30">
-                  <rect x="0" y="0" width={template.width} height={template.height} fill="#666" rx="4" />
+                  <rect x="0" y="0" width={template.width} height={template.height} fill="hsl(var(--foreground))" rx="4" />
                   <rect
                     x={template.screen.x}
                     y={template.screen.y}
                     width={template.screen.width}
                     height={template.screen.height}
                     rx={template.screen.rx || 0}
-                    fill="#888"
+                    fill="hsl(var(--muted-foreground))"
                   />
                 </svg>
               </div>

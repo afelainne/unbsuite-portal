@@ -33,7 +33,7 @@ const SimilarityCard: React.FC<{ match: ColorMatch; onSelect: () => void; showRe
   };
 
   // Color code score
-  let scoreColorBg = 'bg-[#222] text-background';
+  let scoreColorBg = 'bg-foreground text-background';
   if (deltaE < 1.0) scoreColorBg = 'bg-purple-600 text-background'; // Precise match
   else if (deltaE < 2.0) scoreColorBg = 'bg-green-600 text-background';
   else if (deltaE < 5.0) scoreColorBg = 'bg-yellow-500 text-foreground';
@@ -81,7 +81,7 @@ const SimilarityCard: React.FC<{ match: ColorMatch; onSelect: () => void; showRe
             <span className={`${scoreColorBg} px-2 py-[2px] rounded-[3px] text-[9px] font-bold font-mono`}>
                 ΔE {deltaE.toFixed(2)}
             </span>
-            <span className="bg-[#f0f0f0] text-foreground/80 px-2 py-[2px] rounded-[3px] text-[9px] font-mono">
+            <span className="bg-secondary text-foreground/80 px-2 py-[2px] rounded-[3px] text-[9px] font-mono">
                 L{lab.l} a{lab.a} b{lab.b}
             </span>
         </div>

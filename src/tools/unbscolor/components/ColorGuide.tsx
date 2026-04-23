@@ -295,7 +295,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                             <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.accessibleVariations}</h3>
                             <button 
                                 onClick={shuffleSuggestions}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-foreground text-background rounded-full font-mono text-[9px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all"
+                                className="flex items-center gap-2 px-3 py-1.5 bg-foreground text-background rounded-full font-mono text-[9px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all"
                             >
                                 <span>🎲</span> {t.varyTones}
                             </button>

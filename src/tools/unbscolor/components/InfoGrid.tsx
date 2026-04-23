@@ -24,7 +24,7 @@ const Metric: React.FC<MetricProps> = ({ label, value, unit, max, onChange }) =>
   <div className="flex flex-col gap-2">
     <h3 className="font-mono text-xs font-bold text-foreground mb-1 min-h-[1.5em]">{label}</h3>
     <div className="flex items-baseline gap-1">
-        <span className="text-5xl md:text-6xl font-light tracking-tighter text-gray-800">{value}</span>
+        <span className="text-5xl md:text-6xl font-light tracking-tighter text-foreground">{value}</span>
         {unit && <span className="text-xl text-muted-foreground font-light">{unit}</span>}
     </div>
     <div className="mt-4">
@@ -65,7 +65,7 @@ export const InfoGrid: React.FC<InfoGridProps> = ({ rgb, cmyk, hsl, analysis, on
       {analysis && (
           <div className="col-span-2 md:col-span-4 lg:col-span-6 mt-12 pt-12 border-t border-border/60">
                <h3 className="font-mono text-xs font-bold text-foreground mb-4">{t.aiAnalysis}</h3>
-               <p className="text-2xl font-light leading-relaxed text-gray-800 max-w-4xl">
+               <p className="text-2xl font-light leading-relaxed text-foreground max-w-4xl">
                    "{analysis.psychology} {analysis.description}"
                </p>
                <div className="flex gap-4 mt-6">

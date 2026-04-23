@@ -123,7 +123,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={isProcessing}
-              className="w-full sm:w-auto px-4 py-2 bg-foreground text-background text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 h-[38px]"
+              className="w-full sm:w-auto px-4 py-2 bg-foreground text-background text-xs font-bold uppercase tracking-wider hover:bg-foreground/80 transition-colors flex items-center justify-center gap-2 h-[38px]"
             >
               {isProcessing ? t.loading : `+ ${t.uploadAcb}`}
             </button>

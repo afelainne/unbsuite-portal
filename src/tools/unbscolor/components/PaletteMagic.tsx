@@ -636,7 +636,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                   {/* Info bar */}
                   <div className="px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-mono text-[10px] font-bold text-gray-800 uppercase tracking-wider">{palette.name}</h4>
+                      <h4 className="font-mono text-[10px] font-bold text-foreground uppercase tracking-wider">{palette.name}</h4>
                       <span className={`font-mono text-[7px] font-bold px-2 py-0.5 rounded-full ${palette.wcagPass ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                         {palette.wcagPass ? 'WCAG AA' : `${palette.contrastRatio.toFixed(1)}:1`}
                       </span>
@@ -657,7 +657,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                       </button>
                       <button
                         onClick={() => applyPalette(palette.colors)}
-                        className="px-3 py-1.5 font-mono text-[8px] uppercase tracking-wider rounded-full bg-foreground text-background hover:bg-gray-800 transition-all"
+                        className="px-3 py-1.5 font-mono text-[8px] uppercase tracking-wider rounded-full bg-foreground text-background hover:bg-foreground/80 transition-all"
                       >
                         {t.applyPalette}
                       </button>
@@ -730,7 +730,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                 <div className="px-4 py-2 flex items-center justify-between">
                   <span className="font-mono text-[9px] font-bold text-foreground/80 uppercase">{palette.name}</span>
                   <div className="flex gap-1">
-                    <button onClick={() => applyPalette(palette.colors)} className="px-3 py-1 font-mono text-[8px] uppercase rounded-full bg-foreground text-background hover:bg-gray-800 transition-all">{t.applyPalette}</button>
+                    <button onClick={() => applyPalette(palette.colors)} className="px-3 py-1 font-mono text-[8px] uppercase rounded-full bg-foreground text-background hover:bg-foreground/80 transition-all">{t.applyPalette}</button>
                     <button onClick={() => toggleFavorite(palette)} className="px-2 py-1 font-mono text-[8px] text-red-400 hover:text-red-600 transition-colors">✕</button>
                   </div>
                 </div>
