@@ -22,10 +22,10 @@ interface MetricProps {
 
 const Metric: React.FC<MetricProps> = ({ label, value, unit, max, onChange }) => (
   <div className="flex flex-col gap-2">
-    <h3 className="font-mono text-xs font-bold text-black mb-1 min-h-[1.5em]">{label}</h3>
+    <h3 className="font-mono text-xs font-bold text-foreground mb-1 min-h-[1.5em]">{label}</h3>
     <div className="flex items-baseline gap-1">
         <span className="text-5xl md:text-6xl font-light tracking-tighter text-gray-800">{value}</span>
-        {unit && <span className="text-xl text-gray-400 font-light">{unit}</span>}
+        {unit && <span className="text-xl text-muted-foreground font-light">{unit}</span>}
     </div>
     <div className="mt-4">
          <input 
@@ -34,7 +34,7 @@ const Metric: React.FC<MetricProps> = ({ label, value, unit, max, onChange }) =>
             max={max}
             value={value} 
             onChange={(e) => onChange(Number(e.target.value))}
-            className="w-full h-[2px] bg-gray-200 appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-125 transition-all" 
+            className="w-full h-[2px] bg-muted appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-125 transition-all" 
          />
     </div>
   </div>
@@ -63,14 +63,14 @@ export const InfoGrid: React.FC<InfoGridProps> = ({ rgb, cmyk, hsl, analysis, on
 
       {/* AI Insight */}
       {analysis && (
-          <div className="col-span-2 md:col-span-4 lg:col-span-6 mt-12 pt-12 border-t border-gray-100">
-               <h3 className="font-mono text-xs font-bold text-black mb-4">{t.aiAnalysis}</h3>
+          <div className="col-span-2 md:col-span-4 lg:col-span-6 mt-12 pt-12 border-t border-border/60">
+               <h3 className="font-mono text-xs font-bold text-foreground mb-4">{t.aiAnalysis}</h3>
                <p className="text-2xl font-light leading-relaxed text-gray-800 max-w-4xl">
                    "{analysis.psychology} {analysis.description}"
                </p>
                <div className="flex gap-4 mt-6">
                    {analysis.usageTips.map((tip, i) => (
-                       <span key={i} className="px-3 py-1 bg-gray-100 text-xs font-mono">{tip}</span>
+                       <span key={i} className="px-3 py-1 bg-secondary text-xs font-mono">{tip}</span>
                    ))}
                </div>
           </div>

@@ -13,9 +13,9 @@ export const SwatchStrip: React.FC<SwatchStripProps> = ({ colors, onSelect, sele
   
   // Helper to color code Delta E
   const getDeltaEColor = (str: string) => {
-    if (!str.startsWith('ΔE')) return 'text-gray-400'; 
+    if (!str.startsWith('ΔE')) return 'text-muted-foreground'; 
     const val = parseFloat(str.replace('ΔE ', ''));
-    if (isNaN(val)) return 'text-gray-400';
+    if (isNaN(val)) return 'text-muted-foreground';
     if (val < 2) return 'text-green-600 font-bold';
     if (val < 5) return 'text-yellow-600 font-bold';
     return 'text-red-500 font-bold';
@@ -41,7 +41,7 @@ export const SwatchStrip: React.FC<SwatchStripProps> = ({ colors, onSelect, sele
           >
             {/* Selected Checkmark */}
             {isSelected && (
-               <div className="absolute top-2 right-2 w-[18px] h-[18px] bg-white rounded-full flex items-center justify-center text-black shadow-sm">
+               <div className="absolute top-2 right-2 w-[18px] h-[18px] bg-card rounded-full flex items-center justify-center text-foreground shadow-sm">
                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
                </div>
             )}
@@ -62,7 +62,7 @@ export const SwatchStrip: React.FC<SwatchStripProps> = ({ colors, onSelect, sele
             {/* Score Label (Visible on hover or if space permits, always visible at bottom in group hover) */}
             <div className="absolute bottom-2 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                <span 
-                 className={`text-[9px] font-mono px-1 py-[1px] bg-white/90 rounded-[2px] shadow-sm ${scoreColorClass}`}
+                 className={`text-[9px] font-mono px-1 py-[1px] bg-card/90 rounded-[2px] shadow-sm ${scoreColorClass}`}
                >
                   {color.type}
                </span>

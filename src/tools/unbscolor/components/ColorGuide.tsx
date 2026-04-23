@@ -10,8 +10,8 @@ interface ColorGuideProps {
 
 const SectionHeader: React.FC<{ category: string; title: string }> = ({ category, title }) => (
     <div className="mb-8">
-        <h2 className="font-mono text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-1">{category}</h2>
-        <p className="text-3xl font-normal tracking-tight text-black">{title}</p>
+        <h2 className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] mb-1">{category}</h2>
+        <p className="text-3xl font-normal tracking-tight text-foreground">{title}</p>
     </div>
 );
 
@@ -136,7 +136,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                     <div className="aspect-square rounded-[3rem] flex flex-col justify-end p-12 relative overflow-hidden transition-all duration-300" style={{ backgroundColor: currentHex }}>
                          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-black/5 to-transparent"></div>
                          <div className="relative z-10">
-                            <span className="font-mono text-xs font-bold text-black/40 uppercase tracking-widest block mb-2">{t.spotColor2}</span>
+                            <span className="font-mono text-xs font-bold text-foreground/40 uppercase tracking-widest block mb-2">{t.spotColor2}</span>
                             <input 
                                 type="text"
                                 value={localHex}
@@ -153,8 +153,8 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                     </div>
                     {/* Seletor de cores do batch/paleta */}
                     {batchColors.length > 0 && (
-                        <div className="mt-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest block mb-3">{t.paletteColorsLabel}</span>
+                        <div className="mt-4 p-4 bg-secondary/40 rounded-2xl border border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest block mb-3">{t.paletteColorsLabel}</span>
                             <div className="flex flex-wrap gap-2">
                                 {batchColors.map((color, idx) => {
                                     const isActive = color.toUpperCase() === localHex.toUpperCase();
@@ -174,10 +174,10 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                 </div>
                 <div className="lg:col-span-7">
                     <SectionHeader category={t.technicalBreakdown} title={t.cmykSeparationLogic} />
-                    <div className="bg-gray-50 rounded-[3rem] p-12 border border-gray-100 h-[calc(100%-80px)] flex flex-col justify-between">
+                    <div className="bg-secondary/40 rounded-[3rem] p-12 border border-border/60 h-[calc(100%-80px)] flex flex-col justify-between">
                         <div className="flex items-center gap-2 mb-8">
                             <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
-                            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-gray-400">{t.colorChannelsLabel}</span>
+                            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{t.colorChannelsLabel}</span>
                         </div>
                         <div className="flex justify-center items-center h-48 relative">
                             <div className="w-32 h-32 rounded-full bg-[#00FFFF] mix-blend-multiply absolute -translate-x-12 opacity-60"></div>
@@ -190,7 +190,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 const val = rgbToCmyk(currentRgb)[ch.toLowerCase() as keyof typeof manualCmyk];
                                 return (
                                     <div key={ch}>
-                                        <span className="font-mono text-[10px] text-gray-400 block mb-1">{ch}</span>
+                                        <span className="font-mono text-[10px] text-muted-foreground block mb-1">{ch}</span>
                                         <span className="text-3xl font-light tracking-tighter">{val}%</span>
                                     </div>
                                 );
@@ -216,11 +216,11 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                         const simHex = p.type === 'original' ? currentHex : getSubstrateSim(currentHex, p.type);
                         return (
                             <div key={i} className="space-y-4">
-                                <div className="aspect-[4/3] rounded-2xl shadow-sm border border-black/5 transition-colors duration-500" style={{ backgroundColor: simHex }}></div>
+                                <div className="aspect-[4/3] rounded-2xl shadow-sm border border-foreground/5 transition-colors duration-500" style={{ backgroundColor: simHex }}></div>
                                 <div className="font-mono text-center">
-                                    <p className="text-[10px] font-bold text-black uppercase">{p.name}</p>
-                                    <p className="text-[8px] text-gray-400 uppercase">{p.sub}</p>
-                                    <p className="text-[9px] text-gray-300">{simHex}</p>
+                                    <p className="text-[10px] font-bold text-foreground uppercase">{p.name}</p>
+                                    <p className="text-[8px] text-muted-foreground uppercase">{p.sub}</p>
+                                    <p className="text-[9px] text-muted-foreground/70">{simHex}</p>
                                 </div>
                             </div>
                         );
@@ -233,7 +233,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                 <div className="lg:col-span-4 space-y-12">
                     <div>
                         <SectionHeader category={t.legibilityStandards} title={t.contrastAnalysis} />
-                        <div className="p-8 bg-gray-50/50 rounded-[2.5rem] border border-gray-100 space-y-6">
+                        <div className="p-8 bg-secondary/40/50 rounded-[2.5rem] border border-border/60 space-y-6">
                             <div className="flex items-center gap-6">
                                 <div className="w-14 h-14 rounded-2xl shadow-lg" style={{ backgroundColor: currentHex }}></div>
                                 <span className="font-mono text-xl font-bold tracking-tight">{currentHex}</span>
@@ -244,8 +244,8 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                             </div>
                             
                             {/* Preview de Contraste */}
-                            <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
-                                <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.preview}</span>
+                            <div className="mt-6 pt-6 border-t border-border space-y-3">
+                                <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.preview}</span>
                                 <div className="rounded-2xl overflow-hidden shadow-md">
                                     {/* Texto na cor sobre fundo */}
                                     <div className="p-5 flex flex-col gap-2" style={{ backgroundColor: bgHex }}>
@@ -265,7 +265,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                     </div>
 
                     <div>
-                        <h3 className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-6">{t.neutralMatchMatrix}</h3>
+                        <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-6">{t.neutralMatchMatrix}</h3>
                         <div className="grid grid-cols-4 gap-4">
                             {industrialNeutrals.map(n => {
                                 const ratio = getContrastRatio(currentHex, n);
@@ -273,7 +273,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 return (
                                     <button key={n} onClick={() => setBgHex(n)} className={`flex flex-col items-center gap-3 transition-all ${isSelected ? 'scale-110' : 'hover:scale-105'}`}>
                                         <div className={`w-full aspect-square rounded-xl border-2 transition-all ${isSelected ? 'border-blue-500 shadow-lg shadow-blue-100' : 'border-transparent'}`} style={{ backgroundColor: n }}></div>
-                                        <span className={`text-[10px] font-mono font-bold ${ratio >= 4.5 ? 'text-emerald-600' : 'text-gray-400'}`}>{ratio.toFixed(1)}:1</span>
+                                        <span className={`text-[10px] font-mono font-bold ${ratio >= 4.5 ? 'text-emerald-600' : 'text-muted-foreground'}`}>{ratio.toFixed(1)}:1</span>
                                     </button>
                                 );
                             })}
@@ -281,21 +281,21 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                     </div>
                 </div>
 
-                <div className="lg:col-span-4 flex flex-col items-center justify-center p-12 bg-gray-50/30 rounded-[4rem] border border-gray-100/50 relative overflow-hidden">
+                <div className="lg:col-span-4 flex flex-col items-center justify-center p-12 bg-secondary/40/30 rounded-[4rem] border border-border/60/50 relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent"></div>
-                    <span className="text-[12rem] md:text-[14rem] font-light tracking-tighter leading-none text-black z-10">{contrastRatio.toFixed(2)}</span>
+                    <span className="text-[12rem] md:text-[14rem] font-light tracking-tighter leading-none text-foreground z-10">{contrastRatio.toFixed(2)}</span>
                     <div className="mt-6 z-10">
-                        <div className={`px-8 py-2 rounded-full text-[11px] font-black uppercase tracking-widest border-2 shadow-sm ${!isPassAA ? 'bg-white text-red-500 border-red-50' : 'bg-white text-emerald-600 border-emerald-50'}`}>{isPassAAA ? t.wcagAAA : isPassAA ? t.wcagAA : t.fail}</div>
+                        <div className={`px-8 py-2 rounded-full text-[11px] font-black uppercase tracking-widest border-2 shadow-sm ${!isPassAA ? 'bg-card text-red-500 border-red-50' : 'bg-card text-emerald-600 border-emerald-50'}`}>{isPassAAA ? t.wcagAAA : isPassAA ? t.wcagAA : t.fail}</div>
                     </div>
                 </div>
 
                 <div className="lg:col-span-4 space-y-12">
                     <div>
                         <div className="flex items-center justify-between mb-6">
-                            <h3 className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">{t.accessibleVariations}</h3>
+                            <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.accessibleVariations}</h3>
                             <button 
                                 onClick={shuffleSuggestions}
-                                className="flex items-center gap-2 px-3 py-1.5 bg-black text-white rounded-full font-mono text-[9px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all"
+                                className="flex items-center gap-2 px-3 py-1.5 bg-foreground text-background rounded-full font-mono text-[9px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all"
                             >
                                 <span>🎲</span> {t.varyTones}
                             </button>
@@ -304,7 +304,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                         {/* Cores do batch como opções de fundo */}
                         {batchColors.length > 1 && (
                             <div className="mb-4">
-                                <span className="font-mono text-[8px] font-bold text-gray-300 uppercase tracking-widest block mb-2">{t.paletteColorsLabel}</span>
+                                <span className="font-mono text-[8px] font-bold text-muted-foreground/70 uppercase tracking-widest block mb-2">{t.paletteColorsLabel}</span>
                                 <div className="flex flex-wrap gap-2">
                                     {batchColors.filter(c => c.toUpperCase() !== localHex.toUpperCase()).map((color, idx) => {
                                         const ratio = getContrastRatio(currentHex, color);
@@ -313,11 +313,11 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                             <button
                                                 key={idx}
                                                 onClick={() => setBgHex(color)}
-                                                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${isSelected ? 'bg-black/5 ring-1 ring-black' : 'hover:bg-gray-50'}`}
+                                                className={`flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${isSelected ? 'bg-foreground/5 ring-1 ring-black' : 'hover:bg-secondary/40'}`}
                                                 title={color}
                                             >
                                                 <div className="w-8 h-8 rounded-lg shadow-sm" style={{ backgroundColor: color }}></div>
-                                                <span className={`font-mono text-[9px] font-bold ${ratio >= 4.5 ? 'text-emerald-600' : 'text-gray-400'}`}>{ratio.toFixed(1)}</span>
+                                                <span className={`font-mono text-[9px] font-bold ${ratio >= 4.5 ? 'text-emerald-600' : 'text-muted-foreground'}`}>{ratio.toFixed(1)}</span>
                                             </button>
                                         );
                                     })}
@@ -327,11 +327,11 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                         
                         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
                             {automatedCorrections.map((c, i) => (
-                                <button key={i} className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-black transition-all" onClick={() => setBgHex(c.hex)}>
+                                <button key={i} className="w-full flex items-center justify-between p-4 bg-card rounded-2xl border border-border/60 shadow-sm hover:border-foreground transition-all" onClick={() => setBgHex(c.hex)}>
                                     <div className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-lg shadow-inner" style={{ backgroundColor: c.hex }}></div>
                                         <div className="text-left">
-                                            <span className="text-[8px] font-bold text-gray-300 uppercase block mb-0.5">{c.type}</span>
+                                            <span className="text-[8px] font-bold text-muted-foreground/70 uppercase block mb-0.5">{c.type}</span>
                                             <span className="font-mono text-sm font-bold">{c.hex}</span>
                                         </div>
                                     </div>
@@ -341,15 +341,15 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                         </div>
                     </div>
 
-                    <div className="pt-8 border-t border-gray-100 grid grid-cols-2 gap-6">
+                    <div className="pt-8 border-t border-border/60 grid grid-cols-2 gap-6">
                          {[
                             { name: t.darkUi, hue: 10, dark: true },
                             { name: t.surface, hue: -15, dark: false },
                          ].map((template, idx) => {
                              const res = findHarmonicBackground(currentHex, template.hue, 4.5, template.dark);
                              return (
-                                 <button key={idx} onClick={() => setBgHex(res.hex)} className="p-6 bg-gray-50 rounded-[2rem] border border-gray-100 text-left hover:bg-white transition-all">
-                                     <span className="text-[9px] font-black uppercase text-gray-400 tracking-widest block mb-2">{template.name}</span>
+                                 <button key={idx} onClick={() => setBgHex(res.hex)} className="p-6 bg-secondary/40 rounded-[2rem] border border-border/60 text-left hover:bg-card transition-all">
+                                     <span className="text-[9px] font-black uppercase text-muted-foreground tracking-widest block mb-2">{template.name}</span>
                                      <span className="text-xl font-mono font-bold text-emerald-600 block">{res.ratio}</span>
                                  </button>
                              );
@@ -369,7 +369,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 const passAA = ratio >= 4.5;
                                 const passAAA = ratio >= 7.0;
                                 return (
-                                    <div key={`${i}-${j}`} className="bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden">
+                                    <div key={`${i}-${j}`} className="bg-secondary/40 rounded-2xl border border-border/60 overflow-hidden">
                                         <div className="flex">
                                             <div className="flex-1 p-6" style={{ backgroundColor: color1 }}>
                                                 <span className="text-lg font-bold" style={{ color: color2 }}>Aa Bb</span>
@@ -380,10 +380,10 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                                 <p className="text-xs mt-1" style={{ color: color1 }}>{t.textOnBackground}</p>
                                             </div>
                                         </div>
-                                        <div className="p-4 bg-white flex items-center justify-between">
+                                        <div className="p-4 bg-card flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-6 h-6 rounded" style={{ backgroundColor: color1 }}></div>
-                                                <span className="font-mono text-[10px] text-gray-400">×</span>
+                                                <span className="font-mono text-[10px] text-muted-foreground">×</span>
                                                 <div className="w-6 h-6 rounded" style={{ backgroundColor: color2 }}></div>
                                             </div>
                                             <div className="flex items-center gap-2">
@@ -405,27 +405,27 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
             <section className="grid lg:grid-cols-12 gap-12">
                 <div className="lg:col-span-4">
                     <SectionHeader category={t.productionCheck} title={t.trappingRegistration} />
-                    <div className="p-8 bg-gray-50 rounded-[2rem] border border-gray-100 flex flex-col items-center justify-center min-h-[300px] overflow-hidden">
+                    <div className="p-8 bg-secondary/40 rounded-[2rem] border border-border/60 flex flex-col items-center justify-center min-h-[300px] overflow-hidden">
                         <div className="relative w-48 h-48">
                             <div className="absolute inset-0 rounded-full border-4 border-cyan-400 mix-blend-multiply opacity-50 translate-x-0.5"></div>
                             <div className="absolute inset-0 rounded-full border-4 border-magenta-400 mix-blend-multiply opacity-50 -translate-x-0.5 translate-y-0.5"></div>
                             <div className="absolute inset-0 rounded-full border-4 border-yellow-400 mix-blend-multiply opacity-50 translate-y-0.5"></div>
                             <div className="absolute inset-0 rounded-full flex items-center justify-center" style={{ backgroundColor: currentHex }}>
-                                <span className="font-mono text-[10px] text-white font-bold">{t.trapTest}</span>
+                                <span className="font-mono text-[10px] text-background font-bold">{t.trapTest}</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div className="lg:col-span-4">
                     <SectionHeader category={t.resolution} title={t.lpiHalftone} />
-                    <div className="p-8 bg-gray-50 rounded-[2rem] border border-gray-100 flex flex-col items-center justify-center min-h-[300px]">
+                    <div className="p-8 bg-secondary/40 rounded-[2rem] border border-border/60 flex flex-col items-center justify-center min-h-[300px]">
                         <div className="grid grid-cols-2 gap-4 w-full">
                             <div className="space-y-2">
-                                <div className="aspect-square rounded-xl bg-gray-200 overflow-hidden" style={{ backgroundImage: `radial-gradient(circle, ${currentHex} 2px, transparent 2px)`, backgroundSize: '12px 12px' }}></div>
+                                <div className="aspect-square rounded-xl bg-muted overflow-hidden" style={{ backgroundImage: `radial-gradient(circle, ${currentHex} 2px, transparent 2px)`, backgroundSize: '12px 12px' }}></div>
                                 <span className="block text-center font-mono text-[9px] font-bold">85 LPI</span>
                             </div>
                             <div className="space-y-2">
-                                <div className="aspect-square rounded-xl bg-gray-200 overflow-hidden" style={{ backgroundImage: `radial-gradient(circle, ${currentHex} 1px, transparent 1px)`, backgroundSize: '4px 4px' }}></div>
+                                <div className="aspect-square rounded-xl bg-muted overflow-hidden" style={{ backgroundImage: `radial-gradient(circle, ${currentHex} 1px, transparent 1px)`, backgroundSize: '4px 4px' }}></div>
                                 <span className="block text-center font-mono text-[9px] font-bold">175 LPI</span>
                             </div>
                         </div>
@@ -433,8 +433,8 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                 </div>
                 <div className="lg:col-span-4">
                     <SectionHeader category={t.gamut} title={t.colorSpaceGamut} />
-                    <div className="p-8 bg-gray-50 rounded-[2rem] border border-gray-100 flex flex-col justify-between min-h-[300px]">
-                        <div className="relative aspect-square w-full rounded-full border-2 border-dashed border-gray-200 flex items-center justify-center">
+                    <div className="p-8 bg-secondary/40 rounded-[2rem] border border-border/60 flex flex-col justify-between min-h-[300px]">
+                        <div className="relative aspect-square w-full rounded-full border-2 border-dashed border-border flex items-center justify-center">
                             <div className={`w-12 h-12 rounded-full shadow-lg`} style={{ backgroundColor: currentHex }}></div>
                         </div>
                     </div>
@@ -447,12 +447,12 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     
                     {/* Teste 1: Sangria (Bleed) */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.bleedTest}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.bleedTest}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.bleedArea}</h4>
                         </div>
-                        <div className="p-8 flex items-center justify-center min-h-[200px] bg-white">
+                        <div className="p-8 flex items-center justify-center min-h-[200px] bg-card">
                             <div className="relative">
                                 <div className="w-40 h-52 border-2 border-dashed border-red-300 absolute -inset-3 rounded"></div>
                                 <div className="w-36 h-48 border-2 border-dashed border-blue-300 absolute -inset-1 rounded"></div>
@@ -461,8 +461,8 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 </div>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">
                                 <span className="inline-block w-2 h-2 bg-red-300 mr-1"></span>{t.bleed3mm}
                                 <span className="inline-block w-2 h-2 bg-blue-300 ml-3 mr-1"></span>{t.cutLine}
                             </span>
@@ -470,46 +470,46 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                     </div>
 
                     {/* Teste 2: Overprint */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.overprintTest}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.overprintTest}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.colorOverlay}</h4>
                         </div>
-                        <div className="p-8 flex items-center justify-center min-h-[200px] bg-white">
+                        <div className="p-8 flex items-center justify-center min-h-[200px] bg-card">
                             <div className="relative w-40 h-40">
                                 <div className="absolute w-24 h-24 rounded-full top-0 left-0" style={{ backgroundColor: currentHex, opacity: 0.8 }}></div>
                                 <div className="absolute w-24 h-24 rounded-full top-4 left-12 mix-blend-multiply" style={{ backgroundColor: '#000000', opacity: 0.9 }}></div>
                                 <div className="absolute w-24 h-24 rounded-full top-12 left-4 mix-blend-multiply" style={{ backgroundColor: getSubstrateSim(currentHex, 'uncoated'), opacity: 0.7 }}></div>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.overprintSimulationNote}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.overprintSimulationNote}</span>
                         </div>
                     </div>
 
                     {/* Teste 3: Gradiente / Banding */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.gradientTest}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.gradientTest}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.bandingCheck}</h4>
                         </div>
-                        <div className="p-8 flex flex-col gap-4 min-h-[200px] bg-white">
+                        <div className="p-8 flex flex-col gap-4 min-h-[200px] bg-card">
                             <div className="h-12 rounded-lg" style={{ background: `linear-gradient(90deg, ${currentHex}, #FFFFFF)` }}></div>
                             <div className="h-12 rounded-lg" style={{ background: `linear-gradient(90deg, #000000, ${currentHex})` }}></div>
                             <div className="h-12 rounded-lg" style={{ background: `linear-gradient(90deg, ${currentHex}, transparent)` }}></div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.observeBanding}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.observeBanding}</span>
                         </div>
                     </div>
 
                     {/* Teste 4: Texto Mínimo */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.minimumText}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.minimumText}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.textLegibility}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white space-y-3">
+                        <div className="p-8 min-h-[200px] bg-card space-y-3">
                             <div className="p-3 rounded-lg" style={{ backgroundColor: currentHex }}>
                                 <p style={{ color: getContrastColor(currentHex), fontSize: '14px' }}>{t.bodyText}</p>
                             </div>
@@ -523,18 +523,18 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 <p style={{ color: getContrastColor(currentHex), fontSize: '5px' }}>{t.microPrint}</p>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.highResRequired}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.highResRequired}</span>
                         </div>
                     </div>
 
                     {/* Teste 5: Cores Vizinhas */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.adjacencyTest}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.adjacencyTest}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.neighboringColors}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white">
+                        <div className="p-8 min-h-[200px] bg-card">
                             <div className="flex h-32 rounded-xl overflow-hidden shadow-sm">
                                 <div className="flex-1" style={{ backgroundColor: '#FFFFFF' }}></div>
                                 <div className="flex-1" style={{ backgroundColor: currentHex }}></div>
@@ -546,39 +546,39 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 <div className="flex-1" style={{ backgroundColor: getSubstrateSim(currentHex, 'lowDensity') }}></div>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.colorBehavior}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.colorBehavior}</span>
                         </div>
                     </div>
 
                     {/* Teste 6: Inversão Positivo/Negativo */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.reversalTest}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.reversalTest}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.positiveNegative}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white flex gap-4">
+                        <div className="p-8 min-h-[200px] bg-card flex gap-4">
                             <div className="flex-1 rounded-xl p-6 flex flex-col items-center justify-center" style={{ backgroundColor: '#FFFFFF', border: '1px solid #e5e5e5' }}>
                                 <div className="w-16 h-16 rounded-full mb-3" style={{ backgroundColor: currentHex }}></div>
                                 <span className="font-mono text-[9px] font-bold" style={{ color: currentHex }}>{t.positive}</span>
                             </div>
                             <div className="flex-1 rounded-xl p-6 flex flex-col items-center justify-center" style={{ backgroundColor: currentHex }}>
-                                <div className="w-16 h-16 rounded-full mb-3 bg-white"></div>
-                                <span className="font-mono text-[9px] font-bold text-white">{t.negative}</span>
+                                <div className="w-16 h-16 rounded-full mb-3 bg-card"></div>
+                                <span className="font-mono text-[9px] font-bold text-background">{t.negative}</span>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.knockoutApplication}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.knockoutApplication}</span>
                         </div>
                     </div>
 
                     {/* Teste 7: Ângulos de Retícula */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.screenAngles}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.screenAngles}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.cmykPlateAngles}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white">
+                        <div className="p-8 min-h-[200px] bg-card">
                             <div className="grid grid-cols-4 gap-2">
                                 {[
                                     { label: 'C 15°', angle: 15, color: '#00FFFF' },
@@ -605,18 +605,18 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 <div className="absolute inset-0" style={{ backgroundImage: `repeating-linear-gradient(45deg, #00000033 0px, #00000033 1px, transparent 1px, transparent 3px)` }}></div>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.standardAngles}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.standardAngles}</span>
                         </div>
                     </div>
 
                     {/* Teste 8: Metamerismo / Iluminação */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.metamerismTest}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.metamerismTest}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.lightingSimulation}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white">
+                        <div className="p-8 min-h-[200px] bg-card">
                             <div className="grid grid-cols-3 gap-3">
                                 {[
                                     { label: t.lightingD65, filter: 'none', bg: '#FFFFFF' },
@@ -633,34 +633,34 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                                 style={{ backgroundColor: currentHex, filter: light.filter }}
                                             ></div>
                                         </div>
-                                        <span className="font-mono text-[8px] font-bold text-gray-500">{light.label}</span>
+                                        <span className="font-mono text-[8px] font-bold text-muted-foreground">{light.label}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.colorsChangeLight}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.colorsChangeLight}</span>
                         </div>
                     </div>
 
                     {/* Teste 9: Rich Black vs Pure Black */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.blackTest}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.blackTest}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.richBlackVsPure}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white">
+                        <div className="p-8 min-h-[200px] bg-card">
                             <div className="flex gap-4 h-28">
                                 <div className="flex-1 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#000000' }}>
                                     <div className="text-center">
-                                        <span className="font-mono text-[9px] text-white font-bold block">100K</span>
-                                        <span className="font-mono text-[7px] text-gray-400">{t.pureBlack}</span>
+                                        <span className="font-mono text-[9px] text-background font-bold block">100K</span>
+                                        <span className="font-mono text-[7px] text-muted-foreground">{t.pureBlack}</span>
                                     </div>
                                 </div>
                                 <div className="flex-1 rounded-xl flex items-center justify-center" style={{ backgroundColor: '#0F0F0F' }}>
                                     <div className="text-center">
-                                        <span className="font-mono text-[9px] text-white font-bold block">60C 40M 40Y 100K</span>
-                                        <span className="font-mono text-[7px] text-gray-400">{t.richBlack}</span>
+                                        <span className="font-mono text-[9px] text-background font-bold block">60C 40M 40Y 100K</span>
+                                        <span className="font-mono text-[7px] text-muted-foreground">{t.richBlack}</span>
                                     </div>
                                 </div>
                             </div>
@@ -672,18 +672,18 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 <span className="font-mono text-[8px] mt-2 block text-center" style={{ color: getContrastColor(currentHex) }}>{t.comparisonOnColor}</span>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.richBlackDense}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.richBlackDense}</span>
                         </div>
                     </div>
 
                     {/* Teste 10: Densidades / Tints */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.tintRamp}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.tintRamp}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.densityScale}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white">
+                        <div className="p-8 min-h-[200px] bg-card">
                             <div className="flex rounded-xl overflow-hidden shadow-sm">
                                 {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((pct, i) => {
                                     const rgb = hexToRgb(currentHex);
@@ -697,18 +697,18 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 })}
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.tintUniformity}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.tintUniformity}</span>
                         </div>
                     </div>
 
                     {/* Teste 11: Linhas Finas (Hairlines) */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.hairlineTest}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.hairlineTest}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.fineLines}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white space-y-4">
+                        <div className="p-8 min-h-[200px] bg-card space-y-4">
                             {[
                                 { label: '0.25pt', height: '0.5px' },
                                 { label: '0.5pt', height: '1px' },
@@ -716,7 +716,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 { label: '2pt', height: '3px' },
                             ].map((line, i) => (
                                 <div key={i} className="flex items-center gap-4">
-                                    <span className="font-mono text-[8px] w-12 text-gray-400">{line.label}</span>
+                                    <span className="font-mono text-[8px] w-12 text-muted-foreground">{line.label}</span>
                                     <div className="flex-1 rounded" style={{ backgroundColor: currentHex, height: line.height }}></div>
                                 </div>
                             ))}
@@ -728,79 +728,79 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 ].map((line, i) => (
                                     <div key={i} className="flex items-center gap-4 mb-2">
                                         <span className="font-mono text-[8px] w-12" style={{ color: getContrastColor(currentHex) }}>{line.label}</span>
-                                        <div className="flex-1 rounded bg-white" style={{ height: line.height }}></div>
+                                        <div className="flex-1 rounded bg-card" style={{ height: line.height }}></div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.linesPrintFail}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.linesPrintFail}</span>
                         </div>
                     </div>
 
                     {/* Teste 12: Marcas de Registro */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.registrationMarks}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.registrationMarks}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.registrationMarks}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white flex items-center justify-center">
+                        <div className="p-8 min-h-[200px] bg-card flex items-center justify-center">
                             <div className="relative w-32 h-32">
                                 {/* Crosshair */}
-                                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-black -translate-y-1/2"></div>
-                                <div className="absolute top-0 left-1/2 w-[1px] h-full bg-black -translate-x-1/2"></div>
+                                <div className="absolute top-1/2 left-0 w-full h-[1px] bg-foreground -translate-y-1/2"></div>
+                                <div className="absolute top-0 left-1/2 w-[1px] h-full bg-foreground -translate-x-1/2"></div>
                                 {/* Circles */}
-                                <div className="absolute top-1/2 left-1/2 w-16 h-16 border-2 border-black rounded-full -translate-x-1/2 -translate-y-1/2"></div>
-                                <div className="absolute top-1/2 left-1/2 w-8 h-8 border-2 border-black rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+                                <div className="absolute top-1/2 left-1/2 w-16 h-16 border-2 border-foreground rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+                                <div className="absolute top-1/2 left-1/2 w-8 h-8 border-2 border-foreground rounded-full -translate-x-1/2 -translate-y-1/2"></div>
                                 {/* Color dots */}
                                 <div className="absolute top-2 left-2 w-3 h-3 rounded-full bg-cyan-400"></div>
                                 <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-pink-500"></div>
                                 <div className="absolute bottom-2 left-2 w-3 h-3 rounded-full bg-yellow-400"></div>
-                                <div className="absolute bottom-2 right-2 w-3 h-3 rounded-full bg-black"></div>
+                                <div className="absolute bottom-2 right-2 w-3 h-3 rounded-full bg-foreground"></div>
                                 {/* Center with color */}
                                 <div className="absolute top-1/2 left-1/2 w-4 h-4 rounded-full -translate-x-1/2 -translate-y-1/2" style={{ backgroundColor: currentHex }}></div>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.alignCmykPlates}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.alignCmykPlates}</span>
                         </div>
                     </div>
 
                     {/* Teste 13: Knockout vs Overprint Text */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.textKnockout}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.textKnockout}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.knockoutVsOverprint}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white">
+                        <div className="p-8 min-h-[200px] bg-card">
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="rounded-xl p-6 relative overflow-hidden" style={{ backgroundColor: currentHex }}>
-                                    <span className="font-mono text-[8px] text-white/50 block mb-2">{t.knockoutLabel.toUpperCase()}</span>
-                                    <span className="text-2xl font-bold text-white">{t.textLabel}</span>
-                                    <p className="text-[9px] mt-2 text-white/70">{t.knockoutDesc}</p>
+                                    <span className="font-mono text-[8px] text-background/50 block mb-2">{t.knockoutLabel.toUpperCase()}</span>
+                                    <span className="text-2xl font-bold text-background">{t.textLabel}</span>
+                                    <p className="text-[9px] mt-2 text-background/70">{t.knockoutDesc}</p>
                                 </div>
                                 <div className="rounded-xl p-6 relative overflow-hidden" style={{ backgroundColor: currentHex }}>
-                                    <span className="font-mono text-[8px] text-white/50 block mb-2">{t.overprintLabel.toUpperCase()}</span>
+                                    <span className="font-mono text-[8px] text-background/50 block mb-2">{t.overprintLabel.toUpperCase()}</span>
                                     <span className="text-2xl font-bold mix-blend-multiply" style={{ color: '#000000' }}>{t.textLabel}</span>
-                                    <p className="text-[9px] mt-2 text-white/70">{t.overprintDesc}</p>
+                                    <p className="text-[9px] mt-2 text-background/70">{t.overprintDesc}</p>
                                 </div>
                             </div>
-                            <div className="mt-4 p-4 bg-gray-100 rounded-xl">
-                                <p className="text-[9px] text-gray-600 text-center">⚠️ {t.smallBlackText}</p>
+                            <div className="mt-4 p-4 bg-secondary rounded-xl">
+                                <p className="text-[9px] text-foreground/80 text-center">⚠️ {t.smallBlackText}</p>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.knockoutRemoves}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.knockoutRemoves}</span>
                         </div>
                     </div>
 
                     {/* Teste 14: Barras de Cor (Color Bars) */}
-                    <div className="bg-gray-50 rounded-[2rem] border border-gray-100 overflow-hidden">
-                        <div className="p-6 border-b border-gray-100">
-                            <span className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-widest">{t.colorBars}</span>
+                    <div className="bg-secondary/40 rounded-[2rem] border border-border/60 overflow-hidden">
+                        <div className="p-6 border-b border-border/60">
+                            <span className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.colorBars}</span>
                             <h4 className="font-mono text-sm font-bold mt-1">{t.controlBars}</h4>
                         </div>
-                        <div className="p-8 min-h-[200px] bg-white space-y-4">
+                        <div className="p-8 min-h-[200px] bg-card space-y-4">
                             {/* CMYK Bars */}
                             <div className="flex gap-1">
                                 {['#00FFFF', '#FF00FF', '#FFFF00', '#000000'].map((c, i) => (
@@ -827,8 +827,8 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                                 <div className="flex-1 h-8 rounded" style={{ background: `repeating-linear-gradient(0deg, ${currentHex} 0px, ${currentHex} 2px, white 2px, white 4px)` }}></div>
                             </div>
                         </div>
-                        <div className="p-4 bg-gray-50 text-center">
-                            <span className="text-[9px] text-gray-500">{t.densityRegistration}</span>
+                        <div className="p-4 bg-secondary/40 text-center">
+                            <span className="text-[9px] text-muted-foreground">{t.densityRegistration}</span>
                         </div>
                     </div>
                 </div>
@@ -839,12 +839,12 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                 <div className="relative z-10 max-w-[1400px] mx-auto">
                     <div className="grid lg:grid-cols-2 gap-12 items-start">
                         <div>
-                            <h2 className="font-mono text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-4">{t.technicalIntegrity}</h2>
-                            <h3 className="text-5xl font-normal tracking-tight text-black mb-12">{t.totalInkCoverage}</h3>
-                            <p className="text-gray-500 text-sm leading-relaxed mb-8 max-w-lg">
+                            <h2 className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] mb-4">{t.technicalIntegrity}</h2>
+                            <h3 className="text-5xl font-normal tracking-tight text-foreground mb-12">{t.totalInkCoverage}</h3>
+                            <p className="text-muted-foreground text-sm leading-relaxed mb-8 max-w-lg">
                                 {t.ticTacDesc}
                             </p>
-                            <div className="px-4 py-2 border border-emerald-600/30 bg-white rounded-full font-mono text-[10px] font-bold uppercase text-emerald-600 inline-block">
+                            <div className="px-4 py-2 border border-emerald-600/30 bg-card rounded-full font-mono text-[10px] font-bold uppercase text-emerald-600 inline-block">
                                 {t.status}: {totalInk > 300 ? t.highRisk : t.idealDrying}
                             </div>
                         </div>
@@ -852,7 +852,7 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                             <span className={`text-[12rem] md:text-[16rem] font-light leading-none tracking-tighter transition-colors ${totalInk > 300 ? 'text-red-600' : 'text-emerald-600'}`}>
                                 {totalInk}%
                             </span>
-                            <div className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${totalInk > 300 ? 'bg-red-500 text-white' : 'bg-emerald-500 text-white'}`}>
+                            <div className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${totalInk > 300 ? 'bg-red-500 text-background' : 'bg-emerald-500 text-background'}`}>
                                 {totalInk > 300 ? t.highCoverage : t.safeCoverage}
                             </div>
                         </div>
@@ -868,10 +868,10 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                             return (
                                 <div key={item.label} className="space-y-6">
                                     <div className="flex justify-between items-end">
-                                        <span className="font-mono text-[10px] text-gray-400 font-bold uppercase tracking-widest">{item.label}</span>
-                                        <span className="text-5xl font-light tracking-tighter text-black">{val}%</span>
+                                        <span className="font-mono text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{item.label}</span>
+                                        <span className="text-5xl font-light tracking-tighter text-foreground">{val}%</span>
                                     </div>
-                                    <div className="h-1.5 w-full bg-gray-200/40 rounded-full relative overflow-hidden">
+                                    <div className="h-1.5 w-full bg-muted/40 rounded-full relative overflow-hidden">
                                         <div className="h-full transition-all duration-300" style={{ width: `${val}%`, backgroundColor: item.color }}></div>
                                     </div>
                                     <input type="range" min="0" max="100" value={val} onChange={(e) => handleCmykSliderChange(item.key as any, Number(e.target.value))} className="w-full h-8 accent-black cursor-ew-resize" />
@@ -900,10 +900,10 @@ export const ColorGuide: React.FC<ColorGuideProps> = ({ selectedHex, batchColors
                         { title: t.colorGamut, icon: '🌈', desc: t.colorGamutDesc },
                         { title: t.weightVsThickness, icon: '📑', desc: t.weightVsThicknessDesc },
                     ].map((item, i) => (
-                        <div key={i} className="p-8 bg-gray-50 rounded-3xl border border-gray-100">
+                        <div key={i} className="p-8 bg-secondary/40 rounded-3xl border border-border/60">
                             <span className="text-2xl mb-4 block">{item.icon}</span>
-                            <h4 className="font-mono text-[10px] font-bold text-black uppercase tracking-widest mb-3">{item.title}</h4>
-                            <p className="text-[11px] text-gray-500 leading-relaxed">{item.desc}</p>
+                            <h4 className="font-mono text-[10px] font-bold text-foreground uppercase tracking-widest mb-3">{item.title}</h4>
+                            <p className="text-[11px] text-muted-foreground leading-relaxed">{item.desc}</p>
                         </div>
                     ))}
                 </div>

@@ -21,7 +21,7 @@ export default {
         foreground: "hsl(var(--foreground))",
         lime: {
           DEFAULT: "hsl(var(--accent-lime))",
-          foreground: "hsl(0 0% 13%)",
+          foreground: "hsl(0 0% 13.7%)",
         },
         primary: {
           DEFAULT: "hsl(var(--primary))",
@@ -71,6 +71,10 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        mono: ["JetBrains Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       keyframes: {
         "accordion-down": {

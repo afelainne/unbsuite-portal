@@ -59,7 +59,7 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({ onColorSelec
         <button 
           onClick={() => document.getElementById('hidden-file-upload')?.click()}
           disabled={loading}
-          className="h-10 px-3 rounded-md border border-gray-200 bg-white text-gray-600 hover:border-black hover:text-black transition-colors flex items-center gap-2 group"
+          className="h-10 px-3 rounded-md border border-border bg-card text-foreground/80 hover:border-foreground hover:text-foreground transition-colors flex items-center gap-2 group"
         >
           {loading ? (
              <span className="animate-pulse">{t.processingImage}</span>

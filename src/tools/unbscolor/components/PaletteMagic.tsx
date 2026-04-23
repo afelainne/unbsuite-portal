@@ -436,7 +436,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
     <div className="max-w-[1600px] mx-auto space-y-10 py-8">
       {/* Feedback toast */}
       {feedback && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-black text-white px-8 py-3 font-mono text-[10px] uppercase tracking-[0.3em] rounded-full shadow-2xl z-50 animate-in fade-in zoom-in duration-200">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-foreground text-background px-8 py-3 font-mono text-[10px] uppercase tracking-[0.3em] rounded-full shadow-2xl z-50 animate-in fade-in zoom-in duration-200">
           {feedback}
         </div>
       )}
@@ -444,28 +444,28 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
       {/* Header */}
       <section className="text-center space-y-6">
         <div>
-          <h2 className="font-mono text-xs font-bold text-gray-300 uppercase tracking-[0.5em] mb-2">{t.paletteMagic}</h2>
-          <p className="font-mono text-[10px] text-gray-400 max-w-md mx-auto">
+          <h2 className="font-mono text-xs font-bold text-muted-foreground/70 uppercase tracking-[0.5em] mb-2">{t.paletteMagic}</h2>
+          <p className="font-mono text-[10px] text-muted-foreground max-w-md mx-auto">
             Curated palettes with lock & shuffle. Freeze colors you love, regenerate the rest.
           </p>
         </div>
 
         {/* Source colors — click to select for injection into slots */}
         <div className="flex justify-center gap-2 flex-wrap items-center">
-          <span className="font-mono text-[8px] text-gray-400 uppercase tracking-wider mr-1">
+          <span className="font-mono text-[8px] text-muted-foreground uppercase tracking-wider mr-1">
             {selectedSourceColor ? '← click a slot' : 'Source'}
           </span>
           {sources.map((c, i) => (
             <div key={i} className="relative group">
               <div
                 className={`w-10 h-10 rounded-lg shadow-sm border-2 cursor-pointer hover:scale-110 transition-all ${
-                  selectedSourceColor === c ? 'border-yellow-400 ring-2 ring-yellow-300 scale-110' : 'border-gray-100'
+                  selectedSourceColor === c ? 'border-yellow-400 ring-2 ring-yellow-300 scale-110' : 'border-border/60'
                 }`}
                 style={{ backgroundColor: c }}
                 onClick={() => setSelectedSourceColor(prev => prev === c ? null : c)}
                 title={selectedSourceColor === c ? 'Deselect' : 'Select to inject into a slot'}
               />
-              <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-mono text-[6px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{c}</span>
+              <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-mono text-[6px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{c}</span>
             </div>
           ))}
           {/* Extract from image button */}
@@ -491,7 +491,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
             />
             <label
               htmlFor="palette-image-upload"
-              className="w-10 h-10 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-yellow-400 hover:bg-yellow-50 transition-all"
+              className="w-10 h-10 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-yellow-400 hover:bg-yellow-50 transition-all"
               title="Extract palette from image (JPG/PNG/WEBP)"
             >
               <span className="text-[14px]">🖼</span>
@@ -507,7 +507,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
               onClick={() => setContext(ctx.key)}
               className="px-4 py-2 font-mono text-[9px] uppercase tracking-[0.2em] rounded-full transition-all font-bold border"
               style={context === ctx.key
-                ? { backgroundColor: '#F0FF00', color: '#232323', borderColor: '#F0FF00' }
+                ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--accent))' }
                 : { backgroundColor: 'white', color: '#999', borderColor: '#E5E5E5' }
               }
             >
@@ -518,14 +518,14 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
 
         {/* Slot count selector */}
         <div className="flex justify-center items-center gap-3">
-          <span className="font-mono text-[9px] text-gray-400 uppercase tracking-wider">{t.slots}:</span>
+          <span className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">{t.slots}:</span>
           {[3, 4, 5, 6, 7].map(n => (
             <button
               key={n}
               onClick={() => setSlotCount(n)}
               className="w-8 h-8 rounded-full font-mono text-[11px] font-bold transition-all border"
               style={slotCount === n
-                ? { backgroundColor: '#232323', color: '#F0FF00', borderColor: '#232323' }
+                ? { backgroundColor: 'hsl(var(--foreground))', color: 'hsl(var(--accent))', borderColor: 'hsl(var(--foreground))' }
                 : { backgroundColor: 'white', color: '#999', borderColor: '#E5E5E5' }
               }
             >
@@ -537,12 +537,12 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
         {/* Shuffle button */}
         <button
           onClick={handleShuffle}
-          className="group relative inline-flex items-center gap-3 px-12 py-5 bg-black text-white font-mono text-sm uppercase tracking-[0.4em] rounded-full hover:scale-105 active:scale-95 transition-all duration-200 shadow-2xl hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)]"
+          className="group relative inline-flex items-center gap-3 px-12 py-5 bg-foreground text-background font-mono text-sm uppercase tracking-[0.4em] rounded-full hover:scale-105 active:scale-95 transition-all duration-200 shadow-2xl hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)]"
         >
           <span className="text-xl transition-transform group-hover:rotate-180 duration-500">⟳</span>
           <span>Shuffle</span>
           {shuffleCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-[#F0FF00] text-black text-[9px] font-bold w-6 h-6 rounded-full flex items-center justify-center">
+            <span className="absolute -top-2 -right-2 bg-[#F0FF00] text-foreground text-[9px] font-bold w-6 h-6 rounded-full flex items-center justify-center">
               {shuffleCount}
             </span>
           )}
@@ -553,11 +553,11 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
       {palettes.length > 0 && (
         <section ref={gridRef} className="space-y-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-mono text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">
+            <h3 className="font-mono text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.3em]">
               {palettes.length} {t.paletteMagic}
             </h3>
             {favorites.length > 0 && (
-              <span className="font-mono text-[9px] text-gray-400">★ {favorites.length} {t.save}</span>
+              <span className="font-mono text-[9px] text-muted-foreground">★ {favorites.length} {t.save}</span>
             )}
           </div>
 
@@ -568,7 +568,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
               return (
                 <div
                   key={palette.id}
-                  className={`bg-white rounded-2xl border overflow-hidden transition-all duration-300 ${isExpanded ? 'ring-1 ring-black/10 shadow-xl border-gray-200' : 'border-gray-100 hover:shadow-md hover:border-gray-200'}`}
+                  className={`bg-card rounded-2xl border overflow-hidden transition-all duration-300 ${isExpanded ? 'ring-1 ring-black/10 shadow-xl border-border' : 'border-border/60 hover:shadow-md hover:border-border'}`}
                 >
                   {/* Color strip with lock icons */}
                   <div className="flex h-24">
@@ -607,11 +607,11 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                             className={`absolute top-1.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all z-10 ${
                               locked
                                 ? 'opacity-100 bg-yellow-400/90 shadow-md scale-100'
-                                : 'opacity-0 group-hover/swatch:opacity-70 hover:!opacity-100 bg-black/30'
+                                : 'opacity-0 group-hover/swatch:opacity-70 hover:!opacity-100 bg-foreground/30'
                             }`}
                             title={locked ? t.unlockColor : t.lockColor}
                           >
-                            <span style={{ color: locked ? '#232323' : '#fff' }}>
+                            <span style={{ color: locked ? 'hsl(var(--foreground))' : '#fff' }}>
                               {locked ? '🔒' : '🔓'}
                             </span>
                           </button>
@@ -644,20 +644,20 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => toggleFavorite(palette)}
-                        className={`w-7 h-7 flex items-center justify-center rounded-full text-sm transition-all ${fav ? 'bg-[#F0FF00] scale-110' : 'hover:bg-gray-50'}`}
+                        className={`w-7 h-7 flex items-center justify-center rounded-full text-sm transition-all ${fav ? 'bg-[#F0FF00] scale-110' : 'hover:bg-secondary/40'}`}
                       >
                         {fav ? '★' : '☆'}
                       </button>
                       <button
                         onClick={() => copyPalette(palette.colors)}
-                        className="w-7 h-7 flex items-center justify-center rounded-full text-[10px] hover:bg-gray-50 transition-all"
+                        className="w-7 h-7 flex items-center justify-center rounded-full text-[10px] hover:bg-secondary/40 transition-all"
                         title={t.copy}
                       >
                         ⎘
                       </button>
                       <button
                         onClick={() => applyPalette(palette.colors)}
-                        className="px-3 py-1.5 font-mono text-[8px] uppercase tracking-wider rounded-full bg-black text-white hover:bg-gray-800 transition-all"
+                        className="px-3 py-1.5 font-mono text-[8px] uppercase tracking-wider rounded-full bg-foreground text-background hover:bg-gray-800 transition-all"
                       >
                         {t.applyPalette}
                       </button>
@@ -666,9 +666,9 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
 
                   {/* Expanded detail */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-gray-50 animate-in slide-in-from-top-2 duration-200">
+                    <div className="px-4 pb-4 pt-1 border-t border-border/40 animate-in slide-in-from-top-2 duration-200">
                       <div className="space-y-1.5 mb-3">
-                        <h5 className="font-mono text-[8px] font-bold text-gray-300 uppercase tracking-widest mb-2">Contrast Pairs</h5>
+                        <h5 className="font-mono text-[8px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-2">Contrast Pairs</h5>
                         {palette.colors.map((c1, i) =>
                           palette.colors.slice(i + 1).map((c2, j) => {
                             const ratio = getContrastRatio(c1, c2);
@@ -680,7 +680,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                                   <div className="w-5 h-5 rounded-sm" style={{ backgroundColor: c1 }} />
                                   <div className="w-5 h-5 rounded-sm" style={{ backgroundColor: c2 }} />
                                 </div>
-                                <div className="flex-1 h-[2px] bg-gray-100 rounded-full overflow-hidden">
+                                <div className="flex-1 h-[2px] bg-secondary rounded-full overflow-hidden">
                                   <div className="h-full rounded-full" style={{ width: `${Math.min(ratio / 10 * 100, 100)}%`, backgroundColor: passAA ? '#059669' : '#D97706' }} />
                                 </div>
                                 <span className="font-mono text-[8px] font-bold w-10 text-right">{ratio.toFixed(1)}:1</span>
@@ -698,10 +698,10 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                       </div>
                       <div className="space-y-1">
                         {palette.colors.map((c, i) => (
-                          <div key={i} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-md px-1 py-0.5 -mx-1 transition-colors" onClick={() => onHexChange(c)}>
+                          <div key={i} className="flex items-center gap-2 cursor-pointer hover:bg-secondary/40 rounded-md px-1 py-0.5 -mx-1 transition-colors" onClick={() => onHexChange(c)}>
                             <div className="w-4 h-4 rounded-sm shadow-sm" style={{ backgroundColor: c }} />
-                            <span className="font-mono text-[9px] text-gray-700 font-bold">{c}</span>
-                            <span className="font-mono text-[8px] text-gray-400">{getClosestColorName(c)}</span>
+                            <span className="font-mono text-[9px] text-foreground/80 font-bold">{c}</span>
+                            <span className="font-mono text-[8px] text-muted-foreground">{getClosestColorName(c)}</span>
                             {isLocked(palette.id, i) && <span className="text-[8px] text-yellow-500">🔒</span>}
                           </div>
                         ))}
@@ -717,20 +717,20 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
 
       {/* Favorites */}
       {favorites.length > 0 && (
-        <section className="space-y-4 pt-6 border-t border-gray-100">
-          <h3 className="font-mono text-[10px] font-bold text-gray-300 uppercase tracking-[0.3em]">★ {t.save} ({favorites.length})</h3>
+        <section className="space-y-4 pt-6 border-t border-border/60">
+          <h3 className="font-mono text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.3em]">★ {t.save} ({favorites.length})</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {favorites.map(palette => (
-              <div key={palette.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              <div key={palette.id} className="bg-card rounded-2xl border border-border/60 overflow-hidden">
                 <div className="flex h-16">
                   {palette.colors.map((c, ci) => (
                     <div key={ci} className="flex-1" style={{ backgroundColor: c }} />
                   ))}
                 </div>
                 <div className="px-4 py-2 flex items-center justify-between">
-                  <span className="font-mono text-[9px] font-bold text-gray-700 uppercase">{palette.name}</span>
+                  <span className="font-mono text-[9px] font-bold text-foreground/80 uppercase">{palette.name}</span>
                   <div className="flex gap-1">
-                    <button onClick={() => applyPalette(palette.colors)} className="px-3 py-1 font-mono text-[8px] uppercase rounded-full bg-black text-white hover:bg-gray-800 transition-all">{t.applyPalette}</button>
+                    <button onClick={() => applyPalette(palette.colors)} className="px-3 py-1 font-mono text-[8px] uppercase rounded-full bg-foreground text-background hover:bg-gray-800 transition-all">{t.applyPalette}</button>
                     <button onClick={() => toggleFavorite(palette)} className="px-2 py-1 font-mono text-[8px] text-red-400 hover:text-red-600 transition-colors">✕</button>
                   </div>
                 </div>
@@ -744,7 +744,7 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
       {palettes.length === 0 && (
         <div className="text-center py-20 space-y-4">
           <div className="text-6xl opacity-20">⟳</div>
-          <p className="font-mono text-[10px] text-gray-400 uppercase tracking-[0.3em]">
+          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.3em]">
             Hit shuffle to generate palettes
           </p>
         </div>

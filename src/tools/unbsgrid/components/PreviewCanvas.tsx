@@ -44,15 +44,15 @@ const CANVAS_PADDING = 60;
 
 const bgClasses: Record<CanvasBackground, string> = {
   dark: 'bg-canvas',
-  light: 'bg-white',
+  light: 'bg-card',
   checkerboard: '',
 };
 
 const TOOLBAR_THEME = {
-  bg: '#E8E8E3',
-  text: '#232323',
-  muted: '#888',
-  border: '#D0D0C8',
+  bg: 'hsl(var(--card))',
+  text: 'hsl(var(--foreground))',
+  muted: 'hsl(var(--muted-foreground))',
+  border: 'hsl(var(--border))',
 };
 
 const PreviewCanvas: React.FC<PreviewCanvasProps> = ({

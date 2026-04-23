@@ -575,23 +575,23 @@ const App: React.FC = () => {
     const getPmsSolidU = () => findReferenceMatches(hex, solidUncoatedLibrary, 1)[0];
 
     return (
-        <div className="min-h-screen font-sans flex flex-col relative overflow-x-hidden" style={{ backgroundColor: '#FFFFFF', color: '#232323' }}>
+        <div className="min-h-screen font-sans flex flex-col relative overflow-x-hidden" style={{ backgroundColor: '#FFFFFF', color: 'hsl(var(--foreground))' }}>
             {showSettings && (
                 <div className="fixed inset-0 z-[200] flex justify-end">
-                    <div className="absolute inset-0 bg-white/20 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
+                    <div className="absolute inset-0 bg-card/20 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
                     <div className="relative w-full max-w-[440px] border-l p-12 shadow-[0_0_100px_rgba(0,0,0,0.05)] h-full animate-in slide-in-from-right duration-500 overflow-y-auto" style={{ backgroundColor: '#FFFFFF', borderColor: '#D0D0C8' }}>
                         <div className="flex justify-between items-center mb-16">
                             <div className="flex items-center gap-3">
                                 <h2 className="text-3xl font-normal tracking-tighter">{t.settings}</h2>
                             </div>
-                            <button onClick={() => setShowSettings(false)} className="w-10 h-10 border border-gray-100 rounded-full flex items-center justify-center hover:bg-black hover:text-white transition-all">
+                            <button onClick={() => setShowSettings(false)} className="w-10 h-10 border border-border/60 rounded-full flex items-center justify-center hover:bg-foreground hover:text-background transition-all">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                             </button>
                         </div>
 
                         <div className="space-y-16">
                             <div>
-                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-gray-300 mb-8 border-b border-gray-50 pb-2">{t.language}</h3>
+                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/70 mb-8 border-b border-border/40 pb-2">{t.language}</h3>
                                 <div className="grid grid-cols-3 gap-3">
                                     {[
                                         { code: 'en' as Language, label: t.english, flag: '🇺🇸' },
@@ -602,7 +602,7 @@ const App: React.FC = () => {
                                             key={lang.code}
                                             onClick={() => setLanguage(lang.code)}
                                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${language === lang.code ? 'border-transparent' : 'border-[#D0D0C8] hover:shadow-sm'}`}
-                                            style={language === lang.code ? { backgroundColor: '#F0FF00', color: '#232323', borderColor: '#F0FF00' } : { backgroundColor: 'rgba(255,255,255,0.5)' }}
+                                            style={language === lang.code ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--accent))' } : { backgroundColor: 'rgba(255,255,255,0.5)' }}
                                         >
                                             <span className="text-2xl">{lang.flag}</span>
                                             <span className="text-[10px] font-bold uppercase tracking-wider">{lang.label}</span>
@@ -612,7 +612,7 @@ const App: React.FC = () => {
                             </div>
 
                             <div>
-                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-gray-300 mb-8 border-b border-gray-50 pb-2">{t.visibleColorModels}</h3>
+                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/70 mb-8 border-b border-border/40 pb-2">{t.visibleColorModels}</h3>
                                 <div className="grid grid-cols-1 gap-4 mb-6">
                                     {[
                                         { key: 'showHex', label: t.hexadecimal },
@@ -624,19 +624,19 @@ const App: React.FC = () => {
                                     ].map((opt) => (
                                         <div
                                             key={opt.key}
-                                            className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100/50 cursor-pointer group hover:bg-white hover:shadow-sm transition-all"
+                                            className="flex items-center justify-between p-4 bg-secondary/40/50 rounded-2xl border border-border/60/50 cursor-pointer group hover:bg-card hover:shadow-sm transition-all"
                                             onClick={() => setSettings((s) => ({ ...s, [opt.key]: !s[opt.key as keyof SettingsState] }))}
                                         >
-                                            <span className="text-sm font-medium text-gray-700">{opt.label}</span>
-                                             <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? '' : 'bg-gray-200'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: '#F0FF00' } : {}}>
-                                                 <div className={`absolute top-1 w-3 h-3 rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1 bg-white'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: '#232323' } : {}}></div>
+                                            <span className="text-sm font-medium text-foreground/80">{opt.label}</span>
+                                             <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? '' : 'bg-muted'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: 'hsl(var(--accent))' } : {}}>
+                                                 <div className={`absolute top-1 w-3 h-3 rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1 bg-card'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: 'hsl(var(--foreground))' } : {}}></div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
 
                                 <div className="space-y-3">
-                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-gray-400">WEB REFERENCE SEARCH</p>
+                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">WEB REFERENCE SEARCH</p>
                                     {[
                                         { key: 'showPmsC', label: t.refBridgeC },
                                         { key: 'showPmsU', label: t.refBridgeU },
@@ -645,12 +645,12 @@ const App: React.FC = () => {
                                     ].map((opt) => (
                                         <div
                                             key={opt.key}
-                                            className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-200/70 cursor-pointer group hover:shadow-sm transition-all"
+                                            className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border/70 cursor-pointer group hover:shadow-sm transition-all"
                                             onClick={() => setSettings((s) => ({ ...s, [opt.key]: !s[opt.key as keyof SettingsState] }))}
                                         >
-                                            <span className="text-sm font-medium text-gray-700">{opt.label}</span>
-                                             <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? '' : 'bg-gray-200'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: '#F0FF00' } : {}}>
-                                                 <div className={`absolute top-1 w-3 h-3 rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1 bg-white'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: '#232323' } : {}}></div>
+                                            <span className="text-sm font-medium text-foreground/80">{opt.label}</span>
+                                             <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? '' : 'bg-muted'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: 'hsl(var(--accent))' } : {}}>
+                                                 <div className={`absolute top-1 w-3 h-3 rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1 bg-card'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: 'hsl(var(--foreground))' } : {}}></div>
                                             </div>
                                         </div>
                                     ))}
@@ -658,12 +658,12 @@ const App: React.FC = () => {
                             </div>
 
                             <div>
-                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-gray-300 mb-8 border-b border-gray-50 pb-2">{t.mixedFormatSyntax}</h3>
+                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/70 mb-8 border-b border-border/40 pb-2">{t.mixedFormatSyntax}</h3>
                                 <div className="space-y-3">
                                     {['R=80, G=184, B=72', 'RGB 80, 184, 72', 'rgb(80, 184, 72)'].map((fmt) => (
                                         <label
                                             key={fmt}
-                                            className="flex items-center gap-4 cursor-pointer p-4 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100"
+                                            className="flex items-center gap-4 cursor-pointer p-4 rounded-2xl hover:bg-secondary/40 transition-all border border-transparent hover:border-border/60"
                                         >
                                             <div className="relative flex items-center justify-center">
                                                 <input
@@ -673,10 +673,10 @@ const App: React.FC = () => {
                                                     checked={settings.mixFormat === fmt}
                                                     onChange={() => setSettings((s) => ({ ...s, mixFormat: fmt }))}
                                                 />
-                                                <div className={`w-6 h-6 rounded-full border-2 transition-all ${settings.mixFormat === fmt ? 'border-black bg-black' : 'border-gray-200'}`}></div>
-                                                {settings.mixFormat === fmt && <div className="absolute w-2 h-2 bg-white rounded-full"></div>}
+                                                <div className={`w-6 h-6 rounded-full border-2 transition-all ${settings.mixFormat === fmt ? 'border-foreground bg-foreground' : 'border-border'}`}></div>
+                                                {settings.mixFormat === fmt && <div className="absolute w-2 h-2 bg-card rounded-full"></div>}
                                             </div>
-                                            <span className={`text-sm font-mono transition-colors ${settings.mixFormat === fmt ? 'text-black font-bold' : 'text-gray-400'}`}>
+                                            <span className={`text-sm font-mono transition-colors ${settings.mixFormat === fmt ? 'text-foreground font-bold' : 'text-muted-foreground'}`}>
                                                 {fmt}
                                             </span>
                                         </label>
@@ -685,15 +685,15 @@ const App: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="mt-24 pt-8 border-t border-gray-100">
-                            <p className="text-[10px] font-mono text-gray-400 leading-relaxed uppercase tracking-widest">{t.changesAppliedRealtime}</p>
+                        <div className="mt-24 pt-8 border-t border-border/60">
+                            <p className="text-[10px] font-mono text-muted-foreground leading-relaxed uppercase tracking-widest">{t.changesAppliedRealtime}</p>
                         </div>
                     </div>
                 </div>
             )}
 
             {copyFeedback && (
-                <div className="fixed top-4 right-4 bg-black text-white px-4 py-2 text-xs font-mono font-bold uppercase z-[250] shadow-2xl">
+                <div className="fixed top-4 right-4 bg-foreground text-background px-4 py-2 text-xs font-mono font-bold uppercase z-[250] shadow-2xl">
                     {copyFeedback}
                 </div>
             )}
@@ -704,7 +704,7 @@ const App: React.FC = () => {
                         <div className="flex items-center gap-4 md:gap-6">
                             <button
                                 type="button"
-                                className="h-12 px-3 py-1 bg-transparent transition-colors flex items-center justify-center shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                                className="h-12 px-3 py-1 bg-transparent transition-colors flex items-center justify-center shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                                 onClick={() => setActiveTab('matcher')}
                                 aria-label="UNBSCOLOR"
                             >
@@ -714,12 +714,12 @@ const App: React.FC = () => {
                             </button>
 
                             <nav className="flex items-center gap-4 text-xs md:text-sm font-bold uppercase">
-                                <button onClick={() => setActiveTab('matcher')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'matcher' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'matcher' ? { borderColor: '#F0FF00' } : {}}>{t.matcher}</button>
-                                <button onClick={() => setActiveTab('batch')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'batch' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'batch' ? { borderColor: '#F0FF00' } : {}}>{t.multiSlotMatchAnalysis}</button>
-                                <button onClick={() => setActiveTab('palette')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'palette' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'palette' ? { borderColor: '#F0FF00' } : {}}>{t.contrastPalette}</button>
-                                <button onClick={() => setActiveTab('generated')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'generated' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'generated' ? { borderColor: '#F0FF00' } : {}}>{t.generatedPalettes}</button>
-                                <button onClick={() => setActiveTab('magic')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'magic' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'magic' ? { borderColor: '#F0FF00' } : {}}>{t.paletteMagic}</button>
-                                <button onClick={() => setActiveTab('guide')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'guide' ? 'text-[#232323]' : 'border-transparent text-gray-400 hover:text-[#232323]'}`} style={activeTab === 'guide' ? { borderColor: '#F0FF00' } : {}}>{t.printGuide}</button>
+                                <button onClick={() => setActiveTab('matcher')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'matcher' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'matcher' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.matcher}</button>
+                                <button onClick={() => setActiveTab('batch')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'batch' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'batch' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.multiSlotMatchAnalysis}</button>
+                                <button onClick={() => setActiveTab('palette')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'palette' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'palette' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.contrastPalette}</button>
+                                <button onClick={() => setActiveTab('generated')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'generated' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'generated' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.generatedPalettes}</button>
+                                <button onClick={() => setActiveTab('magic')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'magic' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'magic' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.paletteMagic}</button>
+                                <button onClick={() => setActiveTab('guide')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'guide' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'guide' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.printGuide}</button>
                             </nav>
                         </div>
 
@@ -734,7 +734,7 @@ const App: React.FC = () => {
 
                             <button
                                 onClick={() => setShowSettings(true)}
-                                className="h-10 w-10 rounded-md border border-gray-200 bg-white transition-colors flex items-center justify-center shrink-0 hover:bg-black/5 hover:border-black/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
+                                className="h-10 w-10 rounded-md border border-border bg-card transition-colors flex items-center justify-center shrink-0 hover:bg-foreground/5 hover:border-foreground/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
                                 style={{ appearance: 'none', WebkitAppearance: 'none', padding: 0, margin: 0, background: 'transparent', lineHeight: 0 }}
                                 title={t.settings}
                                 aria-label={t.settings}
@@ -786,7 +786,7 @@ const App: React.FC = () => {
                                     className="text-7xl md:text-8xl font-sans font-normal tracking-tighter outline-none w-full bg-transparent placeholder-gray-200"
                                     maxLength={7}
                                 />
-                                <div className="mb-12 font-mono text-gray-500 uppercase tracking-widest text-sm">{getClosestColorName(hex)}</div>
+                                <div className="mb-12 font-mono text-muted-foreground uppercase tracking-widest text-sm">{getClosestColorName(hex)}</div>
 
                                 <div className="space-y-6 max-w-md">
                                     {['r', 'g', 'b'].map((channel) => (
@@ -798,26 +798,26 @@ const App: React.FC = () => {
                                                 max="255"
                                                 value={rgb[channel as keyof RGB]}
                                                 onChange={(e) => handleRgbChange(channel as 'r' | 'g' | 'b', Number(e.target.value))}
-                                                className="w-full h-[2px] bg-gray-200 appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-transform"
+                                                className="w-full h-[2px] bg-muted appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-transform"
                                             />
-                                            <span className="font-mono text-xs w-8 text-right text-gray-400">{rgb[channel as keyof RGB]}</span>
+                                            <span className="font-mono text-xs w-8 text-right text-muted-foreground">{rgb[channel as keyof RGB]}</span>
                                         </div>
                                     ))}
                                 </div>
 
-                                <div className="mt-10 grid grid-cols-2 gap-x-6 gap-y-3 text-sm font-mono text-gray-700 uppercase tracking-tight">
-                                    <span className="text-gray-400">HEX</span>
-                                    <span className="text-left text-black">{hex.toUpperCase()}</span>
-                                    <span className="text-gray-400">RGB</span>
-                                    <span className="text-left text-black">{formatRgbDisplay(rgb.r, rgb.g, rgb.b)}</span>
-                                    <span className="text-gray-400">CMYK</span>
-                                    <span className="text-left text-black">{cmyk.c}, {cmyk.m}, {cmyk.y}, {cmyk.k}</span>
-                                    <span className="text-gray-400">LAB</span>
-                                    <span className="text-left text-black">{Math.round(lab.l)}, {Math.round(lab.a)}, {Math.round(lab.b)}</span>
-                                    <span className="text-gray-400">HSL</span>
-                                    <span className="text-left text-black">{hsl.h}, {hsl.s}%, {hsl.l}%</span>
-                                    <span className="text-gray-400">HSB</span>
-                                    <span className="text-left text-black">{hsv.h}, {hsv.s}, {hsv.v}</span>
+                                <div className="mt-10 grid grid-cols-2 gap-x-6 gap-y-3 text-sm font-mono text-foreground/80 uppercase tracking-tight">
+                                    <span className="text-muted-foreground">HEX</span>
+                                    <span className="text-left text-foreground">{hex.toUpperCase()}</span>
+                                    <span className="text-muted-foreground">RGB</span>
+                                    <span className="text-left text-foreground">{formatRgbDisplay(rgb.r, rgb.g, rgb.b)}</span>
+                                    <span className="text-muted-foreground">CMYK</span>
+                                    <span className="text-left text-foreground">{cmyk.c}, {cmyk.m}, {cmyk.y}, {cmyk.k}</span>
+                                    <span className="text-muted-foreground">LAB</span>
+                                    <span className="text-left text-foreground">{Math.round(lab.l)}, {Math.round(lab.a)}, {Math.round(lab.b)}</span>
+                                    <span className="text-muted-foreground">HSL</span>
+                                    <span className="text-left text-foreground">{hsl.h}, {hsl.s}%, {hsl.l}%</span>
+                                    <span className="text-muted-foreground">HSB</span>
+                                    <span className="text-left text-foreground">{hsv.h}, {hsv.s}, {hsv.v}</span>
                                 </div>
                             </div>
 
@@ -827,7 +827,7 @@ const App: React.FC = () => {
                                     {!showRefMatch && matches[0] && (
                                         <button
                                             onClick={() => setShowRefMatch(true)}
-                                            className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-widest border border-gray-200 bg-white rounded-lg hover:border-black hover:text-black transition-all"
+                                            className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-widest border border-border bg-card rounded-lg hover:border-foreground hover:text-foreground transition-all"
                                         >
                                             {t.analyzeWithAi}
                                         </button>
@@ -838,19 +838,19 @@ const App: React.FC = () => {
                                         <div className="flex gap-8 items-center mb-6">
                                             <div className="flex flex-col items-center gap-3">
                                                 <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-inner" style={{ backgroundColor: hex }}></div>
-                                                <span className="font-mono text-xs text-gray-400">{getClosestColorName(hex)}</span>
+                                                <span className="font-mono text-xs text-muted-foreground">{getClosestColorName(hex)}</span>
                                             </div>
                                             {showRefMatch && matches[0] ? (
                                                 <>
-                                                    <span className="text-gray-300 text-2xl">→</span>
+                                                    <span className="text-muted-foreground/70 text-2xl">→</span>
                                                     <div className="flex flex-col items-center gap-3">
                                                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-inner" style={{ backgroundColor: matches[0].reference.hex }}></div>
-                                                        <span className="font-mono text-xs text-gray-400">{normalizeRefCode(matches[0].reference.code)}</span>
+                                                        <span className="font-mono text-xs text-muted-foreground">{normalizeRefCode(matches[0].reference.code)}</span>
                                                     </div>
                                                 </>
                                             ) : (
-                                                <div className="flex flex-col items-center gap-3 text-gray-300">
-                                                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-dashed border-gray-200 flex items-center justify-center text-[10px] font-mono uppercase tracking-[0.2em]">
+                                                <div className="flex flex-col items-center gap-3 text-muted-foreground/70">
+                                                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-dashed border-border flex items-center justify-center text-[10px] font-mono uppercase tracking-[0.2em]">
                                                         Reference
                                                     </div>
                                                     <span className="font-mono text-[10px] uppercase tracking-[0.2em]">{t.analyzeWithAi}</span>
@@ -859,14 +859,14 @@ const App: React.FC = () => {
                                         </div>
                                         <div className="flex items-start gap-12 w-full mt-8">
                                             <div className="flex flex-col">
-                                                <span className="font-mono text-[10px] text-gray-400 uppercase tracking-[0.2em] mb-4">DELTA E 00</span>
+                                                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4">DELTA E 00</span>
                                                 <span className="text-6xl font-light tracking-tighter">{showRefMatch && matches[0] ? matches[0].deltaE.toFixed(2) : '--'}</span>
                                             </div>
                                             {showRefMatch && matches[0] && (
-                                                <div className="flex flex-col gap-1 border-l border-gray-100 pl-8">
+                                                <div className="flex flex-col gap-1 border-l border-border/60 pl-8">
                                                     <span className="font-bold text-sm mb-1">{getClosestColorName(matches[0].reference.hex)}</span>
-                                                    <div className="font-mono text-[11px] text-gray-500 space-y-1.5">
-                                                        {settings.showHex && <p className="text-gray-400 mb-1">{matches[0].reference.hex}</p>}
+                                                    <div className="font-mono text-[11px] text-muted-foreground space-y-1.5">
+                                                        {settings.showHex && <p className="text-muted-foreground mb-1">{matches[0].reference.hex}</p>}
                                                         {settings.showRgb && <p>{formatRgbDisplay(matches[0].reference.rgb.r, matches[0].reference.rgb.g, matches[0].reference.rgb.b)}</p>}
                                                         {settings.showCmyk && (
                                                             <p className="uppercase">
@@ -878,27 +878,27 @@ const App: React.FC = () => {
                                                         {settings.showHsb && <p>HSB: {rgbToHsv(matches[0].reference.rgb).h}, {rgbToHsv(matches[0].reference.rgb).s}, {rgbToHsv(matches[0].reference.rgb).v}</p>}
 
                                                         {settings.showPmsC && (
-                                                            <div className="mt-4 pt-3 border-t border-gray-50">
-                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.refBridgeC}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
+                                                            <div className="mt-4 pt-3 border-t border-border/40">
+                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeC}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsU && (
-                                                            <div className={`${!settings.showPmsC ? 'mt-4 pt-3 border-t border-gray-50' : 'mt-2'}`}>
-                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.refBridgeU}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
+                                                            <div className={`${!settings.showPmsC ? 'mt-4 pt-3 border-t border-border/40' : 'mt-2'}`}>
+                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeU}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsSolidC && (
-                                                            <div className="mt-2 pt-3 border-t border-gray-50">
-                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.refSolidC}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsSolidC()?.reference.code) || t.outOfGamut}</span>
+                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refSolidC}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsSolidC()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsSolidU && (
-                                                            <div className="mt-2 pt-3 border-t border-gray-50">
-                                                                <span className="text-[9px] font-bold text-gray-300 uppercase block mb-1">{t.refSolidU}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-black">{normalizeRefCode(getPmsSolidU()?.reference.code) || t.outOfGamut}</span>
+                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refSolidU}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsSolidU()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -908,30 +908,30 @@ const App: React.FC = () => {
                                     </div>
 
                                     <div className="flex flex-col gap-2 w-full md:w-auto ml-auto">
-                                        <span className="font-mono text-xs text-gray-400 uppercase mb-4 tracking-widest">{t.actions}</span>
+                                        <span className="font-mono text-xs text-muted-foreground uppercase mb-4 tracking-widest">{t.actions}</span>
                                         <button
                                             onClick={() => handleHexChange(rgbToHex((Math.random() * 255) | 0, (Math.random() * 255) | 0, (Math.random() * 255) | 0))}
-                                             className="px-6 py-4 text-left font-mono text-xs transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F0FF00'; e.currentTarget.style.color = '#232323'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}
+                                             className="px-6 py-4 text-left font-mono text-xs transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'; e.currentTarget.style.color = 'hsl(var(--foreground))'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}
                                          >
                                              {t.randomizeColor}
                                          </button>
                                          <button
                                              onClick={triggerAiAnalysis}
                                              disabled={loadingAi}
-                                             className="px-6 py-4 text-left font-mono text-xs transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F0FF00'; e.currentTarget.style.color = '#232323'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}
+                                             className="px-6 py-4 text-left font-mono text-xs transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'; e.currentTarget.style.color = 'hsl(var(--foreground))'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}
                                         >
                                             {loadingAi ? t.thinking : t.analyzeWithAi}
                                         </button>
                                         {analysis && (
-                                            <div className="mt-4 p-6 bg-gray-50 border border-gray-100 rounded-lg animate-in fade-in slide-in-from-top-2 duration-500 max-w-xs">
-                                                <h3 className="font-mono text-[10px] font-bold text-black mb-3 uppercase tracking-widest">{t.aiResult}</h3>
-                                                <p className="text-sm italic text-gray-700 leading-relaxed mb-4">"{analysis.description}"</p>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">
+                                            <div className="mt-4 p-6 bg-secondary/40 border border-border/60 rounded-lg animate-in fade-in slide-in-from-top-2 duration-500 max-w-xs">
+                                                <h3 className="font-mono text-[10px] font-bold text-foreground mb-3 uppercase tracking-widest">{t.aiResult}</h3>
+                                                <p className="text-sm italic text-foreground/80 leading-relaxed mb-4">"{analysis.description}"</p>
+                                                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">
                                                     {t.mood}: {analysis.psychology}
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
                                                     {analysis.usageTips.map((tip, i) => (
-                                                        <span key={i} className="px-2 py-1 bg-white border border-gray-200 text-[9px] font-mono">
+                                                        <span key={i} className="px-2 py-1 bg-card border border-border text-[9px] font-mono">
                                                             {tip}
                                                         </span>
                                                     ))}
@@ -944,11 +944,11 @@ const App: React.FC = () => {
                         </div>
 
                         <div className="mb-12">
-                            <h3 className="font-mono text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">{t.nearbyRefs}</h3>
+                            <h3 className="font-mono text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">{t.nearbyRefs}</h3>
                             <SwatchStrip colors={stripColors} selectedHex={hex} onSelect={handleHexChange} showRefMatch={showRefMatch} />
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-y-12 gap-x-8 border-t border-gray-100 pt-12 mb-16">
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-y-12 gap-x-8 border-t border-border/60 pt-12 mb-16">
                             <InfoGrid
                                 rgb={rgb}
                                 cmyk={cmyk}
@@ -970,7 +970,7 @@ const App: React.FC = () => {
                     href="https://www.instagram.com/unbserved/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-[10px] font-bold text-gray-400 hover:text-black tracking-widest uppercase transition-colors"
+                    className="font-mono text-[10px] font-bold text-muted-foreground hover:text-foreground tracking-widest uppercase transition-colors"
                 >
                     {t.poweredBy}
                 </a>

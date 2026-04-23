@@ -6,9 +6,9 @@ import InfoTooltip from './InfoTooltip';
 import type { GeometryPreset } from '../lib/preset-engine';
 
 const THEME = {
-  text: '#232323',
-  accent: '#F0FF00',
-  border: '#D0D0C8',
+  text: 'hsl(var(--foreground))',
+  accent: 'hsl(var(--accent))',
+  border: 'hsl(var(--border))',
   muted: '#888',
 };
 

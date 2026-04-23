@@ -28,8 +28,8 @@ const ControlSlider = memo(({ label, paramKey, min, max, unit = "", value, onCha
     return (
         <div className="flex flex-col gap-1 mb-6">
             <div className="flex justify-between items-center mb-1">
-                <label className="font-mono text-[9px] font-bold uppercase text-gray-400 tracking-widest">{label}</label>
-                <span className="font-mono text-[10px] font-bold text-black bg-gray-50 px-2 py-0.5 rounded">
+                <label className="font-mono text-[9px] font-bold uppercase text-muted-foreground tracking-widest">{label}</label>
+                <span className="font-mono text-[10px] font-bold text-foreground bg-secondary/40 px-2 py-0.5 rounded">
                     {isCount ? value : Math.round(value)}{unit}
                 </span>
             </div>
@@ -40,7 +40,7 @@ const ControlSlider = memo(({ label, paramKey, min, max, unit = "", value, onCha
                 step="any"
                 value={value}
                 onChange={handleChange}
-                className="w-full h-[2px] bg-gray-200 appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-black [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-transform [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-black [&::-moz-range-thumb]:rounded-full"
+                className="w-full h-[2px] bg-muted appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-transform [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-foreground [&::-moz-range-thumb]:rounded-full"
             />
         </div>
     );
@@ -132,13 +132,13 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
         <div className="max-w-[1600px] mx-auto space-y-12">
             {/* Seção Batch Palettes */}
             {batchColors && batchColors.length > 0 && (
-                <div className="bg-gray-50 rounded-[2rem] p-6 border border-gray-100">
+                <div className="bg-secondary/40 rounded-[2rem] p-6 border border-border/60">
                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-mono text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.batchPalette} ({batchColors.length} {t.colors})</h3>
+                        <h3 className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.batchPalette} ({batchColors.length} {t.colors})</h3>
                         <button 
                             onClick={() => setShowBatchPalettes(!showBatchPalettes)}
                              className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm"
-                             style={showBatchPalettes ? { backgroundColor: '#F0FF00', color: '#232323', borderColor: '#F0FF00' } : { backgroundColor: 'white', color: '#232323', borderColor: '#D0D0C8' }}
+                             style={showBatchPalettes ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--accent))' } : { backgroundColor: 'white', color: 'hsl(var(--foreground))', borderColor: '#D0D0C8' }}
                         >
                             {showBatchPalettes ? t.hideBatch : t.showBatch}
                         </button>
@@ -157,15 +157,15 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
                                         className={`group relative flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${selectedBatchIndex === idx ? 'ring-2 ring-black scale-105' : 'hover:scale-105'}`}
                                     >
                                         <div 
-                                            className="w-16 h-16 rounded-lg shadow-md border border-gray-200"
+                                            className="w-16 h-16 rounded-lg shadow-md border border-border"
                                             style={{ backgroundColor: color }}
                                         />
-                                        <span className="font-mono text-[8px] text-gray-500 uppercase">{color}</span>
-                                        <span className="font-mono text-[7px] text-gray-400">{getClosestColorName(color)}</span>
+                                        <span className="font-mono text-[8px] text-muted-foreground uppercase">{color}</span>
+                                        <span className="font-mono text-[7px] text-muted-foreground">{getClosestColorName(color)}</span>
                                     </button>
                                 ))}
                             </div>
-                            <p className="text-[10px] text-gray-400 font-mono">{t.clickToUseAsBase}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono">{t.clickToUseAsBase}</p>
                         </div>
                     )}
                 </div>
@@ -173,7 +173,7 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
                 <div className="lg:col-span-5">
-                    <h2 className="font-mono text-sm font-medium mb-8 text-gray-400 uppercase tracking-widest">{t.baseColor}</h2>
+                    <h2 className="font-mono text-sm font-medium mb-8 text-muted-foreground uppercase tracking-widest">{t.baseColor}</h2>
                     <input 
                         type="text" 
                         value={baseHex}
@@ -186,25 +186,25 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
                         maxLength={7}
                     />
                     <div className="flex flex-wrap items-center gap-4 mt-2 mb-8">
-                         <div className="font-mono text-gray-500 uppercase tracking-widest text-sm font-bold">{getClosestColorName(baseHex)}</div>
+                         <div className="font-mono text-muted-foreground uppercase tracking-widest text-sm font-bold">{getClosestColorName(baseHex)}</div>
                          <div className="flex gap-2">
                             <button onClick={() => {
                                 const h = rgbToHex(Math.random()*255|0, Math.random()*255|0, Math.random()*255|0);
                                 setBaseHex(h); onHexChange(h);
-                             }} className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = '#F0FF00'; e.currentTarget.style.color = '#232323'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}>{t.randomize}</button>
-                             <button onClick={() => setUseReference(!useReference)} className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm" style={useReference ? { backgroundColor: '#F0FF00', color: '#232323', borderColor: '#F0FF00' } : { backgroundColor: 'white', color: '#232323', borderColor: '#D0D0C8' }}>{t.useRefMatch}</button>
+                             }} className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'; e.currentTarget.style.color = 'hsl(var(--foreground))'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}>{t.randomize}</button>
+                             <button onClick={() => setUseReference(!useReference)} className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm" style={useReference ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--accent))' } : { backgroundColor: 'white', color: 'hsl(var(--foreground))', borderColor: '#D0D0C8' }}>{t.useRefMatch}</button>
                          </div>
                     </div>
                 </div>
                 <div className="lg:col-span-7 grid md:grid-cols-2 gap-x-12">
                      <div>
-                        <h3 className="font-mono text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-8 border-b border-gray-100 pb-2">{t.shades}</h3>
+                        <h3 className="font-mono text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-8 border-b border-border/60 pb-2">{t.shades}</h3>
                         <ControlSlider label={t.count} paramKey="darkCount" min={0} max={10} value={darkCount} onChange={handleSliderChange} />
                         <ControlSlider label={t.step} paramKey="darknessIntensity" min={1} max={30} unit="%" value={darknessIntensity} onChange={handleSliderChange} />
                         <ControlSlider label={t.hue} paramKey="hueRotDark" min={-60} max={60} unit="°" value={hueRotDark} onChange={handleSliderChange} />
                      </div>
                      <div>
-                        <h3 className="font-mono text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-8 border-b border-gray-100 pb-2">{t.tints}</h3>
+                        <h3 className="font-mono text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-8 border-b border-border/60 pb-2">{t.tints}</h3>
                         <ControlSlider label={t.count} paramKey="lightCount" min={0} max={10} value={lightCount} onChange={handleSliderChange} />
                         <ControlSlider label={t.step} paramKey="lightnessIntensity" min={1} max={30} unit="%" value={lightnessIntensity} onChange={handleSliderChange} />
                         <ControlSlider label={t.hue} paramKey="hueRotLight" min={-60} max={60} unit="°" value={hueRotLight} onChange={handleSliderChange} />
@@ -214,7 +214,7 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
 
             <div className="relative w-full rounded-[3rem] shadow-2xl ring-1 ring-black/5 px-10 py-10" style={{ backgroundColor: renderBg }}>
                 <div className="flex w-full justify-center">
-                    <div className="w-[88%] max-w-[1400px] h-[260px] rounded-[2rem] overflow-hidden shadow-xl ring-1 ring-black/5 bg-white/40 backdrop-blur-sm">
+                    <div className="w-[88%] max-w-[1400px] h-[260px] rounded-[2rem] overflow-hidden shadow-xl ring-1 ring-black/5 bg-card/40 backdrop-blur-sm">
                         <div className="flex w-full h-full">
                             {palette.map((color, idx) => (
                                 <div 
@@ -245,14 +245,14 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
                     </div>
                 </div>
                 {feedback && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black text-white px-8 py-3 font-mono text-[10px] uppercase tracking-widest rounded-full shadow-2xl z-30 pointer-events-none animate-in fade-in zoom-in duration-300">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-foreground text-background px-8 py-3 font-mono text-[10px] uppercase tracking-widest rounded-full shadow-2xl z-30 pointer-events-none animate-in fade-in zoom-in duration-300">
                         {feedback}
                     </div>
                 )}
             </div>
             <div className="flex justify-center gap-4 pt-4">
                 {(['white', 'black', 'darkest', 'lightest'] as const).map(ctx => (
-                    <button key={ctx} onClick={() => setBgContext(ctx)} className={`w-6 h-6 rounded-full border border-gray-200 transition-all ${bgContext === ctx ? 'scale-150 ring-2 ring-black ring-offset-2' : 'hover:scale-125 shadow-sm'}`} style={{ backgroundColor: ctx === 'white' ? '#fff' : ctx === 'black' ? '#000' : ctx === 'darkest' ? palette[0]?.hex : palette[palette.length-1]?.hex }} />
+                    <button key={ctx} onClick={() => setBgContext(ctx)} className={`w-6 h-6 rounded-full border border-border transition-all ${bgContext === ctx ? 'scale-150 ring-2 ring-black ring-offset-2' : 'hover:scale-125 shadow-sm'}`} style={{ backgroundColor: ctx === 'white' ? '#fff' : ctx === 'black' ? '#000' : ctx === 'darkest' ? palette[0]?.hex : palette[palette.length-1]?.hex }} />
                 ))}
             </div>
         </div>

@@ -76,12 +76,12 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-4 border border-black p-4 bg-white">
+    <div className="flex flex-col gap-4 border border-foreground p-4 bg-card">
       
       {/* Top Row: Selector and Upload */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
           <div className="w-full sm:w-auto flex-grow">
-            <label className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-2 block">
+            <label className="text-xs font-bold tracking-widest text-muted-foreground uppercase mb-2 block">
               {t.selectLibrary}
             </label>
             <div className="relative">
@@ -96,7 +96,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                             if (lib) onLibrarySelect(lib.name, lib.colors);
                         }
                     }}
-                    className="w-full p-2 border border-black font-mono text-sm bg-white appearance-none pr-8 focus:outline-none focus:ring-1 focus:ring-black"
+                    className="w-full p-2 border border-foreground font-mono text-sm bg-card appearance-none pr-8 focus:outline-none focus:ring-1 focus:ring-black"
                 >
                 <option value={t.standardLibrary}>{t.standardLibrary}</option>
                 {customLibraries.length > 0 && <optgroup label={t.uploadedLibraries}>
@@ -105,7 +105,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
                         ))}
                     </optgroup>}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-foreground/80">
                     <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                 </div>
             </div>
@@ -123,7 +123,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
             <button 
               onClick={() => fileInputRef.current?.click()}
               disabled={isProcessing}
-              className="w-full sm:w-auto px-4 py-2 bg-black text-white text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 h-[38px]"
+              className="w-full sm:w-auto px-4 py-2 bg-foreground text-background text-xs font-bold uppercase tracking-wider hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 h-[38px]"
             >
               {isProcessing ? t.loading : `+ ${t.uploadAcb}`}
             </button>
@@ -140,10 +140,10 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
 
       {/* Bottom Row: Management Actions (Only for Custom Libraries) */}
       {!isStandard && (
-          <div className="flex items-center gap-2 pt-2 border-t border-dashed border-gray-300">
+          <div className="flex items-center gap-2 pt-2 border-t border-dashed border-border">
               <button 
                   onClick={handleExportJson}
-                  className="px-3 py-1 text-[10px] font-mono border border-gray-300 hover:border-black hover:bg-gray-50 transition-colors uppercase flex items-center gap-2"
+                  className="px-3 py-1 text-[10px] font-mono border border-border hover:border-foreground hover:bg-secondary/40 transition-colors uppercase flex items-center gap-2"
               >
                   {copyFeedback ? (
                       <span className="text-green-600 font-bold">{t.copiedToClipboard}</span>
@@ -165,7 +165,7 @@ export const LibraryManager: React.FC<LibraryManagerProps> = ({
       )}
       
       {!isStandard && !hasInvalidColors && (
-        <p className="text-[10px] text-gray-400 font-mono leading-tight">
+        <p className="text-[10px] text-muted-foreground font-mono leading-tight">
                 * {t.verifyColorsNote}
         </p>
       )}

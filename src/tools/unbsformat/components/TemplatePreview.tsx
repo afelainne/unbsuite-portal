@@ -13,10 +13,10 @@ interface TemplatePreviewProps {
 }
 
 const TOOLBAR_THEME = {
-  bg: '#E8E8E3',
-  text: '#232323',
-  muted: '#888',
-  border: '#D0D0C8',
+  bg: 'hsl(var(--card))',
+  text: 'hsl(var(--foreground))',
+  muted: 'hsl(var(--muted-foreground))',
+  border: 'hsl(var(--border))',
 };
 
 export const TemplatePreview: React.FC<TemplatePreviewProps> = ({ 
@@ -103,7 +103,7 @@ export const TemplatePreview: React.FC<TemplatePreviewProps> = ({
   );
 
   return (
-    <div className="flex-1 flex flex-col bg-[#eeeeee] relative">
+    <div className="flex-1 flex flex-col bg-canvas relative">
       {/* Toolbar */}
       <div className="flex items-center gap-0.5 px-2 py-1 border-b"
         style={{ backgroundColor: TOOLBAR_THEME.bg, borderColor: TOOLBAR_THEME.border }}>

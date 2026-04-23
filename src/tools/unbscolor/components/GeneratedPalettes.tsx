@@ -1109,28 +1109,28 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         <div className="max-w-[1600px] mx-auto py-8 space-y-16">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
-                    <h2 className="font-mono text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mb-1">PALETTE EXPORT</h2>
-                    <p className="text-3xl font-normal tracking-tight text-black">Paletas Geradas</p>
+                    <h2 className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] mb-1">PALETTE EXPORT</h2>
+                    <p className="text-3xl font-normal tracking-tight text-foreground">Paletas Geradas</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full cursor-pointer hover:bg-gray-50 hover:border-gray-300 transition-all text-gray-600">
+                    <label className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-full cursor-pointer hover:bg-secondary/40 hover:border-border transition-all text-foreground/80">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-gray-600">Upload SVG</span>
+                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground/80">Upload SVG</span>
                         <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
                     </label>
-                    <button onClick={suggestNewCombination} className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">
+                    <button onClick={suggestNewCombination} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">
                         <span>🎲</span> Sugerir Combinação
                     </button>
                     <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={showCodes} onChange={(e) => setShowCodes(e.target.checked)} className="w-4 h-4 accent-black" />
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-gray-600">Mostrar Códigos</span>
+                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground/80">Mostrar Códigos</span>
                     </label>
                 </div>
             </div>
 
-            <section className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100">
+            <section className="bg-secondary/40 rounded-[2rem] p-8 border border-border/60">
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">CORES DA PALETA</h3>
+                    <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">CORES DA PALETA</h3>
                     <div className="flex items-center gap-2">
                         <span className={`font-mono text-sm font-bold ${totalWeight === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>Total: {totalWeight}%</span>
                         {totalWeight !== 100 && <span className="text-[9px] text-amber-600">(deve ser 100%)</span>}
@@ -1140,7 +1140,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                     {colors.map((color, idx) => (
                         <div 
                             key={idx} 
-                            className={`flex flex-wrap items-center gap-4 p-4 bg-white rounded-2xl border transition-all ${draggedColorIndex === idx ? 'border-black opacity-50' : 'border-gray-100 hover:border-gray-300'}`}
+                            className={`flex flex-wrap items-center gap-4 p-4 bg-card rounded-2xl border transition-all ${draggedColorIndex === idx ? 'border-foreground opacity-50' : 'border-border/60 hover:border-border'}`}
                             onDragOver={handleColorDragOver}
                             onDrop={(e) => handleColorDrop(e, idx)}
                         >
@@ -1148,40 +1148,40 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                 draggable
                                 onDragStart={(e) => handleColorDragStart(e, idx)}
                                 onDragEnd={handleColorDragEnd}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 cursor-grab active:cursor-grabbing transition-all flex-shrink-0"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary hover:bg-muted cursor-grab active:cursor-grabbing transition-all flex-shrink-0"
                                 title="Arrastar para reordenar"
                             >
-                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
                                 </svg>
                             </button>
                             <div className="flex items-center gap-2">
-                                <div className="w-16 h-16 rounded-xl shadow-md border border-gray-200 flex-shrink-0" style={{ backgroundColor: color.hex }} />
+                                <div className="w-16 h-16 rounded-xl shadow-md border border-border flex-shrink-0" style={{ backgroundColor: color.hex }} />
                             </div>
                             <div className="flex-1 min-w-[200px] space-y-2">
                                 <div className="flex gap-2">
-                                    <input type="text" value={color.hex} onChange={(e) => updateColor(idx, e.target.value)} className="w-28 px-3 py-2 font-mono text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black" placeholder="#FFFFFF" />
-                                    <input type="text" value={color.name} onChange={(e) => updateName(idx, e.target.value)} className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-black" placeholder="Nome da cor" />
+                                    <input type="text" value={color.hex} onChange={(e) => updateColor(idx, e.target.value)} className="w-28 px-3 py-2 font-mono text-sm border border-border rounded-lg focus:outline-none focus:border-foreground" placeholder="#FFFFFF" />
+                                    <input type="text" value={color.name} onChange={(e) => updateName(idx, e.target.value)} className="flex-1 px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:border-foreground" placeholder="Nome da cor" />
                                 </div>
-                                <div className="flex flex-wrap gap-2 text-[9px] font-mono text-gray-500">
+                                <div className="flex flex-wrap gap-2 text-[9px] font-mono text-muted-foreground">
                                     {formatColorCodes(color.hex).slice(1).map((code, i) => (
-                                        <span key={i} className="px-2 py-0.5 bg-gray-100 rounded">{code}</span>
+                                        <span key={i} className="px-2 py-0.5 bg-secondary rounded">{code}</span>
                                     ))}
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <button onClick={() => toggleLock(idx)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${color.locked ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`} title={color.locked ? 'Destrava peso' : 'Trava peso'}>
+                                    <button onClick={() => toggleLock(idx)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${color.locked ? 'bg-amber-100 text-amber-600' : 'bg-secondary text-muted-foreground hover:bg-muted'}`} title={color.locked ? 'Destrava peso' : 'Trava peso'}>
                                         {color.locked ? (
                                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
                                         ) : (
                                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" /></svg>
                                         )}
                                     </button>
-                                    <span className={`font-mono text-[10px] w-16 ${color.locked ? 'text-amber-600 font-bold' : 'text-gray-400'}`}>{color.weight}% {color.locked && '🔒'}</span>
+                                    <span className={`font-mono text-[10px] w-16 ${color.locked ? 'text-amber-600 font-bold' : 'text-muted-foreground'}`}>{color.weight}% {color.locked && '🔒'}</span>
                                     <input type="range" min="5" max="90" step="1" value={color.weight} onChange={(e) => updateWeight(idx, parseInt(e.target.value))} disabled={color.locked} className={`flex-1 h-2 accent-black rounded-full ${color.locked ? 'opacity-50 cursor-not-allowed' : ''}`} />
                                 </div>
                             </div>
                             {colors.length > 2 && (
-                                <button onClick={() => removeColor(idx)} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 hover:text-red-600 transition-all">
+                                <button onClick={() => removeColor(idx)} className="w-8 h-8 flex items-center justify-center rounded-full bg-secondary hover:bg-red-100 hover:text-red-600 transition-all">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                 </button>
                             )}
@@ -1189,24 +1189,24 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                     ))}
                 </div>
                 <div className="flex gap-2">
-                    <input type="text" value={newColorInput} onChange={(e) => setNewColorInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addColor()} className="flex-1 px-4 py-3 font-mono text-sm border-2 border-dashed border-gray-200 rounded-xl focus:outline-none focus:border-black" placeholder={t.addColorPlaceholder} />
-                    <button onClick={addColor} disabled={!isValidHex(newColorInput)} className="px-6 py-3 bg-black text-white rounded-xl font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all">{t.addColorButton}</button>
+                    <input type="text" value={newColorInput} onChange={(e) => setNewColorInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addColor()} className="flex-1 px-4 py-3 font-mono text-sm border-2 border-dashed border-border rounded-xl focus:outline-none focus:border-foreground" placeholder={t.addColorPlaceholder} />
+                    <button onClick={addColor} disabled={!isValidHex(newColorInput)} className="px-6 py-3 bg-foreground text-background rounded-xl font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all">{t.addColorButton}</button>
                 </div>
             </section>
 
             <section>
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                     <div>
-                        <h3 className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">{t.preview1Title}</h3>
+                        <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.preview1Title}</h3>
                         <p className="text-xl font-normal tracking-tight">{t.preview1Subtitle}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-gray-500 uppercase">{t.templateLabel}:</span>
+                            <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.templateLabel}:</span>
                             <select 
                                 value={paletteTemplate} 
                                 onChange={(e) => setPaletteTemplate(e.target.value as 'classic' | 'vertical' | 'grid' | 'cards')}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg font-mono text-[10px] focus:outline-none focus:border-black bg-white"
+                                className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
                             >
                                 <option value="classic">{t.classic}</option>
                                 <option value="vertical">{t.vertical}</option>
@@ -1217,37 +1217,37 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                         {paletteTemplate === 'classic' && (
                             <>
                                 <div className="flex items-center gap-3">
-                                    <span className="font-mono text-[10px] text-gray-500 uppercase">{t.splitLabel}:</span>
+                                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.splitLabel}:</span>
                                     <input 
                                         type="range" 
                                         min="30" 
                                         max="80" 
                                         value={splitRatio} 
                                         onChange={(e) => setSplitRatio(Number(e.target.value))} 
-                                        className="w-20 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                                        className="w-20 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-black"
                                     />
                                     <span className="font-mono text-sm font-bold w-10 text-center">{splitRatio}%</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="font-mono text-[10px] text-gray-500 uppercase">{t.variationsLabel}:</span>
+                                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.variationsLabel}:</span>
                                     <input 
                                         type="range" 
                                         min="1" 
                                         max={baseColorPosition === 'none' ? 12 : 6} 
                                         value={variationCount} 
                                         onChange={(e) => setVariationCount(Number(e.target.value))} 
-                                        className="w-20 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                                        className="w-20 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-black"
                                     />
                                     <span className="font-mono text-sm font-bold w-12 text-center">
                                         {baseColorPosition === 'none' ? `${variationCount}+${variationCount}` : `${variationCount}+1+${variationCount}`}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="font-mono text-[10px] text-gray-500 uppercase">{t.baseColorPositionLabel}:</span>
+                                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.baseColorPositionLabel}:</span>
                                     <select 
                                         value={baseColorPosition} 
                                         onChange={(e) => setBaseColorPosition(e.target.value as 'none' | 'above' | 'center' | 'below')}
-                                        className="px-2 py-1 border border-gray-200 rounded text-[10px] font-mono bg-white"
+                                        className="px-2 py-1 border border-border rounded text-[10px] font-mono bg-card"
                                     >
                                         <option value="none">{t.basePositionNone}</option>
                     	                <option value="above">{t.basePositionAbove}</option>
@@ -1259,23 +1259,23 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                         )}
                         <button 
                             onClick={() => setShowVariationCodes((prev) => !prev)}
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariationCodes ? 'border border-gray-200 hover:bg-gray-50 text-gray-700' : 'bg-black text-white hover:bg-gray-800'}`}
+                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariationCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-gray-800'}`}
                         >
                             {showVariationCodes ? t.showVariationCodesOn : t.showVariationCodesOff}
                         </button>
                         <button 
                             onClick={() => setShowCodes((prev) => !prev)}
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showCodes ? 'border border-gray-200 hover:bg-gray-50 text-gray-700' : 'bg-black text-white hover:bg-gray-800'}`}
+                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-gray-800'}`}
                         >
                             {showCodes ? t.showCodesOn : t.showCodesOff}
                         </button>
                         <div className="flex gap-2">
-                            <button onClick={() => downloadSvg(getCurrentPaletteSvg(), 'palette-sheet.svg')} className="px-4 py-2 border border-gray-200 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-50 transition-all">↓ SVG</button>
-                            <button onClick={() => downloadPng(getCurrentPaletteSvg(), 'palette-sheet.png')} className="px-4 py-2 bg-black text-white rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">↓ PNG</button>
+                            <button onClick={() => downloadSvg(getCurrentPaletteSvg(), 'palette-sheet.svg')} className="px-4 py-2 border border-border rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-secondary/40 transition-all">↓ SVG</button>
+                            <button onClick={() => downloadPng(getCurrentPaletteSvg(), 'palette-sheet.png')} className="px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">↓ PNG</button>
                         </div>
                     </div>
                 </div>
-                <div className={`w-full rounded-2xl overflow-hidden shadow-2xl ${paletteTemplate === 'cards' || paletteTemplate === 'grid' ? 'bg-gray-100' : 'bg-black'}`}>
+                <div className={`w-full rounded-2xl overflow-hidden shadow-2xl ${paletteTemplate === 'cards' || paletteTemplate === 'grid' ? 'bg-secondary' : 'bg-foreground'}`}>
                     <div className="w-full [&>svg]:w-full [&>svg]:h-auto [&>svg]:block" dangerouslySetInnerHTML={{ __html: getCurrentPaletteSvg() }} />
                 </div>
             </section>
@@ -1283,17 +1283,17 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             <section>
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                     <div>
-                        <h3 className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">{t.preview2Title.toUpperCase()}</h3>
+                        <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.preview2Title.toUpperCase()}</h3>
                         <p className="text-xl font-normal tracking-tight">{t.preview2Subtitle}</p>
-                        <span className="text-xs text-gray-400">{albersGrid.length} {t.availableCombinations}</span>
+                        <span className="text-xs text-muted-foreground">{albersGrid.length} {t.availableCombinations}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-gray-500 uppercase">{t.templateLabel}:</span>
+                            <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.templateLabel}:</span>
                             <select 
                                 value={albersTemplate} 
                                 onChange={(e) => setAlbersTemplate(e.target.value as 'squares' | 'circles' | 'sunset' | 'bars')}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg font-mono text-[10px] focus:outline-none focus:border-black bg-white"
+                                className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
                             >
                                 <option value="squares">{t.templateSquares}</option>
                                 <option value="circles">{t.templateCircles}</option>
@@ -1302,11 +1302,11 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             </select>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-gray-500 uppercase">Layers:</span>
+                            <span className="font-mono text-[10px] text-muted-foreground uppercase">Layers:</span>
                             <select
                                 value={albersLayerCount}
                                 onChange={(e) => setAlbersLayerCount(Number(e.target.value) as 2 | 3 | 4)}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg font-mono text-[10px] focus:outline-none focus:border-black bg-white"
+                                className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
                             >
                                 <option value={2}>2</option>
                                 <option value={3}>3</option>
@@ -1314,11 +1314,11 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             </select>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-gray-500 uppercase">{t.backgroundLabel}:</span>
+                            <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.backgroundLabel}:</span>
                             <select 
                                 value={albersBackground} 
                                 onChange={(e) => setAlbersBackground(e.target.value as 'black' | 'white' | 'gray')}
-                                className="px-3 py-1.5 border border-gray-200 rounded-lg font-mono text-[10px] focus:outline-none focus:border-black bg-white"
+                                className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
                             >
                                 <option value="black">{t.backgroundBlack}</option>
                                 <option value="white">{t.backgroundWhite}</option>
@@ -1328,16 +1328,16 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                         <div className="flex gap-2">
                             <button 
                                 onClick={() => setFullContrastMode(!fullContrastMode)} 
-                                className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all border ${fullContrastMode ? 'border-transparent' : 'border-gray-200 hover:bg-gray-50'}`}
-                                style={fullContrastMode ? { backgroundColor: '#F0FF00', color: '#232323' } : {}}
+                                className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all border ${fullContrastMode ? 'border-transparent' : 'border-border hover:bg-secondary/40'}`}
+                                style={fullContrastMode ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))' } : {}}
                             >
                                 {fullContrastMode ? '◉' : '○'} FULL CONTRAST
                             </button>
-                            <button onClick={shuffleAlbers} className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-200 transition-all">
+                            <button onClick={shuffleAlbers} className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-muted transition-all">
                                 🔀 {t.shuffleAlbers}
                             </button>
-                            <button onClick={() => downloadSvg(getCurrentAlbersSvg(), 'albers-grid.svg')} className="px-4 py-2 border border-gray-200 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-50 transition-all">↓ SVG</button>
-                            <button onClick={() => downloadPng(getCurrentAlbersSvg(), 'albers-grid.png')} className="px-4 py-2 bg-black text-white rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">↓ PNG</button>
+                            <button onClick={() => downloadSvg(getCurrentAlbersSvg(), 'albers-grid.svg')} className="px-4 py-2 border border-border rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-secondary/40 transition-all">↓ SVG</button>
+                            <button onClick={() => downloadPng(getCurrentAlbersSvg(), 'albers-grid.png')} className="px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">↓ PNG</button>
                         </div>
                     </div>
                 </div>
@@ -1346,33 +1346,33 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                 </div>
             </section>
 
-            <section className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100">
+            <section className="bg-secondary/40 rounded-[2rem] p-8 border border-border/60">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                     <div>
-                        <h3 className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">{t.preview3Title.toUpperCase()}</h3>
-                        <p className="text-sm text-gray-500 mt-1">{t.preview3Subtitle}</p>
+                        <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.preview3Title.toUpperCase()}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">{t.preview3Subtitle}</p>
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3">
-                            <span className="font-mono text-[10px] text-gray-500 uppercase">{t.cardsLabel}:</span>
+                            <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.cardsLabel}:</span>
                             <input 
                                 type="range" 
                                 min="4" 
                                 max={Math.min(getMaxCardsByTemplate(albersTemplate), albersGrid.length)} 
                                 value={Math.min(cardCount, getMaxCardsByTemplate(albersTemplate), albersGrid.length)} 
                                 onChange={(e) => setCardCount(Math.min(Number(e.target.value), getMaxCardsByTemplate(albersTemplate), albersGrid.length))} 
-                                className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                                className="w-24 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-black"
                             />
                             <span className="font-mono text-sm font-bold w-6 text-center">{Math.min(cardCount, getMaxCardsByTemplate(albersTemplate), albersGrid.length)}</span>
                         </div>
                         <button 
                             onClick={() => setFullContrastMode(!fullContrastMode)} 
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all border ${fullContrastMode ? 'border-transparent' : 'border-gray-200 hover:bg-gray-50'}`}
-                            style={fullContrastMode ? { backgroundColor: '#F0FF00', color: '#232323' } : {}}
+                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all border ${fullContrastMode ? 'border-transparent' : 'border-border hover:bg-secondary/40'}`}
+                            style={fullContrastMode ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))' } : {}}
                         >
                             {fullContrastMode ? '◉' : '○'} FULL CONTRAST
                         </button>
-                        <button onClick={() => { shuffleAlbers(); setCustomCombos({}); }} className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">
+                        <button onClick={() => { shuffleAlbers(); setCustomCombos({}); }} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-gray-800 transition-all">
                             🔀 {t.shuffleAlbers}
                         </button>
                     </div>
@@ -1395,7 +1395,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             >
                                 <button
                                     onClick={(e) => { e.stopPropagation(); setComboLocks((prev) => ({ ...prev, [idx]: !prev[idx] })); }}
-                                    className="absolute top-1 left-1 px-1.5 py-1 rounded-md bg-white/80 text-[9px] font-mono font-bold shadow-sm hover:bg-white"
+                                    className="absolute top-1 left-1 px-1.5 py-1 rounded-md bg-card/80 text-[9px] font-mono font-bold shadow-sm hover:bg-card"
                                     title={comboLocks[idx] ? 'Unlock slot' : 'Lock slot'}
                                 >
                                     {comboLocks[idx] ? '🔒' : '🔓'}
@@ -1409,9 +1409,9 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             </div>
                             
                             {editingComboIndex === idx ? (
-                                <div className="p-2 bg-white rounded-lg border border-gray-200 space-y-2">
+                                <div className="p-2 bg-card rounded-lg border border-border space-y-2">
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[8px] text-gray-400 w-8">{t.externalColorLabel}:</span>
+                                        <span className="text-[8px] text-muted-foreground w-8">{t.externalColorLabel}:</span>
                                         <input 
                                             type="color" 
                                             value={combo.outer} 
@@ -1426,7 +1426,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                         />
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[8px] text-gray-400 w-8">Mid:</span>
+                                        <span className="text-[8px] text-muted-foreground w-8">Mid:</span>
                                         <input 
                                             type="color" 
                                             value={combo.middle} 
@@ -1441,7 +1441,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                         />
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        <span className="text-[8px] text-gray-400 w-8">{t.internalColorLabel}:</span>
+                                        <span className="text-[8px] text-muted-foreground w-8">{t.internalColorLabel}:</span>
                                         <input 
                                             type="color" 
                                             value={combo.inner} 
@@ -1467,11 +1467,11 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             ) : (
                                 <div className="text-center">
                                     <div className="flex justify-center gap-0.5 mb-0.5">
-                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-gray-200`} style={{ backgroundColor: combo.outer }} title={combo.outer}></span>
-                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-gray-200`} style={{ backgroundColor: combo.middle }} title={combo.middle}></span>
-                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-gray-200`} style={{ backgroundColor: combo.inner }} title={combo.inner}></span>
+                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-border`} style={{ backgroundColor: combo.outer }} title={combo.outer}></span>
+                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-border`} style={{ backgroundColor: combo.middle }} title={combo.middle}></span>
+                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-border`} style={{ backgroundColor: combo.inner }} title={combo.inner}></span>
                                     </div>
-                                    <span className={`font-mono text-gray-500 ${cardCount > 12 ? 'text-[6px]' : 'text-[8px]'}`}>{combo.weight.toFixed(0)}% • {getContrastRatio(combo.middle, combo.inner).toFixed(1)}:1</span>
+                                    <span className={`font-mono text-muted-foreground ${cardCount > 12 ? 'text-[6px]' : 'text-[8px]'}`}>{combo.weight.toFixed(0)}% • {getContrastRatio(combo.middle, combo.inner).toFixed(1)}:1</span>
                                 </div>
                             )}
                         </div>
@@ -1479,30 +1479,30 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                 </div>
             </section>
 
-            <section className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100 overflow-hidden">
+            <section className="bg-secondary/40 rounded-[2rem] p-8 border border-border/60 overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <h3 className="font-mono text-[9px] font-bold text-gray-400 uppercase tracking-[0.2em]">{t.preview4Title.toUpperCase()}</h3>
+                    <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.preview4Title.toUpperCase()}</h3>
                     <div className="flex items-center gap-3">
-                        <span className="font-mono text-[10px] text-gray-500 uppercase">{t.cardsLabel}:</span>
+                        <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.cardsLabel}:</span>
                         <input 
                             type="range" 
                             min="4" 
                             max="16" 
                             value={contrastCardCount} 
                             onChange={(e) => setContrastCardCount(Number(e.target.value))} 
-                            className="w-24 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                            className="w-24 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-black"
                         />
                         <span className="font-mono text-sm font-bold w-6 text-center">{contrastCardCount}</span>
                     </div>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                     {contrastPairs.slice(0, contrastCardCount).map((pair, idx) => (
-                        <div key={idx} className="rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                        <div key={idx} className="rounded-xl overflow-hidden shadow-sm border border-border/60">
                             <div className="p-4 flex flex-col items-center justify-center h-24" style={{ backgroundColor: pair.bg }}>
                                 <span className="text-2xl font-bold" style={{ color: pair.fg }}>Aa</span>
                                 <span className="text-xs font-mono" style={{ color: pair.fg }}>{pair.fg}</span>
                             </div>
-                            <div className="bg-white p-3 text-center border-t border-gray-100">
+                            <div className="bg-card p-3 text-center border-t border-border/60">
                                 <span className={`font-mono text-[10px] font-bold block ${pair.ratio >= 7 ? 'text-emerald-600' : pair.ratio >= 4.5 ? 'text-amber-600' : 'text-red-500'}`}>{pair.ratio.toFixed(1)}:1</span>
                                 <span className={`font-mono text-[9px] ${pair.ratio >= 7 ? 'text-emerald-500' : pair.ratio >= 4.5 ? 'text-amber-500' : 'text-red-400'}`}>{pair.ratio >= 7 ? 'AAA' : pair.ratio >= 4.5 ? 'AA' : 'FAIL'}</span>
                             </div>

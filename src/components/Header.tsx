@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import UnbsToolsLogo from "./UnbsToolsLogo";
 
 interface HeaderProps {
   showBack?: boolean;
@@ -8,24 +9,37 @@ interface HeaderProps {
 
 const Header = ({ showBack = false, title }: HeaderProps) => {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white" style={{ borderColor: '#D0D0C8' }}>
-      <div className="w-full px-6 flex h-12 items-center gap-2 text-sm">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-md">
+      <div className="container-fluid flex h-14 items-center gap-3">
         {showBack && (
-          <Link to="/" className="text-gray-400 hover:text-[#232323] transition-colors">
-            <ArrowLeft className="h-4 w-4" />
+          <Link
+            to="/"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label="Voltar"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
           </Link>
         )}
-        <Link to="/" className="flex items-center gap-1.5">
-          <span className="font-bold tracking-tight" style={{ color: '#232323' }}>
-            UNBSERVED.
-          </span>
+
+        <Link to="/" className="flex items-center gap-2">
+          <UnbsToolsLogo height={18} color="hsl(var(--foreground))" />
         </Link>
-        {showBack && title && (
-          <>
-            <span className="text-gray-300">/</span>
-            <span className="text-gray-400 text-xs font-medium">{title}</span>
-          </>
+
+        {title && (
+          <div className="flex items-center gap-2 ml-1">
+            <span className="text-muted-foreground/60 font-mono text-xs">/</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-foreground">
+              {title}
+            </span>
+          </div>
         )}
+
+        <div className="ml-auto flex items-center gap-3">
+          <span className="pill-status hidden sm:inline-flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-accent pulse-dot" />
+            SYS.ACTIVE
+          </span>
+        </div>
       </div>
     </header>
   );

@@ -35,11 +35,11 @@ export const GridStylePicker: React.FC<GridStylePickerProps> = ({ onApply, curre
           <div key={cat}>
             <button
               onClick={() => toggle(cat)}
-              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-bold tracking-wider text-gray-500 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.18em] font-bold text-muted-foreground hover:bg-secondary transition-colors"
             >
               <ChevronRight className={`h-3 w-3 transition-transform ${isOpen ? 'rotate-90' : ''}`} />
               {cat}
-              <span className="ml-auto text-[9px] font-normal text-gray-400">{presets.length}</span>
+              <span className="ml-auto text-[9px] font-normal text-muted-foreground/70">{presets.length}</span>
             </button>
             {isOpen && (
               <div className="pb-1">
@@ -50,7 +50,7 @@ export const GridStylePicker: React.FC<GridStylePickerProps> = ({ onApply, curre
                       key={p.id}
                       onClick={() => onApply(p)}
                       className={`w-full text-left px-4 py-2 transition-colors ${
-                        active ? 'bg-black text-white' : 'hover:bg-gray-100'
+                        active ? 'bg-foreground text-background' : 'hover:bg-secondary'
                       }`}
                     >
                       <div className="flex items-center justify-between">
@@ -61,7 +61,7 @@ export const GridStylePicker: React.FC<GridStylePickerProps> = ({ onApply, curre
                           <Columns2 className="h-3 w-3 opacity-40" />
                         )}
                       </div>
-                      <div className={`text-[9px] mt-0.5 ${active ? 'text-gray-300' : 'text-gray-400'}`}>
+                      <div className={`text-[9px] mt-0.5 ${active ? 'text-background/70' : 'text-muted-foreground'}`}>
                         {p.description} · {p.columns}col{p.rows > 1 ? ` × ${p.rows}row` : ''} · {p.gutter}mm · {p.safeZone}mm
                       </div>
                     </button>

@@ -29,8 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedId, onSelect }) => {
   }));
 
   return (
-    <div className="w-64 border-r border-gray-200 h-screen overflow-y-auto bg-white flex flex-col p-4 mono text-[10px] tracking-widest uppercase">
-      <div className="mb-6 border-b border-black pb-2">
+    <div className="w-64 border-r border-border h-full overflow-y-auto bg-card flex flex-col p-4 font-mono text-[10px] tracking-[0.18em] uppercase">
+      <div className="mb-6 border-b border-border pb-2">
         <h1 className="font-bold text-sm">FORMAT LAB</h1>
       </div>
 
@@ -41,10 +41,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedId, onSelect }) => {
             <div key={category}>
               <button
                 onClick={() => toggle(category)}
-                className="w-full flex items-center justify-between py-2 px-1 text-gray-400 hover:text-black transition-colors"
+                className="w-full flex items-center justify-between py-2 px-1 text-muted-foreground hover:text-foreground transition-colors"
               >
                 <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-border"></span>
                   {category}
                 </span>
                 {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
@@ -56,8 +56,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedId, onSelect }) => {
                     <li
                       key={item.id}
                       onClick={() => onSelect(item)}
-                      className={`flex justify-between p-2 cursor-pointer transition-colors ${
-                        selectedId === item.id ? 'bg-black text-white' : 'hover:bg-gray-100'
+                      className={`flex justify-between p-2 cursor-pointer transition-colors rounded-md ${
+                        selectedId === item.id ? 'bg-foreground text-background' : 'hover:bg-secondary'
                       }`}
                     >
                       <span className="truncate">{item.name}</span>
