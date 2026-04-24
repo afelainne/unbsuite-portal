@@ -698,17 +698,17 @@ const App: React.FC = () => {
                 </div>
             )}
 
-            <header className="sticky top-0 z-30 backdrop-blur border-b border-border bg-card/95 px-6 md:px-8 py-6">
+            <header className="tool-subheader">
                 <div className="max-w-[1600px] mx-auto w-full space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-4 md:gap-6">
                         <div className="flex items-center gap-4 md:gap-6">
-                            <nav className="flex items-center gap-4 text-xs md:text-sm font-bold uppercase">
-                                <button onClick={() => setActiveTab('matcher')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'matcher' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'matcher' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.matcher}</button>
-                                <button onClick={() => setActiveTab('batch')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'batch' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'batch' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.multiSlotMatchAnalysis}</button>
-                                <button onClick={() => setActiveTab('palette')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'palette' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'palette' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.contrastPalette}</button>
-                                <button onClick={() => setActiveTab('generated')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'generated' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'generated' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.generatedPalettes}</button>
-                                <button onClick={() => setActiveTab('magic')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'magic' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'magic' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.paletteMagic}</button>
-                                <button onClick={() => setActiveTab('guide')} className={`pb-1 border-b-2 transition-colors ${activeTab === 'guide' ? 'text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground'}`} style={activeTab === 'guide' ? { borderColor: 'hsl(var(--accent))' } : {}}>{t.printGuide}</button>
+                            <nav className="flex items-center gap-5 md:gap-7">
+                                <button onClick={() => setActiveTab('matcher')} className={`nav-tab ${activeTab === 'matcher' ? 'is-active' : ''}`}>{t.matcher}</button>
+                                <button onClick={() => setActiveTab('batch')} className={`nav-tab ${activeTab === 'batch' ? 'is-active' : ''}`}>{t.multiSlotMatchAnalysis}</button>
+                                <button onClick={() => setActiveTab('palette')} className={`nav-tab ${activeTab === 'palette' ? 'is-active' : ''}`}>{t.contrastPalette}</button>
+                                <button onClick={() => setActiveTab('generated')} className={`nav-tab ${activeTab === 'generated' ? 'is-active' : ''}`}>{t.generatedPalettes}</button>
+                                <button onClick={() => setActiveTab('magic')} className={`nav-tab ${activeTab === 'magic' ? 'is-active' : ''}`}>{t.paletteMagic}</button>
+                                <button onClick={() => setActiveTab('guide')} className={`nav-tab ${activeTab === 'guide' ? 'is-active' : ''}`}>{t.printGuide}</button>
                             </nav>
                         </div>
 

@@ -69,7 +69,7 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex flex-col">
         {/* Top Control Bar */}
-        <header className="h-20 border-b border-border bg-card flex items-center px-8 justify-between shrink-0">
+        <header className="sticky top-14 z-30 border-b border-border bg-card/95 backdrop-blur flex items-center px-6 md:px-8 py-4 justify-between shrink-0 gap-6 flex-wrap">
           <div className="flex gap-12 items-center">
             <div className="flex flex-col gap-1">
               <span className="eyebrow">Columns</span>
