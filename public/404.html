@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>UNBSERVED</title>
+    <script>
+      // SPA fallback for static hosts (GitHub Pages, Lovable, etc.)
+      // Redirects any unknown path to /?redirect=<path> so the SPA can restore it.
+      (function () {
+        var l = window.location;
+        var path = l.pathname + l.search + l.hash;
+        l.replace(l.origin + "/?spa_redirect=" + encodeURIComponent(path));
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
