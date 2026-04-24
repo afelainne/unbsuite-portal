@@ -5,6 +5,7 @@ import {
   FileText,
   Monitor,
   ALargeSmall,
+  Type,
   ArrowRight,
   ArrowDown,
   Plus,
@@ -72,6 +73,15 @@ const TOOLS: Tool[] = [
     path: "/unbstype",
     icon: ALargeSmall,
   },
+  {
+    index: "06",
+    name: "UNBSFONT",
+    tagline: "Editor de fontes",
+    copy: "Editor de fontes vetorial. Glyphs, kerning, export OTF. Sem floreios.",
+    status: "NEW",
+    path: "/unbsfont",
+    icon: Type,
+  },
 ];
 
 const STATUS_STYLE: Record<ToolStatus, string> = {
@@ -82,7 +92,7 @@ const STATUS_STYLE: Record<ToolStatus, string> = {
 };
 
 const STATS = [
-  { k: "05", v: "TOOLS" },
+  { k: "06", v: "TOOLS" },
   { k: "100%", v: "LOCAL" },
   { k: "0", v: "TRACKERS" },
   { k: "∞", v: "POSSIBILIDADES" },
@@ -298,7 +308,7 @@ const Index = () => {
               >
                 {/* Header row */}
                 <div className="flex items-start justify-between mb-6">
-                  <span className="eyebrow">{tool.index} / 05</span>
+                  <span className="eyebrow">{tool.index} / 06</span>
                   <span
                     className={`rounded-full border px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.2em] ${STATUS_STYLE[tool.status]}`}
                   >
