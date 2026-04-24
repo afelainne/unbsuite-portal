@@ -14,7 +14,6 @@ const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode, isDarkMode })
 
     return (
         <div className={`flex flex-col items-center justify-center min-h-screen ${bgMain} ${textMain} p-8`}>
-            <h1 className="text-[10px] font-black uppercase tracking-[0.4em] mb-2 opacity-50">UNBSFONT</h1>
             <h2 className="text-2xl font-black uppercase tracking-wider mb-1">Select Editor Mode</h2>
             <p className={`text-xs ${textSub} mb-12 tracking-wide`}>Choose how you want to work on your font</p>
 

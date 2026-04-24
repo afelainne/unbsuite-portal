@@ -1,6 +1,5 @@
 import React, { useRef } from 'react';
 import { GlyphData, Project } from '../types';
-import AppLogo from './AppLogo';
 
 interface DashboardProps {
     onCreateProject: () => void;
@@ -46,9 +45,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreateProject, onOpenProject, o
                 className="hidden"
                 accept=".unbsfo,application/json"
             />
-            <div className="pt-4 px-2">
-                <AppLogo className={`w-full max-w-[180px] ${isDarkMode ? 'text-white' : 'text-black'}`} />
-            </div>
         </div>
 
         {/* Main Content */}

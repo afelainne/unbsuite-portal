@@ -21,7 +21,6 @@ import {
     DEFAULT_AUTO_CONFIG_OPTIONS,
     analyzeFontQuality 
 } from '../services/autoFontConfigService';
-import AppLogo from './AppLogo';
 
 interface CompactEditorProps {
     glyphs: GlyphData[];
@@ -626,8 +625,8 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             {/* Header */}
             <header className={`flex items-center justify-between px-6 py-3 border-b ${borderCol}`}>
                 <div className="flex items-center gap-4">
-                    <button onClick={onGoHome} className="hover:opacity-80 transition-opacity">
-                        <AppLogo className={`h-8 w-auto ${isDarkMode ? 'text-white' : 'text-black'}`} />
+                    <button onClick={onGoHome} className="text-[10px] font-black uppercase tracking-[0.18em] hover:opacity-70 transition-opacity">
+                        ← Projects
                     </button>
                     <div className={`w-px h-6 ${isDarkMode ? 'bg-slate-700' : 'bg-neutral-300'}`} />
                     <input

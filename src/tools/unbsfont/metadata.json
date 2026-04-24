@@ -1,5 +1,5 @@
 {
-  "name": "UNBSFONTS",
+  "name": "UNBSFONT",
   "description": "A professional web-based font editor to create, edit, and export custom OTF fonts using SVG imports and AI generation.",
   "requestFramePermissions": [
     "clipboard-read"

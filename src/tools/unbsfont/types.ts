@@ -218,7 +218,7 @@ export interface Project {
 export const INITIAL_METADATA: FontMetadata = {
   familyName: "MyCustomFont",
   styleName: "Regular",
-  designer: "UNBSFONTS",
+  designer: "UNBSFONT",
   version: "1.0",
   unitsPerEm: 1000,
   ascender: 800,

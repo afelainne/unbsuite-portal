@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { FontMetadata } from '../types';
-import AppLogo from './AppLogo';
 
 interface ToolbarProps {
     metadata: FontMetadata;
@@ -120,8 +119,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
             <div className={`${panelClass} flex flex-col gap-4 px-4 py-4`}>
                 <div className="flex flex-col gap-2">
-                    <AppLogo className={`h-10 w-auto self-start ${isDarkMode ? 'text-white' : 'text-black'}`} />
-                    <div className={`h-px w-full ${isDarkMode ? 'bg-white/10' : 'bg-black/10'}`} aria-hidden="true"></div>
                     <div className="flex flex-col gap-1">
                         <input 
                             value={metadata.familyName} 
