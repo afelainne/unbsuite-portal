@@ -575,7 +575,7 @@ const App: React.FC = () => {
     const getPmsSolidU = () => findReferenceMatches(hex, solidUncoatedLibrary, 1)[0];
 
     return (
-        <div className="min-h-screen font-sans flex flex-col relative overflow-x-hidden bg-background text-foreground">
+        <div className="font-sans w-full">
             {showSettings && (
                 <div className="fixed inset-0 z-[200] flex justify-end">
                     <div className="absolute inset-0 bg-card/20 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
