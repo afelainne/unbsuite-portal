@@ -140,7 +140,10 @@ const App: React.FC = () => {
       try {
           const saved = localStorage.getItem('font_studio_projects');
           return saved ? JSON.parse(saved) : [];
-      } catch (e) { return []; }
+      } catch (e) {
+          console.warn('[unbsfont] failed to load projects from localStorage', e);
+          return [];
+      }
   });
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [lastProjectFileName, setLastProjectFileName] = useState<string | null>(null);
@@ -272,9 +275,10 @@ const App: React.FC = () => {
       try {
           localStorage.setItem('font_studio_projects', JSON.stringify(projects));
       } catch (e: any) {
-          console.error("Storage Save Error:", e);
-          if (e.name === 'QuotaExceededError') {
+          if (e?.name === 'QuotaExceededError') {
               pushNotice('Armazenamento do navegador cheio. Exporte o projeto (.otf) e remova pesos ou glifos para liberar espaço.', 'error');
+          } else {
+              pushNotice('Não foi possível salvar o projeto localmente.', 'error');
           }
       }
     }, [projects, pushNotice]);
@@ -370,7 +374,7 @@ const App: React.FC = () => {
       }
   };
 
-  const handleSaveProject = () => {
+  const handleSaveProject = useCallback(() => {
       if (!activeProjectId) {
           handleCreateProject(); 
           return;
@@ -392,7 +396,7 @@ const App: React.FC = () => {
       if (!lastProjectFileName) {
           pushNotice('Use "Download File" para gerar um arquivo .unbsfo quando precisar exportar.', 'info');
       }
-  };
+  }, [activeProjectId, styleMap, currentStyle, glyphs, metadata, lastProjectFileName, pushNotice]);
 
   useEffect(() => {
       saveProjectRef.current = handleSaveProject;
@@ -1369,7 +1373,7 @@ const App: React.FC = () => {
     const headerRowClass = 'flex items-center gap-6 flex-nowrap overflow-x-auto py-2';
     const controlGroupClass = 'flex flex-col items-center gap-1.5 shrink-0';
     const workspaceControls = (
-        <div className={`w-full sticky top-0 z-30 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-white text-black'}`}>
+        <div className={`w-full sticky top-14 z-30 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-white text-black'}`}>
             <div className="max-w-6xl mx-auto w-full px-4">
                 <div className={`${headerRowClass}`}>
                     <div className={`${controlGroupClass} min-w-[150px]`}>
@@ -1528,7 +1532,7 @@ const App: React.FC = () => {
             <main className="flex-1 flex overflow-hidden relative">
         {viewMode === 'GRID' ? (
           <div ref={containerRef} className={`flex-1 overflow-y-auto p-8 custom-scrollbar relative select-none ${isDarkMode ? 'bg-[radial-gradient(#707070_1px,transparent_1px)]' : 'bg-[radial-gradient(#e5e5e5_1px,transparent_1px)]'} [background-size:20px_20px]`} onMouseDown={handleGridMouseDown} onMouseMove={handleGridMouseMove} onMouseUp={handleGridMouseUp} onMouseLeave={handleGridMouseUp}>
-            {isSelecting && selectionBox && <div className="absolute bg-blue-500/10 border border-blue-500 z-50 pointer-events-none" style={{ left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY) }} />}
+            {isSelecting && selectionBox && <div className="absolute bg-accent/15 border border-accent z-50 pointer-events-none" style={{ left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY) }} />}
             {isLoading && <div className={`fixed inset-0 z-50 flex items-center justify-center ${isDarkMode ? 'bg-black/80' : 'bg-white/80'}`}><div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDarkMode ? 'border-white' : 'border-black'}`}></div></div>}
             <div className="pb-20 space-y-12">
               {categorizedGlyphs.map(([category, catGlyphs]) => (
@@ -1725,7 +1729,7 @@ const App: React.FC = () => {
 
   return (
         <NoticeContext.Provider value={{ pushNotice }}>
-            <div className={`font-sans transition-colors duration-300 ${themeClasses} min-h-screen flex gap-0`} onContextMenu={(e) => e.preventDefault()}>
+            <div className={`font-sans transition-colors duration-300 ${themeClasses} flex-1 flex gap-0 min-h-0`} onContextMenu={(e) => e.preventDefault()}>
                     <Toolbar 
                         metadata={metadata} setMetadata={setMetadata} onExport={handleExport} onExportSvgFirst={handleExportSvgFirst} onExportFontEditor={handleExportFontEditor} onExportSvgSheet={handleExportSvgSheet} onExportEmptySvgSheet={handleExportEmptySvgSheet} isExporting={isExporting} exportProgress={exportProgress} onImportSheet={handleImportSheet}
                         availableStyles={Object.keys(styleMap)} currentStyle={currentStyle} onChangeStyle={handleSwitchStyle}
