@@ -91,6 +91,12 @@ const defaultStyles: GeometryStyles = {
   pathDirectionArrows: { color: "#ee8844", opacity: 0.55, strokeWidth: 1 },
   tangentIntersections: { color: "#aa55cc", opacity: 0.45, strokeWidth: 0.8 },
   anchorPoints: { color: "#ff5566", opacity: 0.7, strokeWidth: 1 },
+  flowerOfLife: { color: "#b8a87a", opacity: 0.4, strokeWidth: 0.8 },
+  reuleauxTriangle: { color: "#c08a4a", opacity: 0.5, strokeWidth: 1 },
+  hexGrid: { color: "#7ab896", opacity: 0.3, strokeWidth: 0.5 },
+  triangularGrid: { color: "#88aabb", opacity: 0.3, strokeWidth: 0.5 },
+  polarGrid: { color: "#cc99bb", opacity: 0.4, strokeWidth: 0.6 },
+  concentricSquares: { color: "#a8b878", opacity: 0.45, strokeWidth: 0.8 },
 };
 
 const geometryLabels: Record<keyof GeometryOptions, string> = {
@@ -133,6 +139,12 @@ const geometryLabels: Record<keyof GeometryOptions, string> = {
   pathDirectionArrows: "Path Direction Arrows",
   tangentIntersections: "Tangent Intersections",
   anchorPoints: "Anchor Points",
+  flowerOfLife: "Flower of Life",
+  reuleauxTriangle: "Reuleaux Triangle",
+  hexGrid: "Hexagonal Grid",
+  triangularGrid: "Triangular Grid (60°)",
+  polarGrid: "Polar / Radial Grid",
+  concentricSquares: "Concentric Squares",
 };
 
 const geometryGroups: { label: string; keys: (keyof GeometryOptions)[] }[] = [
@@ -150,7 +162,9 @@ const geometryGroups: { label: string; keys: (keyof GeometryOptions)[] }[] = [
     label: "Measurement",
     keys: ["symmetryAxes", "angleMeasurements", "spacingGuides", "alignmentGuides", "dynamicBaseline", "componentRatioLabels", "harmonicDivisions"],
   },
-  { label: "Harmony", keys: ["rootRectangles", "modularScale", "safeZone", "fibonacciOverlay", "vesicaPiscis"] },
+  { label: "Harmony", keys: ["modularScale", "safeZone", "fibonacciOverlay"] },
+  { label: "Sacred Geometry", keys: ["flowerOfLife", "reuleauxTriangle", "hexGrid", "vesicaPiscis"] },
+  { label: "Geometric Construction", keys: ["triangularGrid", "polarGrid", "concentricSquares", "rootRectangles"] },
   { label: "Grid & Output", keys: ["isometricGrid", "pixelGrid", "contrastGuide", "kenBurnsSafe"] },
 ];
 
@@ -224,11 +238,15 @@ const Index = () => {
     dominantDiagonals: false, curvatureComb: false, skeletonCenterline: false,
     constructionGrid: false, pathDirectionArrows: false, tangentIntersections: false,
     anchorPoints: false,
+    flowerOfLife: false, reuleauxTriangle: false, hexGrid: false,
+    triangularGrid: false, polarGrid: false, concentricSquares: false,
   });
   const [geometryStyles, setGeometryStyles] = useState<GeometryStyles>({ ...defaultStyles });
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
     Advanced: true, Basic: false, Proportions: false,
-    Measurement: false, Harmony: false, "Grid & Output": false,
+    Measurement: false, Harmony: false,
+    "Sacred Geometry": false, "Geometric Construction": false,
+    "Grid & Output": false,
   });
   const resetGroup = useCallback((groupKeys: (keyof GeometryOptions)[]) => {
     setGeometryOptions((prev) => {

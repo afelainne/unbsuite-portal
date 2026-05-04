@@ -5,3 +5,5 @@ export { renderSymmetryAxes, renderAngleMeasurements, renderSpacingGuides, rende
 export { renderRootRectangles, renderModularScale, renderSafeZone, renderFibonacciOverlay, renderVesicaPiscis } from './harmony';
 export { renderIsometricGrid, renderPixelGrid, renderContrastGuide, renderKenBurnsSafe, renderOpticalCenter, renderVisualWeightMap } from './grid';
 export { renderBezierHandles, renderParallelFlowLines, renderUnderlyingCircles, renderDominantDiagonals, renderCurvatureComb, renderSkeletonCenterline, renderConstructionGrid, renderPathDirectionArrows, renderTangentIntersections, renderAnchorPoints } from './advanced';
+export { renderFlowerOfLife, renderReuleauxTriangle, renderHexGrid } from './sacred';
+export { renderTriangularGrid, renderPolarGrid, renderConcentricSquares } from './construction';

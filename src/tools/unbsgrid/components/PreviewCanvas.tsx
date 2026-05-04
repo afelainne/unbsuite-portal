@@ -15,6 +15,8 @@ import {
   renderParallelFlowLines, renderUnderlyingCircles, renderDominantDiagonals, renderCurvatureComb,
   renderSkeletonCenterline, renderConstructionGrid, renderPathDirectionArrows, renderTangentIntersections,
   renderAnchorPoints,
+  renderFlowerOfLife, renderReuleauxTriangle, renderHexGrid,
+  renderTriangularGrid, renderPolarGrid, renderConcentricSquares,
 } from './renderers';
 import { Button } from './ui/button';
 
@@ -221,6 +223,12 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
     if (geometryOptions.pathDirectionArrows) safe(() => renderPathDirectionArrows(bounds, s.pathDirectionArrows, renderContext));
     if (geometryOptions.tangentIntersections) safe(() => renderTangentIntersections(bounds, s.tangentIntersections, renderContext));
     if (geometryOptions.anchorPoints) safe(() => renderAnchorPoints(bounds, s.anchorPoints, renderContext, anchorPointSize));
+    if (geometryOptions.flowerOfLife) safe(() => renderFlowerOfLife(bounds, s.flowerOfLife, renderContext));
+    if (geometryOptions.reuleauxTriangle) safe(() => renderReuleauxTriangle(bounds, s.reuleauxTriangle, renderContext));
+    if (geometryOptions.hexGrid) safe(() => renderHexGrid(bounds, s.hexGrid, renderContext));
+    if (geometryOptions.triangularGrid) safe(() => renderTriangularGrid(bounds, s.triangularGrid, renderContext));
+    if (geometryOptions.polarGrid) safe(() => renderPolarGrid(bounds, s.polarGrid, renderContext));
+    if (geometryOptions.concentricSquares) safe(() => renderConcentricSquares(bounds, s.concentricSquares, renderContext));
 
     (paper.view as any).draw();
     onProjectReady?.(paper.project);

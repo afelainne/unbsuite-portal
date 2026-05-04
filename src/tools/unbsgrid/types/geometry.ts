@@ -40,6 +40,14 @@ export interface GeometryOptions {
   pathDirectionArrows: boolean;
   tangentIntersections: boolean;
   anchorPoints: boolean;
+  // Sacred Geometry
+  flowerOfLife: boolean;
+  reuleauxTriangle: boolean;
+  hexGrid: boolean;
+  // Geometric Construction
+  triangularGrid: boolean;
+  polarGrid: boolean;
+  concentricSquares: boolean;
 }
 
 export interface GeometryStyle {

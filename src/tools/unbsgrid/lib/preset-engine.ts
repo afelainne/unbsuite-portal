@@ -29,6 +29,8 @@ const allOff: GeometryOptions = {
   parallelFlowLines: false, underlyingCircles: false, dominantDiagonals: false, curvatureComb: false,
   skeletonCenterline: false, constructionGrid: false, pathDirectionArrows: false, tangentIntersections: false,
   anchorPoints: false,
+  flowerOfLife: false, reuleauxTriangle: false, hexGrid: false,
+  triangularGrid: false, polarGrid: false, concentricSquares: false,
 };
 
 const defaultStyle = (color: string, opacity: number, strokeWidth: number) => ({ color, opacity, strokeWidth });
@@ -73,6 +75,12 @@ const defaultStyles: GeometryStyles = {
   pathDirectionArrows:   defaultStyle('#ee8844', 0.55, 1),
   tangentIntersections:  defaultStyle('#aa55cc', 0.45, 0.8),
   anchorPoints:          defaultStyle('#ff5566', 0.7, 1),
+  flowerOfLife:          defaultStyle('#b8a87a', 0.4, 0.8),
+  reuleauxTriangle:      defaultStyle('#c08a4a', 0.5, 1),
+  hexGrid:               defaultStyle('#7ab896', 0.3, 0.5),
+  triangularGrid:        defaultStyle('#88aabb', 0.3, 0.5),
+  polarGrid:             defaultStyle('#cc99bb', 0.4, 0.6),
+  concentricSquares:     defaultStyle('#a8b878', 0.45, 0.8),
 };
 
 export function getBuiltinPresets(): GeometryPreset[] {
@@ -331,9 +339,164 @@ export function getBuiltinPresets(): GeometryPreset[] {
         parallelFlowLines: true, underlyingCircles: true, dominantDiagonals: true, curvatureComb: true,
         skeletonCenterline: true, constructionGrid: true, pathDirectionArrows: true, tangentIntersections: true,
         anchorPoints: true,
+        flowerOfLife: true, reuleauxTriangle: true, hexGrid: true,
+        triangularGrid: true, polarGrid: true, concentricSquares: true,
       },
       geometryStyles: { ...defaultStyles },
       clearspaceValue: 1, clearspaceUnit: 'logomark', showGrid: true, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // === New built-ins (Wave 2) ===
+
+    // --- Wordmark / Logotipo ---
+    {
+      id: 'builtin-wordmark',
+      name: 'Wordmark & Logotipo',
+      description: 'Baseline dinâmico, x-height, proporções tipográficas e espaçamento entre letras',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, dynamicBaseline: true, harmonicDivisions: true, typographicProportions: true, componentRatioLabels: true, spacingGuides: true },
+      geometryStyles: {
+        ...defaultStyles,
+        dynamicBaseline: defaultStyle('#66aadd', 0.5, 0.8),
+        harmonicDivisions: defaultStyle('#aa66dd', 0.4, 0.8),
+        typographicProportions: defaultStyle('#88ddaa', 0.5, 1),
+        componentRatioLabels: defaultStyle('#88bbff', 0.7, 1),
+        spacingGuides: defaultStyle('#33ccff', 0.5, 1),
+      },
+      clearspaceValue: 0.5, clearspaceUnit: 'logomark', showGrid: true, gridSubdivisions: 12,
+      createdAt: 0,
+    },
+
+    // --- Monograma ---
+    {
+      id: 'builtin-monogram',
+      name: 'Monograma',
+      description: 'Vesica piscis, círculos áureos, simetria dupla e quadrados concêntricos',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, vesicaPiscis: true, goldenRatio: true, symmetryAxes: true, circles: true, concentricSquares: true },
+      geometryStyles: {
+        ...defaultStyles,
+        vesicaPiscis: defaultStyle('#bb77cc', 0.5, 1),
+        goldenRatio: defaultStyle('#f2c00a', 0.5, 1),
+        symmetryAxes: defaultStyle('#ff66b2', 0.55, 1),
+        circles: defaultStyle('#33b380', 0.4, 0.8),
+        concentricSquares: defaultStyle('#a8b878', 0.45, 0.8),
+      },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Favicon / App Icon ---
+    {
+      id: 'builtin-favicon',
+      name: 'Favicon / App Icon',
+      description: 'Pixel grid, safe zone reforçada e contraste para ícones em tamanhos pequenos',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, pixelGrid: true, safeZone: true, contrastGuide: true, boundingRects: true, centerLines: true },
+      geometryStyles: {
+        ...defaultStyles,
+        pixelGrid: defaultStyle('#999999', 0.3, 0.5),
+        safeZone: defaultStyle('#44cc88', 0.5, 1.2),
+        contrastGuide: defaultStyle('#ffcc00', 0.5, 1),
+        boundingRects: defaultStyle('#d94040', 0.4, 0.8),
+        centerLines: defaultStyle('#e69a1a', 0.35, 0.6),
+      },
+      clearspaceValue: 0.5, clearspaceUnit: 'pixels', showGrid: true, gridSubdivisions: 16,
+      createdAt: 0,
+    },
+
+    // --- Responsivo / Multi-escala ---
+    {
+      id: 'builtin-responsive',
+      name: 'Responsivo Multi-escala',
+      description: 'Clearspace, grid de construção, centro óptico e safe zones para escala',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, safeZone: true, constructionGrid: true, opticalCenter: true, kenBurnsSafe: true, componentRatioLabels: true },
+      geometryStyles: {
+        ...defaultStyles,
+        safeZone: defaultStyle('#44cc88', 0.4, 1.2),
+        constructionGrid: defaultStyle('#7799dd', 0.35, 0.6),
+        opticalCenter: defaultStyle('#ff4488', 0.55, 1.5),
+        kenBurnsSafe: defaultStyle('#ff6644', 0.35, 1),
+        componentRatioLabels: defaultStyle('#88bbff', 0.6, 1),
+      },
+      clearspaceValue: 1, clearspaceUnit: 'logomark', showGrid: true, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Auditoria de Acessibilidade ---
+    {
+      id: 'builtin-accessibility',
+      name: 'Auditoria de Acessibilidade',
+      description: 'Contraste, peso visual, centro óptico e área segura para uso acessível',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, contrastGuide: true, visualWeightMap: true, safeZone: true, opticalCenter: true },
+      geometryStyles: {
+        ...defaultStyles,
+        contrastGuide: defaultStyle('#ffcc00', 0.5, 1),
+        visualWeightMap: defaultStyle('#cc8844', 0.4, 1),
+        safeZone: defaultStyle('#44cc88', 0.45, 1.2),
+        opticalCenter: defaultStyle('#ff4488', 0.6, 1.5),
+      },
+      clearspaceValue: 1.5, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Geometria Sagrada ---
+    {
+      id: 'builtin-sacred-geometry',
+      name: 'Geometria Sagrada',
+      description: 'Flor da vida, vesica piscis, malha hexagonal e triângulo de Reuleaux',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, flowerOfLife: true, vesicaPiscis: true, hexGrid: true, reuleauxTriangle: true, circles: true },
+      geometryStyles: {
+        ...defaultStyles,
+        flowerOfLife: defaultStyle('#b8a87a', 0.5, 0.8),
+        vesicaPiscis: defaultStyle('#bb77cc', 0.45, 1),
+        hexGrid: defaultStyle('#7ab896', 0.3, 0.5),
+        reuleauxTriangle: defaultStyle('#c08a4a', 0.55, 1),
+        circles: defaultStyle('#33b380', 0.35, 0.8),
+      },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
+      createdAt: 0,
+    },
+
+    // --- Brutalist Grid ---
+    {
+      id: 'builtin-brutalist',
+      name: 'Brutalist Grid',
+      description: 'Grid de construção denso, diagonais dominantes e malha triangular para composições marcantes',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, constructionGrid: true, dominantDiagonals: true, pixelGrid: true, boundingRects: true, triangularGrid: true },
+      geometryStyles: {
+        ...defaultStyles,
+        constructionGrid: defaultStyle('#7799dd', 0.5, 0.8),
+        dominantDiagonals: defaultStyle('#dd7733', 0.55, 1),
+        pixelGrid: defaultStyle('#999999', 0.3, 0.5),
+        boundingRects: defaultStyle('#d94040', 0.5, 1),
+        triangularGrid: defaultStyle('#88aabb', 0.4, 0.6),
+      },
+      clearspaceValue: 0, clearspaceUnit: 'logomark', showGrid: true, gridSubdivisions: 16,
+      createdAt: 0,
+    },
+
+    // --- Modular Type System ---
+    {
+      id: 'builtin-modular-type',
+      name: 'Modular Type System',
+      description: 'Escala modular, divisões harmônicas, baseline e grid radial para sistemas tipográficos',
+      isBuiltin: true,
+      geometryOptions: { ...allOff, modularScale: true, harmonicDivisions: true, dynamicBaseline: true, typographicProportions: true, polarGrid: true },
+      geometryStyles: {
+        ...defaultStyles,
+        modularScale: defaultStyle('#77ddaa', 0.45, 0.8),
+        harmonicDivisions: defaultStyle('#aa66dd', 0.4, 0.8),
+        dynamicBaseline: defaultStyle('#66aadd', 0.45, 0.8),
+        typographicProportions: defaultStyle('#88ddaa', 0.5, 1),
+        polarGrid: defaultStyle('#cc99bb', 0.35, 0.6),
+      },
+      clearspaceValue: 0.5, clearspaceUnit: 'logomark', showGrid: false, gridSubdivisions: 8,
       createdAt: 0,
     },
   ];
