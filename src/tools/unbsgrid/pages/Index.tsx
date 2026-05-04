@@ -218,6 +218,9 @@ const Index = () => {
   const [safeZoneMargin, setSafeZoneMargin] = useState(0.1);
   const [maxFlowLines, setMaxFlowLines] = useState(5);
   const [anchorPointSize, setAnchorPointSize] = useState(3);
+  const [bezierHandleSize, setBezierHandleSize] = useState(3);
+  const [bezierShowAnchors, setBezierShowAnchors] = useState(true);
+  const [bezierShowHandles, setBezierShowHandles] = useState(true);
   const [svgColorOverride, setSvgColorOverride] = useState<string | null>(null);
   const [useRealDataInterpretation, setUseRealDataInterpretation] = useState(true);
   const [svgOutlineMode, setSvgOutlineMode] = useState(false);
@@ -724,6 +727,23 @@ const Index = () => {
                                 </div>
                               </div>
                             )}
+                            {key === "bezierHandles" && (
+                              <div className="pl-6 pr-1 pb-1 space-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[9px]" style={{ color: THEME.muted, width: 36 }}>Size</span>
+                                  <Slider min={1} max={10} step={0.5} value={[bezierHandleSize]} onValueChange={(v) => setBezierHandleSize(v[0])} className="flex-1" />
+                                  <span className="text-[9px]" style={{ color: THEME.muted, width: 20, textAlign: 'right' }}>{bezierHandleSize}</span>
+                                </div>
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <span className="text-[9px]" style={{ color: THEME.muted }}>Anchors</span>
+                                  <Switch checked={bezierShowAnchors} onCheckedChange={setBezierShowAnchors} />
+                                </div>
+                                <div className="flex items-center justify-between gap-1.5">
+                                  <span className="text-[9px]" style={{ color: THEME.muted }}>Handles</span>
+                                  <Switch checked={bezierShowHandles} onCheckedChange={setBezierShowHandles} />
+                                </div>
+                              </div>
+                            )}
                           </>
                         )}
                       </div>
@@ -777,6 +797,9 @@ const Index = () => {
           svgOutlineMode={svgOutlineMode} svgOutlineWidth={svgOutlineWidth}
           svgOutlineDash={svgOutlineDash} svgOutlineLineCap={svgOutlineLineCap}
           maxFlowLines={maxFlowLines} anchorPointSize={anchorPointSize}
+          bezierHandleSize={bezierHandleSize}
+          bezierShowAnchors={bezierShowAnchors}
+          bezierShowHandles={bezierShowHandles}
           onProjectReady={(p) => { projectRef.current = p; }}
         />
       </main>

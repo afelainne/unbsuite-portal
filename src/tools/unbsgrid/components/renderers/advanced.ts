@@ -2,43 +2,63 @@ import paper from 'paper';
 import type { BezierSegmentData } from '../../lib/svg-engine';
 import { hexToColor, clipLineToRect, type StyleConfig, type RenderContext } from './utils';
 
+export interface BezierHandlesOptions {
+  /** Anchor / handle dot radius in px (default 3). */
+  handleSize?: number;
+  /** Show anchor dots on segment points (default true). */
+  showAnchors?: boolean;
+  /** Show handle lines + handle dots (default true). */
+  showHandles?: boolean;
+}
+
 export function renderBezierHandles(
   segments: BezierSegmentData[],
   originalBounds: paper.Rectangle,
   canvasBounds: paper.Rectangle,
   style: StyleConfig,
-  context?: RenderContext
+  context?: RenderContext,
+  options?: BezierHandlesOptions
 ) {
   const color = hexToColor(style.color, style.opacity);
   const handleColor = hexToColor(style.color, style.opacity * 0.7);
+  const hs = options?.handleSize ?? 3;
+  const showA = options?.showAnchors ?? true;
+  const showH = options?.showHandles ?? true;
+  if (!showA && !showH) return;
+  const anchorR = hs;
+  const handleR = Math.max(1, hs * 0.6);
+  const handleLineW = style.strokeWidth * 0.6;
 
   if (context?.useRealData && context?.actualPaths && context.actualPaths.length > 0) {
     for (const path of context.actualPaths) {
-      if (!path.curves || path.curves.length === 0) continue;
-      for (const curve of path.curves) {
-        const p1 = new paper.Point(curve.point1.x, curve.point1.y);
-        const p2 = new paper.Point(curve.point2.x, curve.point2.y);
-        const h1 = curve.handle1;
-        if (h1 && (Math.abs(h1.x) > 0.1 || Math.abs(h1.y) > 0.1)) {
-          const hPt = new paper.Point(p1.x + h1.x, p1.y + h1.y);
-          const line = new paper.Path.Line(p1, hPt);
-          line.strokeColor = handleColor; line.strokeWidth = style.strokeWidth * 0.6;
-          const hdot = new paper.Path.Circle(hPt, style.strokeWidth + 0.5);
-          hdot.fillColor = handleColor; hdot.strokeColor = null;
-        }
-        const h2 = curve.handle2;
-        if (h2 && (Math.abs(h2.x) > 0.1 || Math.abs(h2.y) > 0.1)) {
-          const hPt = new paper.Point(p2.x + h2.x, p2.y + h2.y);
-          const line = new paper.Path.Line(p2, hPt);
-          line.strokeColor = handleColor; line.strokeWidth = style.strokeWidth * 0.6;
-          const hdot = new paper.Path.Circle(hPt, style.strokeWidth + 0.5);
-          hdot.fillColor = handleColor; hdot.strokeColor = null;
+      if (showH && path.curves && path.curves.length > 0) {
+        for (const curve of path.curves) {
+          const p1 = new paper.Point(curve.point1.x, curve.point1.y);
+          const p2 = new paper.Point(curve.point2.x, curve.point2.y);
+          const h1 = curve.handle1;
+          if (h1 && (Math.abs(h1.x) > 0.1 || Math.abs(h1.y) > 0.1)) {
+            const hPt = new paper.Point(p1.x + h1.x, p1.y + h1.y);
+            const line = new paper.Path.Line(p1, hPt);
+            line.strokeColor = handleColor; line.strokeWidth = handleLineW;
+            const hdot = new paper.Path.Circle(hPt, handleR);
+            hdot.fillColor = handleColor; hdot.strokeColor = null;
+          }
+          const h2 = curve.handle2;
+          if (h2 && (Math.abs(h2.x) > 0.1 || Math.abs(h2.y) > 0.1)) {
+            const hPt = new paper.Point(p2.x + h2.x, p2.y + h2.y);
+            const line = new paper.Path.Line(p2, hPt);
+            line.strokeColor = handleColor; line.strokeWidth = handleLineW;
+            const hdot = new paper.Path.Circle(hPt, handleR);
+            hdot.fillColor = handleColor; hdot.strokeColor = null;
+          }
         }
       }
-      for (const seg of path.segments) {
-        const pt = new paper.Point(seg.point.x, seg.point.y);
-        const dot = new paper.Path.Circle(pt, style.strokeWidth * 1.5 + 1);
-        dot.fillColor = color; dot.strokeColor = null;
+      if (showA) {
+        for (const seg of path.segments) {
+          const pt = new paper.Point(seg.point.x, seg.point.y);
+          const dot = new paper.Path.Circle(pt, anchorR);
+          dot.fillColor = color; dot.strokeColor = null;
+        }
       }
     }
     return;
@@ -49,21 +69,23 @@ export function renderBezierHandles(
 
   segments.forEach(seg => {
     const ax = mapX(seg.anchor.x); const ay = mapY(seg.anchor.y);
-    const dot = new paper.Path.Circle(new paper.Point(ax, ay), style.strokeWidth * 1.5 + 1);
-    dot.fillColor = color; dot.strokeColor = null;
+    if (showA) {
+      const dot = new paper.Path.Circle(new paper.Point(ax, ay), anchorR);
+      dot.fillColor = color; dot.strokeColor = null;
+    }
 
-    if (seg.hasHandleIn) {
+    if (showH && seg.hasHandleIn) {
       const hx = mapX(seg.handleIn.x); const hy = mapY(seg.handleIn.y);
       const line = new paper.Path.Line(new paper.Point(ax, ay), new paper.Point(hx, hy));
-      line.strokeColor = handleColor; line.strokeWidth = style.strokeWidth * 0.6;
-      const hdot = new paper.Path.Circle(new paper.Point(hx, hy), style.strokeWidth + 0.5);
+      line.strokeColor = handleColor; line.strokeWidth = handleLineW;
+      const hdot = new paper.Path.Circle(new paper.Point(hx, hy), handleR);
       hdot.fillColor = handleColor; hdot.strokeColor = null;
     }
-    if (seg.hasHandleOut) {
+    if (showH && seg.hasHandleOut) {
       const hx = mapX(seg.handleOut.x); const hy = mapY(seg.handleOut.y);
       const line = new paper.Path.Line(new paper.Point(ax, ay), new paper.Point(hx, hy));
-      line.strokeColor = handleColor; line.strokeWidth = style.strokeWidth * 0.6;
-      const hdot = new paper.Path.Circle(new paper.Point(hx, hy), style.strokeWidth + 0.5);
+      line.strokeColor = handleColor; line.strokeWidth = handleLineW;
+      const hdot = new paper.Path.Circle(new paper.Point(hx, hy), handleR);
       hdot.fillColor = handleColor; hdot.strokeColor = null;
     }
   });

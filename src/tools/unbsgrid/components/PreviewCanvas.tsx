@@ -39,6 +39,9 @@ interface PreviewCanvasProps {
   svgOutlineLineCap?: string;
   maxFlowLines?: number;
   anchorPointSize?: number;
+  bezierHandleSize?: number;
+  bezierShowAnchors?: boolean;
+  bezierShowHandles?: boolean;
   onProjectReady?: (project: paper.Project) => void;
 }
 
@@ -62,7 +65,9 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
   geometryOptions, geometryStyles, canvasBackground, modularScaleRatio = 1.618,
   safeZoneMargin = 0.1, svgColorOverride, useRealDataInterpretation = true,
   svgOutlineMode = false, svgOutlineWidth = 1, svgOutlineDash = [], svgOutlineLineCap = 'butt',
-  maxFlowLines = 5, anchorPointSize = 3, onProjectReady,
+  maxFlowLines = 5, anchorPointSize = 3,
+  bezierHandleSize = 3, bezierShowAnchors = true, bezierShowHandles = true,
+  onProjectReady,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -192,7 +197,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
     if (geometryOptions.tangentLines) safe(() => renderTangentLines(bounds, scaledCompBounds, s.tangentLines, renderContext));
     if (geometryOptions.goldenSpiral) safe(() => renderGoldenSpiral(bounds, s.goldenSpiral, renderContext));
     if (geometryOptions.isometricGrid) safe(() => renderIsometricGrid(bounds, s.isometricGrid, gridSubdivisions, renderContext));
-    if (geometryOptions.bezierHandles) safe(() => renderBezierHandles(parsedSVG.segments, parsedSVG.fullBounds, bounds, s.bezierHandles, renderContext));
+    if (geometryOptions.bezierHandles) safe(() => renderBezierHandles(parsedSVG.segments, parsedSVG.fullBounds, bounds, s.bezierHandles, renderContext, { handleSize: bezierHandleSize, showAnchors: bezierShowAnchors, showHandles: bezierShowHandles }));
     if (geometryOptions.typographicProportions) safe(() => renderTypographicProportions(bounds, s.typographicProportions, renderContext));
     if (geometryOptions.thirdLines) safe(() => renderThirdLines(bounds, s.thirdLines, renderContext));
     if (geometryOptions.symmetryAxes) safe(() => renderSymmetryAxes(bounds, scaledCompBounds, s.symmetryAxes, renderContext));
@@ -232,7 +237,7 @@ const PreviewCanvas: React.FC<PreviewCanvasProps> = ({
 
     (paper.view as any).draw();
     onProjectReady?.(paper.project);
-  }, [parsedSVG, clearspaceValue, clearspaceUnit, showGrid, gridSubdivisions, geometryOptions, geometryStyles, zoom, panOffset, onProjectReady, modularScaleRatio, safeZoneMargin, svgColorOverride, canvasBackground, useRealDataInterpretation, svgOutlineMode, svgOutlineWidth, svgOutlineDash, svgOutlineLineCap, anchorPointSize]);
+  }, [parsedSVG, clearspaceValue, clearspaceUnit, showGrid, gridSubdivisions, geometryOptions, geometryStyles, zoom, panOffset, onProjectReady, modularScaleRatio, safeZoneMargin, svgColorOverride, canvasBackground, useRealDataInterpretation, svgOutlineMode, svgOutlineWidth, svgOutlineDash, svgOutlineLineCap, anchorPointSize, bezierHandleSize, bezierShowAnchors, bezierShowHandles]);
 
   useEffect(() => { draw(); }, [draw]);
 
