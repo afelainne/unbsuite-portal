@@ -80,7 +80,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const [variationCount, setVariationCount] = useState(5);
     const [baseColorPosition, setBaseColorPosition] = useState<'none' | 'above' | 'center' | 'below'>('none');
     const [splitRatio, setSplitRatio] = useState(55);
-    const [paletteTemplate, setPaletteTemplate] = useState<'classic' | 'vertical' | 'grid' | 'cards'>('classic');
+    const [paletteTemplate, setPaletteTemplate] = useState<'classic' | 'vertical' | 'grid' | 'cards' | 'stripes' | 'swatches' | 'gradient' | 'mosaic'>('classic');
+    const [showVariations, setShowVariations] = useState(true);
     const [albersTemplate, setAlbersTemplate] = useState<'squares' | 'circles' | 'sunset' | 'bars'>('squares');
     const [albersBackground, setAlbersBackground] = useState<'black' | 'white' | 'gray'>('black');
     const [draggedComboIndex, setDraggedComboIndex] = useState<number | null>(null);
@@ -585,7 +586,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const generatePaletteSvg = (): string => {
         const width = 1920;
         const height = 1080;
-        const mainAreaWidth = width * (splitRatio / 100);
+        const mainAreaWidth = showVariations ? width * (splitRatio / 100) : width;
         const variationsAreaWidth = width - mainAreaWidth;
         let yOffset = 0;
         const mainBlocks = colors.map((color) => {
@@ -616,8 +617,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             yOffset += blockHeight;
             return block;
         }).join('');
-        const colWidth = variationsAreaWidth / colors.length;
-        const variationBlocks = colors.map((color, colIdx) => {
+        const colWidth = colors.length ? variationsAreaWidth / colors.length : 0;
+        const variationBlocks = !showVariations ? '' : colors.map((color, colIdx) => {
             const vars = getColorVariations(color.hex, variationCount);
             const varHeight = height / vars.length;
             return vars
@@ -682,10 +683,10 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         const mainBlocks = mainColors.map((color, idx) => {
             const x = idx * mainColWidth;
             const textColor = getContrastColor(color.hex);
-            const vars = getColorVariations(color.hex, 3);
+            const vars = showVariations ? getColorVariations(color.hex, 3) : [];
             const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const mainBlockHeight = mainHeight * 0.7;
-            const varBlockHeight = (mainHeight - mainBlockHeight) / vars.length;
+            const mainBlockHeight = showVariations ? mainHeight * 0.7 : mainHeight;
+            const varBlockHeight = vars.length ? (mainHeight - mainBlockHeight) / vars.length : 0;
             
             const mainRect = `<rect x="${x}" y="0" width="${mainColWidth}" height="${mainBlockHeight}" fill="${color.hex}" />`;
             const nameLabel = `<text x="${x + 25}" y="55" font-size="48" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>`;
@@ -738,7 +739,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             const cardWidth = ((width - padding * 2 - gap * (topColors.length - 1)) * color.weight) / topColors.reduce((s, c) => s + c.weight, 0);
             const textColor = getContrastColor(color.hex);
             const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const vars = getColorVariations(color.hex, 3);
+            const vars = showVariations ? getColorVariations(color.hex, 3) : [];
             const varHeight = 40;
             
             const codeLabels = codes.map((code, i) => 
@@ -780,7 +781,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             const y = topHeight + padding * 2;
             const textColor = getContrastColor(color.hex);
             const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const vars = getColorVariations(color.hex, 2);
+            const vars = showVariations ? getColorVariations(color.hex, 2) : [];
             const varHeight = 30;
             
             const codeLabels = codes.map((code, i) => 
@@ -816,12 +817,108 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,700&family=JetBrains+Mono:wght@400&display=swap');</style><rect width="100%" height="100%" fill="#F5F5F5" />${topCards}${bottomCards}</svg>`;
     };
 
+    // Template 5: Stripes (linhas horizontais proporcionais)
+    const generateStripesSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        const totalW = colors.reduce((s, c) => s + c.weight, 0) || 1;
+        let yOff = 0;
+        const rows = colors.map((color) => {
+            const rowH = (color.weight / totalW) * height;
+            const textColor = getContrastColor(color.hex);
+            const codes = showCodes ? formatColorCodes(color.hex) : [];
+            const codeRow = codes.map((c, i) => `<text x="${width - 40 - i * 180}" y="${yOff + rowH / 2 + 5}" text-anchor="end" font-size="13" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.75">${c}</text>`).join('');
+            const block = `<rect x="0" y="${yOff}" width="${width}" height="${rowH}" fill="${color.hex}" />` +
+                `<text x="40" y="${yOff + rowH / 2 + 12}" font-size="${Math.min(48, Math.max(18, rowH * 0.35))}" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>` +
+                codeRow;
+            yOff += rowH;
+            return block;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style>${rows}</svg>`;
+    };
+
+    // Template 6: Swatches (grid de cartões iguais)
+    const generateSwatchesSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        const pad = 32;
+        const cols = Math.min(colors.length, Math.ceil(Math.sqrt(colors.length * (width / height))));
+        const rows = Math.ceil(colors.length / cols);
+        const cellW = (width - pad * (cols + 1)) / cols;
+        const cellH = (height - pad * (rows + 1)) / rows;
+        const swatches = colors.map((color, i) => {
+            const r = Math.floor(i / cols);
+            const c = i % cols;
+            const x = pad + c * (cellW + pad);
+            const y = pad + r * (cellH + pad);
+            const textColor = getContrastColor(color.hex);
+            const codes = showCodes ? formatColorCodes(color.hex).slice(0, 4) : [];
+            const codeLines = codes.map((cd, ci) => `<text x="${x + 24}" y="${y + cellH - 24 - (codes.length - 1 - ci) * 18}" font-size="12" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.75">${cd}</text>`).join('');
+            return `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="20" fill="${color.hex}" />` +
+                `<text x="${x + 24}" y="${y + 48}" font-size="28" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>` +
+                codeLines;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#F5F5F5" />${swatches}</svg>`;
+    };
+
+    // Template 7: Gradient (faixa contínua com fusão)
+    const generateGradientSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        const stops = colors.map((c, i) => `<stop offset="${(i / Math.max(colors.length - 1, 1)) * 100}%" stop-color="${c.hex}" />`).join('');
+        const labelW = width / colors.length;
+        const labels = colors.map((c, i) => {
+            const x = i * labelW + labelW / 2;
+            const textColor = getContrastColor(c.hex);
+            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 3) : [];
+            const codeLines = codes.map((cd, ci) => `<text x="${x}" y="${height - 60 + ci * 18}" text-anchor="middle" font-size="11" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.85">${cd}</text>`).join('');
+            return `<text x="${x}" y="80" text-anchor="middle" font-size="28" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${c.name}</text>${codeLines}`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">${stops}</linearGradient></defs><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="url(#g)" />${labels}</svg>`;
+    };
+
+    // Template 8: Mosaic (cor principal + secundárias quebradas)
+    const generateMosaicSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        if (colors.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" />`;
+        const sorted = [...colors].sort((a, b) => b.weight - a.weight);
+        const main = sorted[0];
+        const rest = sorted.slice(1);
+        const heroW = width * 0.6;
+        const sideW = width - heroW;
+        const tcMain = getContrastColor(main.hex);
+        const codesMain = showCodes ? formatColorCodes(main.hex).slice(0, 6) : [];
+        const codeMainLines = codesMain.map((cd, i) => `<text x="60" y="${height - 80 - (codesMain.length - 1 - i) * 22}" font-size="14" font-family="'JetBrains Mono', monospace" fill="${tcMain}" opacity="0.8">${cd}</text>`).join('');
+        const hero = `<rect x="0" y="0" width="${heroW}" height="${height}" fill="${main.hex}" />` +
+            `<text x="60" y="120" font-size="72" font-family="'Inter', sans-serif" font-weight="700" fill="${tcMain}">${main.name}</text>` +
+            codeMainLines;
+        const totalRest = rest.reduce((s, c) => s + c.weight, 0) || 1;
+        let yOff = 0;
+        const sides = rest.map((c) => {
+            const h = (c.weight / totalRest) * height;
+            const tc = getContrastColor(c.hex);
+            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 3) : [];
+            const codeLines = codes.map((cd, i) => `<text x="${heroW + 30}" y="${yOff + h - 30 - (codes.length - 1 - i) * 16}" font-size="11" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.8">${cd}</text>`).join('');
+            const block = `<rect x="${heroW}" y="${yOff}" width="${sideW}" height="${h}" fill="${c.hex}" />` +
+                `<text x="${heroW + 30}" y="${yOff + 50}" font-size="28" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${c.name}</text>` +
+                codeLines;
+            yOff += h;
+            return block;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style>${hero}${sides}</svg>`;
+    };
+
     // Função que retorna o SVG baseado no template selecionado
     const getCurrentPaletteSvg = (): string => {
         switch (paletteTemplate) {
             case 'vertical': return generateVerticalSvg();
             case 'grid': return generateGridSvg();
             case 'cards': return generateCardsSvg();
+            case 'stripes': return generateStripesSvg();
+            case 'swatches': return generateSwatchesSvg();
+            case 'gradient': return generateGradientSvg();
+            case 'mosaic': return generateMosaicSvg();
             default: return generatePaletteSvg();
         }
     };
@@ -1205,13 +1302,17 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.templateLabel}:</span>
                             <select 
                                 value={paletteTemplate} 
-                                onChange={(e) => setPaletteTemplate(e.target.value as 'classic' | 'vertical' | 'grid' | 'cards')}
+                                onChange={(e) => setPaletteTemplate(e.target.value as typeof paletteTemplate)}
                                 className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
                             >
                                 <option value="classic">{t.classic}</option>
                                 <option value="vertical">{t.vertical}</option>
                                 <option value="grid">{t.grid}</option>
                                 <option value="cards">{t.cards}</option>
+                                <option value="stripes">Stripes</option>
+                                <option value="swatches">Swatches</option>
+                                <option value="gradient">Gradient</option>
+                                <option value="mosaic">Mosaic</option>
                             </select>
                         </div>
                         {paletteTemplate === 'classic' && (
@@ -1262,6 +1363,12 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariationCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
                         >
                             {showVariationCodes ? t.showVariationCodesOn : t.showVariationCodesOff}
+                        </button>
+                        <button
+                            onClick={() => setShowVariations((prev) => !prev)}
+                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariations ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
+                        >
+                            {showVariations ? 'Hide variations' : 'Show variations'}
                         </button>
                         <button 
                             onClick={() => setShowCodes((prev) => !prev)}
