@@ -80,9 +80,9 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const [variationCount, setVariationCount] = useState(5);
     const [baseColorPosition, setBaseColorPosition] = useState<'none' | 'above' | 'center' | 'below'>('none');
     const [splitRatio, setSplitRatio] = useState(55);
-    const [paletteTemplate, setPaletteTemplate] = useState<'classic' | 'vertical' | 'grid' | 'cards' | 'stripes' | 'swatches' | 'gradient' | 'mosaic'>('classic');
+    const [paletteTemplate, setPaletteTemplate] = useState<'classic' | 'vertical' | 'grid' | 'cards' | 'stripes' | 'swatches' | 'gradient' | 'mosaic' | 'splitscreen' | 'columns' | 'dots' | 'editorial'>('classic');
     const [showVariations, setShowVariations] = useState(true);
-    const [albersTemplate, setAlbersTemplate] = useState<'squares' | 'circles' | 'sunset' | 'bars'>('squares');
+    const [albersTemplate, setAlbersTemplate] = useState<'squares' | 'circles' | 'sunset' | 'bars' | 'rings' | 'diamonds' | 'frames' | 'split' | 'targets' | 'triangles'>('squares');
     const [albersBackground, setAlbersBackground] = useState<'black' | 'white' | 'gray'>('black');
     const [draggedComboIndex, setDraggedComboIndex] = useState<number | null>(null);
     const [comboOrder, setComboOrder] = useState<number[]>([]);
@@ -944,6 +944,107 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     };
 
     // Função que retorna o SVG baseado no template selecionado
+    // Template 9: Split Screen (hero + grid)
+    const generateSplitScreenSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        if (colors.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" />`;
+        const sorted = [...colors].sort((a, b) => b.weight - a.weight);
+        const main = sorted[0];
+        const rest = sorted.slice(1);
+        const heroH = height * 0.55;
+        const tcMain = getContrastColor(main.hex);
+        const codesMain = showCodes ? formatColorCodes(main.hex).slice(0, 6) : [];
+        const codeMainLines = codesMain.map((cd, i) => `<text x="60" y="${heroH - 60 - (codesMain.length - 1 - i) * 22}" font-size="14" font-family="'JetBrains Mono', monospace" fill="${tcMain}" opacity="0.85">${cd}</text>`).join('');
+        const hero = `<rect x="0" y="0" width="${width}" height="${heroH}" fill="${main.hex}" />` +
+            `<text x="60" y="120" font-size="84" font-family="'Inter', sans-serif" font-weight="700" fill="${tcMain}">${main.name}</text>` +
+            codeMainLines;
+        const cellW = width / Math.max(rest.length, 1);
+        const cellH = height - heroH;
+        const tiles = rest.map((c, i) => {
+            const x = i * cellW;
+            const tc = getContrastColor(c.hex);
+            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 3) : [];
+            const codeLines = codes.map((cd, ci) => `<text x="${x + 24}" y="${heroH + cellH - 24 - (codes.length - 1 - ci) * 16}" font-size="11" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.8">${cd}</text>`).join('');
+            return `<rect x="${x}" y="${heroH}" width="${cellW}" height="${cellH}" fill="${c.hex}" /><text x="${x + 24}" y="${heroH + 50}" font-size="26" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${c.name}</text>${codeLines}`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style>${hero}${tiles}</svg>`;
+    };
+
+    // Template 10: Columns (vertical bars with names rotated)
+    const generateColumnsSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        const pad = 24;
+        const gap = 12;
+        const totalW = width - pad * 2 - gap * (colors.length - 1);
+        const totalWeight = colors.reduce((s, c) => s + c.weight, 0) || 1;
+        let xOff = pad;
+        const cols = colors.map((c) => {
+            const colW = (c.weight / totalWeight) * totalW;
+            const tc = getContrastColor(c.hex);
+            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 5) : [];
+            const codeLines = codes.map((cd, i) => `<text x="${xOff + colW / 2}" y="${height - 60 - (codes.length - 1 - i) * 18}" text-anchor="middle" font-size="11" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.85">${cd}</text>`).join('');
+            const block = `<rect x="${xOff}" y="${pad}" width="${colW}" height="${height - pad * 2}" rx="12" fill="${c.hex}" />` +
+                `<text x="${xOff + colW / 2}" y="${height / 2}" font-size="${Math.min(56, Math.max(18, colW * 0.18))}" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}" text-anchor="middle" transform="rotate(-90, ${xOff + colW / 2}, ${height / 2})">${c.name}</text>` +
+                codeLines;
+            xOff += colW + gap;
+            return block;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#111111" />${cols}</svg>`;
+    };
+
+    // Template 11: Dots (large circles weighted)
+    const generateDotsSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        const pad = 60;
+        const cols = Math.ceil(Math.sqrt(colors.length * (width / height)));
+        const rows = Math.ceil(colors.length / cols);
+        const cellW = (width - pad * 2) / cols;
+        const cellH = (height - pad * 2) / rows;
+        const maxW = colors.reduce((m, c) => Math.max(m, c.weight), 1);
+        const items = colors.map((c, i) => {
+            const r = Math.floor(i / cols);
+            const col = i % cols;
+            const cx = pad + col * cellW + cellW / 2;
+            const cy = pad + r * cellH + cellH / 2;
+            const radius = Math.min(cellW, cellH) * 0.42 * (0.5 + 0.5 * (c.weight / maxW));
+            const tc = getContrastColor(c.hex);
+            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 2) : [];
+            const codeLines = codes.map((cd, ci) => `<text x="${cx}" y="${cy + radius + 22 + ci * 16}" text-anchor="middle" font-size="11" font-family="'JetBrains Mono', monospace" fill="#FFFFFF" opacity="0.85">${cd}</text>`).join('');
+            return `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${c.hex}" /><text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="20" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${c.name}</text>${codeLines}`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#0A0A0A" />${items}</svg>`;
+    };
+
+    // Template 12: Editorial (hero + index list)
+    const generateEditorialSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        if (colors.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" />`;
+        const sorted = [...colors].sort((a, b) => b.weight - a.weight);
+        const main = sorted[0];
+        const heroW = width * 0.65;
+        const tc = getContrastColor(main.hex);
+        const codes = showCodes ? formatColorCodes(main.hex).slice(0, 8) : [];
+        const codeLines = codes.map((cd, i) => `<text x="80" y="${height - 80 - (codes.length - 1 - i) * 26}" font-size="16" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.9">${cd}</text>`).join('');
+        const hero = `<rect x="0" y="0" width="${heroW}" height="${height}" fill="${main.hex}" />` +
+            `<text x="80" y="160" font-size="120" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${main.name}</text>` +
+            `<text x="80" y="220" font-size="22" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.7">${main.hex}</text>` +
+            codeLines;
+        const sideX = heroW + 60;
+        const lineH = (height - 120) / Math.max(sorted.length, 1);
+        const list = sorted.map((c, i) => {
+            const y = 80 + i * lineH;
+            return `<rect x="${sideX}" y="${y + 10}" width="40" height="40" fill="${c.hex}" />` +
+                `<text x="${sideX + 56}" y="${y + 36}" font-size="20" font-family="'Inter', sans-serif" font-weight="700" fill="#111111">${c.name}</text>` +
+                `<text x="${sideX + 56}" y="${y + 56}" font-size="12" font-family="'JetBrains Mono', monospace" fill="#666666">${c.hex} · ${c.weight.toFixed(0)}%</text>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#FAFAFA" />${hero}${list}</svg>`;
+    };
+
+    // Função que retorna o SVG baseado no template selecionado
     const getCurrentPaletteSvg = (): string => {
         switch (paletteTemplate) {
             case 'vertical': return generateVerticalSvg();
@@ -953,6 +1054,10 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             case 'swatches': return generateSwatchesSvg();
             case 'gradient': return generateGradientSvg();
             case 'mosaic': return generateMosaicSvg();
+            case 'splitscreen': return generateSplitScreenSvg();
+            case 'columns': return generateColumnsSvg();
+            case 'dots': return generateDotsSvg();
+            case 'editorial': return generateEditorialSvg();
             default: return generatePaletteSvg();
         }
     };
@@ -973,6 +1078,12 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             case 'circles': return 18;
             case 'sunset': return 20;
             case 'bars': return 12;
+            case 'rings': return 18;
+            case 'diamonds': return 16;
+            case 'frames': return 16;
+            case 'split': return 16;
+            case 'targets': return 16;
+            case 'triangles': return 16;
             default: return 18;
         }
     };
@@ -1185,12 +1296,166 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${bars}</svg>`;
     };
 
+    // Helper: compute responsive grid (cols/rows + cell size)
+    const computeAlbersGrid = (itemCount: number, width: number, height: number, padding: number, gap: number) => {
+        let bestCols = 1, bestFit = 0;
+        for (let cols = 1; cols <= itemCount; cols++) {
+            const rows = Math.ceil(itemCount / cols);
+            const cellWidth = (width - padding * 2 - gap * (cols - 1)) / cols;
+            const cellHeight = (height - padding * 2 - gap * (rows - 1)) / rows;
+            const cellSize = Math.min(cellWidth, cellHeight);
+            const lastRowItems = itemCount % cols || cols;
+            const completeness = lastRowItems / cols;
+            const fit = cellSize * cellSize * itemCount * completeness;
+            if (fit > bestFit) { bestFit = fit; bestCols = cols; }
+        }
+        const cols = bestCols;
+        const rows = Math.ceil(itemCount / cols);
+        const cellWidth = (width - padding * 2 - gap * (cols - 1)) / cols;
+        const cellHeight = (height - padding * 2 - gap * (rows - 1)) / rows;
+        return { cols, rows, cellWidth, cellHeight };
+    };
+
+    // Template 5: Rings (anéis com fundo da cor do meio)
+    const generateAlbersRingsSvg = (): string => {
+        const width = 1920, height = 1080, padding = 40, gap = 20;
+        const maxCards = getMaxCardsByTemplate('rings');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const r = Math.min(cellWidth, cellHeight) * 0.42;
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const x = padding + col * (cellWidth + gap), y = padding + row * (cellHeight + gap);
+            const cx = x + cellWidth / 2, cy = y + cellHeight / 2;
+            return `<g><rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" fill="${combo.middle}" /><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${combo.outer}" stroke-width="${r * 0.35}" /><circle cx="${cx}" cy="${cy}" r="${r * 0.5}" fill="${combo.inner}" /></g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 6: Diamonds (losangos rotacionados)
+    const generateAlbersDiamondsSvg = (): string => {
+        const width = 1920, height = 1080, padding = 60, gap = 30;
+        const maxCards = getMaxCardsByTemplate('diamonds');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const size = Math.min(cellWidth, cellHeight) * 0.78;
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
+            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
+            const layers = getComboLayers(combo);
+            const factors = [1, 0.65, 0.4, 0.22];
+            const rects = layers.map((color, i) => {
+                const s = size * (factors[i] || Math.max(0.15, 0.65 ** i));
+                return `<rect x="${cx - s / 2}" y="${cy - s / 2}" width="${s}" height="${s}" fill="${color}" transform="rotate(45 ${cx} ${cy})" />`;
+            }).join('');
+            return `<g>${rects}</g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 7: Frames (moldura grossa estilo Albers Homenagem)
+    const generateAlbersFramesSvg = (): string => {
+        const width = 1920, height = 1080, padding = 50, gap = 25;
+        const maxCards = getMaxCardsByTemplate('frames');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const size = Math.min(cellWidth, cellHeight) * 0.92;
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
+            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
+            const layers = getComboLayers(combo);
+            const factors = [1, 0.78, 0.55, 0.32];
+            const rects = layers.map((color, i) => {
+                const s = size * (factors[i] || Math.max(0.18, 0.7 ** i));
+                const offset = i > 0 ? s * 0.08 : 0;
+                return `<rect x="${cx - s / 2}" y="${cy - s / 2 + offset}" width="${s}" height="${s}" fill="${color}" />`;
+            }).join('');
+            return `<g>${rects}</g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 8: Split (cell dividido em metades + acento)
+    const generateAlbersSplitSvg = (): string => {
+        const width = 1920, height = 1080, padding = 40, gap = 18;
+        const maxCards = getMaxCardsByTemplate('split');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const x = padding + col * (cellWidth + gap), y = padding + row * (cellHeight + gap);
+            const half = cellWidth / 2;
+            const accentR = Math.min(cellWidth, cellHeight) * 0.18;
+            return `<g><rect x="${x}" y="${y}" width="${half}" height="${cellHeight}" fill="${combo.outer}" /><rect x="${x + half}" y="${y}" width="${half}" height="${cellHeight}" fill="${combo.middle}" /><circle cx="${x + cellWidth / 2}" cy="${y + cellHeight / 2}" r="${accentR}" fill="${combo.inner}" /></g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 9: Targets (alvos com anéis concêntricos múltiplos)
+    const generateAlbersTargetsSvg = (): string => {
+        const width = 1920, height = 1080, padding = 40, gap = 20;
+        const maxCards = getMaxCardsByTemplate('targets');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const r = Math.min(cellWidth, cellHeight) * 0.45;
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
+            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
+            const palette = [combo.outer, combo.middle, combo.inner, combo.outer, combo.middle];
+            const radii = [1, 0.78, 0.58, 0.4, 0.22];
+            const circles = radii.map((rf, i) => `<circle cx="${cx}" cy="${cy}" r="${r * rf}" fill="${palette[i % palette.length]}" />`).join('');
+            return `<g>${circles}</g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 10: Triangles (triângulos sobrepostos)
+    const generateAlbersTrianglesSvg = (): string => {
+        const width = 1920, height = 1080, padding = 60, gap = 30;
+        const maxCards = getMaxCardsByTemplate('triangles');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const size = Math.min(cellWidth, cellHeight) * 0.85;
+        const tri = (cx: number, cy: number, s: number, color: string, flip = false) => {
+            const h = s * 0.866;
+            const points = flip
+                ? `${cx - s / 2},${cy - h / 2} ${cx + s / 2},${cy - h / 2} ${cx},${cy + h / 2}`
+                : `${cx - s / 2},${cy + h / 2} ${cx + s / 2},${cy + h / 2} ${cx},${cy - h / 2}`;
+            return `<polygon points="${points}" fill="${color}" />`;
+        };
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
+            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
+            const layers = getComboLayers(combo);
+            const factors = [1, 0.7, 0.45, 0.25];
+            const tris = layers.map((color, i) => tri(cx, cy, size * (factors[i] || 0.2), color, i % 2 === 1)).join('');
+            return `<g>${tris}</g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
     // Função que retorna o SVG baseado no template de Albers selecionado
     const getCurrentAlbersSvg = (): string => {
         switch (albersTemplate) {
             case 'circles': return generateAlbersCirclesSvg();
             case 'sunset': return generateAlbersSunsetSvg();
             case 'bars': return generateAlbersBarsSvg();
+            case 'rings': return generateAlbersRingsSvg();
+            case 'diamonds': return generateAlbersDiamondsSvg();
+            case 'frames': return generateAlbersFramesSvg();
+            case 'split': return generateAlbersSplitSvg();
+            case 'targets': return generateAlbersTargetsSvg();
+            case 'triangles': return generateAlbersTrianglesSvg();
             default: return generateAlbersSquaresSvg();
         }
     };
@@ -1374,6 +1639,10 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                 <option value="swatches">Swatches</option>
                                 <option value="gradient">Gradient</option>
                                 <option value="mosaic">Mosaic</option>
+                                <option value="splitscreen">Split Screen</option>
+                                <option value="columns">Columns</option>
+                                <option value="dots">Dots</option>
+                                <option value="editorial">Editorial</option>
                             </select>
                         </div>
                         {paletteTemplate === 'classic' && (
@@ -1460,13 +1729,19 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.templateLabel}:</span>
                             <select 
                                 value={albersTemplate} 
-                                onChange={(e) => setAlbersTemplate(e.target.value as 'squares' | 'circles' | 'sunset' | 'bars')}
+                                onChange={(e) => setAlbersTemplate(e.target.value as typeof albersTemplate)}
                                 className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
                             >
                                 <option value="squares">{t.templateSquares}</option>
                                 <option value="circles">{t.templateCircles}</option>
                                 <option value="sunset">{t.templateSunset}</option>
                                 <option value="bars">{t.templateBars}</option>
+                                <option value="rings">Rings</option>
+                                <option value="diamonds">Diamonds</option>
+                                <option value="frames">Frames</option>
+                                <option value="split">Split</option>
+                                <option value="targets">Targets</option>
+                                <option value="triangles">Triangles</option>
                             </select>
                         </div>
                         <div className="flex items-center gap-2">
