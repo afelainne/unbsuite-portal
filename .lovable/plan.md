@@ -1,79 +1,98 @@
-# Varredura de bugs e correção do vínculo família/estilo de fontes
+## Problemas atuais no Toolbar lateral (modo Avançado)
 
-## Bugs / inconsistências identificados
+Arquivo: `src/tools/unbsfont/components/Toolbar.tsx` (412 linhas, 14+ botões em 5 seções).
 
-### 1. UNBSFONT — Preview da fonte usa nome fixo (não respeita familyName)
-`src/tools/unbsfont/components/FontPreview.tsx` registra a fonte sempre como `FontPreview_UnbsFont`, ignorando `metadata.familyName`. Resultado: o preview não reflete o nome real da família, e qualquer CSS externo tentando usar `familyName` falha.
+1. **Exportação inflada e ambígua**
+   - "Exportar Tabela" aparece **duas vezes** com legendas SVG/Sheet — usuário não sabe a diferença.
+   - "Preview Final", "Diagnóstico", "Exportar TTF", "Exportar Tabela (vazia)", "Exportar Tabela (preenchida)" amontoados sem hierarquia.
+   - 3 variações visuais de botão (`primaryButtonBase` ativo, passivo, `quickActionButtonBase`) sem critério claro.
 
-### 2. UNBSFONT — Preview não recarrega quando metadata/glifos mudam
-O `useEffect` depende só de `isOpen` (`eslint-disable-line` ativo). Editar um glifo, fechar e reabrir mostra fonte velha em cache porque o `FontFace` antigo não é removido por mudança de família.
+2. **Projeto com 5 botões redundantes**
+   - "Salvar projeto" (localStorage) vs "Baixar arquivo .unbsfo" — ambos salvam, diferença só no destino.
+   - "Abrir projeto (.unbsfo)" + "Dashboard" navegam — duplicam o caminho Home.
+   - "Import SVG" misturado com ações de projeto (deveria ficar perto da edição).
 
-### 3. UNBSFONT — Export "rápido" (CompactEditor) só exporta o estilo ATIVO
-`handleExportFontEditor` usa `glyphs` (estilo atual), nunca itera `styleMap`. Famílias com vários pesos (Regular, Bold, Light) só geram 1 arquivo. Apenas `handleExport` (modo Avançado) faz a iteração correta.
-Correção: `handleExportFontEditor` deve exportar todos os estilos com `glyphs.some(pathData)`, gerando 1 TTF por peso, todos compartilhando `familyName`.
+3. **Seção "Tipografia" vazia** — só mostra um aviso "vá para outra aba". Ocupa espaço sem ação.
 
-### 4. UNBSFONT — `fullName` / `postScriptName` montados em 2 lugares (drift)
-`fontEditorExporter.ts` repete a montagem nas linhas 524-528 e 676-680. Se uma for atualizada, a outra fica desatualizada. Extrair para helper `applyNameRecords(ttfData, metadata)`.
+4. **Designer name escondido** num double-click da versão. Quase invisível.
 
-### 5. UNBSFONT — Falta preferredFamily/preferredSubfamily (name IDs 16/17)
-Para fontes com >2 estilos (ex.: Light, Regular, Medium, Bold, Black), o sistema operacional precisa dos name records 16/17 senão os pesos extras viram "famílias separadas" em apps como Word/Figma. Adicionar `name.preferredFamily` e `name.preferredSubFamily` quando `styleMap` tem mais de 2 entradas.
+5. **Pesos & Estilos** funciona bem, mas cada linha tem 3 botões (usar/duplicar/excluir) — denso. Duplicar pode virar menu.
 
-### 6. UNBSTYPE — Upload de fonte não detecta categoria nem weights reais
-`handleUploadFont` força `category: 'sans'` e `weights: [400, 700]`. Se a fonte uploaded for serif/mono/display ou tiver só 1 weight, a UI mente. Usar metadata do `FontFace` (`fontFace.weight`) e oferecer dropdown de categoria. Mínimo: ler `fontFace.weight` real.
+6. **Preferências** mistura "Modo Compact" (mudança crítica de fluxo) com "Tema" (cosmético).
 
-### 7. UNBSTYPE — Nome do upload colide se mesmo arquivo for enviado 2×
-`name = "Upload: file.ttf"` — segunda vez sobrescreve a primeira no `document.fonts` mas adiciona entry duplicada em `customFonts`. Usar `localFontCounter` no nome (`Upload ${counter}: name`) e desduplicar antes de inserir.
+## Reorganização proposta
 
-### 8. UNBSTYPE — Preview pode tentar usar fonte ainda não carregada
-`PreviewPanel` não aguarda `document.fonts.ready`. Em primeira renderização aparece o fallback genérico. Adicionar `await document.fonts.load(\`16px '${fontName}'\`)` antes de marcar como pronto, ou usar `font-display: swap` com loader visual.
+Reduzir a **3 seções claras**, ~9 botões totais (de 14+):
 
-### 9. UNBSTYPE — `fontFamily: "'${name}', sans-serif"` quebra com nomes com aspas
-Improvável, mas nomes como `Source Sans 3` funcionam; nomes com aspas/carac. especiais não. Sanitizar nome no `loadGoogleFont` e usar nome sanitizado consistentemente.
+```
+┌─ HEADER (compacto)
+│  Family name [editável]      v1.0 · Designer ✎
+│  ───────────────────────────────────────────
+│
+├─ ESTILOS (Pesos)
+│  • Regular        [ATIVO]  ⋯
+│  • Bold                    ⋯
+│  + Adicionar estilo
+│  ───────────────────────────────────────────
+│
+├─ AÇÕES                        (botão principal grande)
+│  ⬇  Importar SVG               Ctrl+V
+│  💾  Salvar                     Ctrl+S      ← unifica save+download
+│  📂  Abrir .unbsfo
+│  ───────────────────────────────────────────
+│
+├─ EXPORTAR FONTE
+│  ⭐ Exportar TTF              [primário]   ← ação principal
+│  👁  Preview da fonte
+│  ⚠  Diagnóstico
+│  ▾  Mais opções (collapse)                  ← esconde sheet/tabela
+│       · Tabela SVG (vazia)
+│       · Tabela SVG (preenchida)
+│  ───────────────────────────────────────────
+│
+└─ FOOTER (rodapé fixo)
+   ◐ Tema   ⇄ Modo Compact   ⌂ Dashboard
+```
 
-### 10. CompactEditor — input de SVG sem reset de `value`
-Linha ~677: o handler usa `e.target.value = ''` corretamente, OK. Verificar paridade no botão "Carregar SVG" do painel de glifo selecionado (~969).
+### Mudanças concretas
 
-### 11. Console warning persistente — `Function components cannot be given refs`
-Vem de algum filho em `App.tsx` (root) usando `forwardRef` faltando. Localizar e envolver com `React.forwardRef` ou trocar por componente que aceite `ref`.
+**A. Header**
+- Tornar o campo "Designer" visível (input pequeno abaixo do nome) em vez de double-click invisível.
+- Versão fica como tag pequena ao lado do nome.
 
-### 12. Inconsistência de chrome — Header global + ToolHeader em sub-apps
-Alguns sub-apps (UNBSFORMAT, UNBSGRID) renderizam um `ToolHeader` próprio dentro do `ToolLayout`, gerando dois headers. Verificar e remover o segundo onde aplicável.
+**B. Estilos**
+- Manter lista, mas colapsar Duplicar/Excluir num menu `⋯` (popover ou inline ao hover) para reduzir ruído visual. Botão "Usar/Ativo" vira o próprio item clicável.
 
-## Mudanças propostas
+**C. Seção "Ações" (renomeada de "Projeto")**
+- 3 botões só: **Importar SVG**, **Salvar** (unifica `onSaveProject` + `onDownloadProjectFile` num único fluxo — salva local + oferece download), **Abrir .unbsfo**.
+- Remover botão "Dashboard" daqui (vai pro footer junto com Tema/Compact).
 
-### A. `src/tools/unbsfont/components/FontPreview.tsx`
-- Trocar `FONT_FAMILY_NAME` constante por `\`${metadata.familyName || 'CustomFont'}_preview\``.
-- Trocar dependências do `useEffect` para `[isOpen, metadata, glyphs]` e remover o eslint-disable.
-- Limpeza ampla: remover qualquer `FontFace` cuja `family` termine com `_preview` antes de adicionar nova.
+**D. Seção "Exportar fonte"**
+- **Exportar TTF** vira único botão primário grande (estilo `activePrimaryClasses`).
+- **Preview** e **Diagnóstico** ficam como botões secundários menores lado a lado.
+- **Tabela SVG vazia/preenchida** vão pra um collapse "Mais opções" — uso raro, não polui o topo.
 
-### B. `src/tools/unbsfont/App.tsx` — `handleExportFontEditor`
-Reescrever para iterar `styleMap` igual a `handleExport`, montando 1 candidato por estilo e chamando `downloadFontEditorFont(meta, glyphs)` em loop. Mantém `familyName` constante e varia apenas `styleName`. Mostra notice consolidada no fim.
+**E. Remover seção "Tipografia"** (placeholder vazio).
 
-### C. `src/tools/unbsfont/services/fontEditorExporter.ts`
-- Extrair `applyNameRecords(ttfData, metadata, totalStyles)` reutilizado pelas duas funções de export.
-- Quando `totalStyles > 2`, preencher `name.preferredFamily = familyName` e `name.preferredSubFamily = styleName` (name IDs 16/17). Para Bold/Italic standard pairs (≤2), seguir só com IDs 1/2.
-- Helper aceita `totalStyles` opcional (default 1).
-- Caller (`App.tsx`) passa `Object.keys(styleMap).length` ao chamar export.
+**F. Footer fixo no fundo do sidebar**
+- 3 ícones pequenos: **Tema** (claro/escuro), **Modo Compact**, **Dashboard** (Home).
+- Libera espaço vertical no corpo principal.
 
-### D. `src/tools/unbstype/App.tsx` — Upload
-- Após `await fontFace.load()`, ler `fontFace.weight` (string tipo `"400"`) e converter em number; usar como único weight.
-- Sanitizar `name` removendo extensão e caracteres ` "/\`.
-- Antes de `setCustomFonts`, filtrar duplicatas por `name`.
+**G. Estilos visuais**
+- Reduzir a 2 variantes: `primary` (ações principais — TTF, Salvar) e `ghost` (tudo o mais).
+- Remover `quickActionButtonBase` redundante.
+- Padding e espaçamentos consistentes (todos `py-2 px-3 rounded-lg`).
 
-### E. `src/tools/unbstype/components/PreviewPanel.tsx`
-- Adicionar `useEffect([headingFont, bodyFont])` que faz `document.fonts.load(\`16px '${headingFont}'\`)` e `\`16px '${bodyFont}'\`` em paralelo, e seta um `ready` boolean. Renderizar com `opacity-0` enquanto `!ready` para evitar flash do fallback.
+### Comportamento dos botões (sem quebrar API)
 
-### F. `src/components/ToolLayout.tsx` / sub-apps
-- Auditar UNBSFORMAT e UNBSGRID: garantir que não renderizem header próprio quando estão dentro de `ToolLayout`. Onde renderizam, remover.
+`Toolbar.tsx` continua recebendo as mesmas props. Mudanças internas:
+- `onSaveProject` + `onDownloadProjectFile` são chamados **sequencialmente** ao clicar "Salvar" (salva local primeiro, depois baixa). Mantém ambos os efeitos.
+- `onExportSvgSheet` e `onExportEmptySvgSheet` movidos para dentro do collapse, sem mudança de comportamento.
+- Adicionar `useState` local para o collapse "Mais opções" e `useState` para o menu `⋯` por estilo.
 
-### G. Console warning de `forwardRef`
-- Buscar nos componentes consumidos pelo `<Routes>` qual está recebendo `ref` (provavelmente `Index` ou um wrapper). Identificar e converter para `React.forwardRef`. Diagnóstico em runtime; sem código a propor antes da inspeção em build mode.
+### Verificação
+- Mesma quantidade de funcionalidades, **menos botões visíveis**.
+- Hierarquia clara: Identidade → Estilos → Ações → Exportar → (rodapé global).
+- Nenhuma prop nova, nenhuma quebra em `App.tsx`.
 
-## Verificação
-- Exportar uma família com 3 estilos (Light, Regular, Bold) gera 3 TTFs, todos com mesma `familyName` e diferentes `styleName`. Instalados juntos no SO ou Figma, aparecem agrupados sob 1 família.
-- Preview do UNBSFONT muda fontFamily quando o usuário renomeia a família.
-- Upload de uma fonte serif no UNBSTYPE mostra a categoria correta e o weight real.
-- Nenhum warning de forwardRef no console.
-- Sem duplicação de header em qualquer sub-app.
-
-Sem mudanças de schema/DB, sem novas dependências.
+Apenas `src/tools/unbsfont/components/Toolbar.tsx` é alterado.
