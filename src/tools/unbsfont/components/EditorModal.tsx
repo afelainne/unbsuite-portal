@@ -88,10 +88,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
         const [alignmentTarget, setAlignmentTarget] = useState<'glyph' | 'anchor' | 'context'>('glyph');
 
     const [kerningPartner, setKerningPartner] = useState<string>("");
-    const [kerningPreviewZoom, setKerningPreviewZoom] = useState(1);
-    const [kerningPreviewPan, setKerningPreviewPan] = useState({ x: 0, y: 0 });
-    const [isPreviewPanMode, setIsPreviewPanMode] = useState(false);
-    const [isPreviewPanning, setIsPreviewPanning] = useState(false);
+    const [kerningDirection, setKerningDirection] = useState<'LEFT' | 'BOTH' | 'RIGHT'>('BOTH');
     const previewPanStartRef = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null);
 
         const [leftKerningPartner, setLeftKerningPartner] = useState("");
@@ -151,8 +148,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
         setHistoryIndex(0);
         loadedGlyphChar.current = glyph.char;
         setKerningPartner("");
-        setKerningPreviewPan({ x: 0, y: 0 });
-        setIsPreviewPanMode(false);
+        setKerningDirection('BOTH');
         setLeftKerningPartner("");
         setRightKerningPartner("");
         setLeftKerningValue(0);
@@ -222,46 +218,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
       return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleUndo, handleRedo]);
 
-  const handleKerningPreviewMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isPreviewPanMode || !kerningPreviewLayout) return;
-      e.preventDefault();
-      e.stopPropagation();
-      previewPanStartRef.current = {
-          x: e.clientX,
-          y: e.clientY,
-          originX: kerningPreviewPan.x,
-          originY: kerningPreviewPan.y,
-      };
-      setIsPreviewPanning(true);
-  };
-
-  useEffect(() => {
-      if (!isPreviewPanning) return;
-      const handleMouseMove = (e: MouseEvent) => {
-          if (!previewPanStartRef.current) return;
-          const deltaX = e.clientX - previewPanStartRef.current.x;
-          const deltaY = e.clientY - previewPanStartRef.current.y;
-          setKerningPreviewPan({
-              x: previewPanStartRef.current.originX + deltaX,
-              y: previewPanStartRef.current.originY + deltaY,
-          });
-      };
-      const handleMouseUp = () => {
-          setIsPreviewPanning(false);
-          previewPanStartRef.current = null;
-      };
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-          window.removeEventListener('mousemove', handleMouseMove);
-          window.removeEventListener('mouseup', handleMouseUp);
-      };
-  }, [isPreviewPanning]);
-
-  useEffect(() => {
-      setKerningPreviewPan({ x: 0, y: 0 });
-      setIsPreviewPanMode(false);
-  }, [kerningPartner]);
+  // Pan/zoom removed — visualizer uses fit-to-view only.
 
     useEffect(() => {
         if (!leftKerningPartner) {
@@ -535,6 +492,51 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
   const ghostGapGuideY = ghostSpacingLayout ? Math.max(80, ghostSpacingLayout.baselineY - 280) : 0;
     const kerningPreviewLayout = kerningPreview?.layout ?? null;
   const kerningPreviewGapY = kerningPreviewLayout ? Math.max(80, kerningPreviewLayout.baselineY - 280) : 0;
+
+  // Unified pair visualizer — one sequence based on direction toggle.
+  const pairSequence = useMemo(() => {
+      if (!kerningPartner) return '';
+      if (kerningDirection === 'LEFT') return `${kerningPartner}${glyph.char}`;
+      if (kerningDirection === 'RIGHT') return `${glyph.char}${kerningPartner}`;
+      return `${kerningPartner}${glyph.char}${kerningPartner}`;
+  }, [kerningPartner, kerningDirection, glyph.char]);
+
+  const pairLayout = useMemo(() => {
+      if (!pairSequence || !glyphMap.has(kerningPartner)) return null;
+      return computeGlyphSequenceLayout({
+          sequence: pairSequence,
+          glyphMap,
+          kerning: metadata.kerning,
+          trackingProfile: previewTrackingProfile,
+          fontSizePt: PREVIEW_FONT_SIZE_PT,
+          baselineY: 900,
+          viewHeight: 1800,
+          padding: 350,
+      });
+  }, [pairSequence, kerningPartner, glyphMap, metadata.kerning, previewTrackingProfile]);
+
+  const pairGapY = pairLayout ? Math.max(80, pairLayout.baselineY - 280) : 0;
+
+  // Active pair key being edited (depends on direction).
+  const activePairKey = useMemo(() => {
+      if (!kerningPartner) return null;
+      // For BOTH, prefer right-side pair (glyph + partner) for editing.
+      if (kerningDirection === 'LEFT') return `${kerningPartner}${glyph.char}`;
+      return `${glyph.char}${kerningPartner}`;
+  }, [kerningPartner, kerningDirection, glyph.char]);
+
+  const activePairValue = activePairKey ? (metadata.kerning?.[activePairKey] ?? 0) : 0;
+
+  // Unified saved pairs list with direction badges.
+  const allSavedPairs = useMemo(() => {
+      const out = [
+          ...kerningPairsBySide.asLeft.map(p => ({ ...p, direction: 'right' as const })),
+          ...kerningPairsBySide.asRight.map(p => ({ ...p, direction: 'left' as const })),
+      ];
+      return out.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  }, [kerningPairsBySide]);
+
+  const QUICK_PARTNERS = ['A', 'V', 'O', 'T', 'H', 'N', 'o', 'e', 'a'];
 
         const computedRightSideBearing = useMemo(() => {
                 if (!activeGlyphBounds) {
@@ -1308,152 +1310,18 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                     </div>
                 </div>
 
-                {/* Context & Ghost Char */}
-                </>)}
-                {activeTab === 'KERNING' && (<>
-                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Context & Ghost Char</label>
-                    <div className="space-y-3">
-                        <input 
-                            type="text" maxLength={1}
-                            value={contextChar}
-                            onChange={(e) => setContextChar(e.target.value)}
-                            placeholder="Ghost Char..."
-                            className={`w-full border rounded px-3 py-1.5 text-center font-black text-lg uppercase outline-none ${inputBg}`}
-                        />
-                        <div className="flex gap-1">
-                            {['LEFT', 'OVERLAP', 'RIGHT'].map(pos => (
-                                <button key={pos} onClick={() => setContextPos(pos as any)} className={`flex-1 text-[9px] py-1.5 rounded border font-bold ${contextPos === pos ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black border-black text-white') : `${textSub} ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-300'}`}`}>
-                                    {pos}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className={`text-[10px] font-bold block mb-1 ${textSub}`}>X</label>
-                                <input type="range" min="-500" max="500" value={contextOffset.x} onChange={(e) => setContextOffset(prev => ({ ...prev, x: parseInt(e.target.value) }))} className={`w-full h-1.5 rounded cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
-                            </div>
-                            <div>
-                                <label className={`text-[10px] font-bold block mb-1 ${textSub}`}>Y</label>
-                                <input type="range" min="-500" max="500" value={contextOffset.y} onChange={(e) => setContextOffset(prev => ({ ...prev, y: parseInt(e.target.value) }))} className={`w-full h-1.5 rounded cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Ghost Gap Visualization */}
-                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Ghost Gap Visualization</label>
-                    {!contextChar ? (
-                        <p className={`text-[11px] ${textSub}`}>Defina um ghost char para ver o espaçamento.</p>
-                    ) : ghostGlyphMissing ? (
-                        <p className={`text-[11px] ${textSub}`}>
-                            O glifo <span className="font-mono font-bold">{contextChar}</span> não existe neste estilo.
-                        </p>
-                    ) : !ghostSpacingLayout ? (
-                        <p className={`text-[11px] ${textSub}`}>Pré-visualização indisponível.</p>
-                    ) : (
-                        <div className="space-y-3">
-                            <div className={`text-[10px] font-bold uppercase tracking-[0.3em] ${textSub}`}>
-                                {`${contextChar}${glyph.char}${contextChar}`}
-                            </div>
-                            <div className={`border rounded-lg p-3 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-neutral-200'}`}>
-                                <svg
-                                    viewBox={ghostSpacingLayout.viewBox}
-                                    className={`w-full h-48 ${isDarkMode ? 'fill-white' : 'fill-black'}`}
-                                    preserveAspectRatio="xMidYMid meet"
-                                >
-                                    <line
-                                        x1={ghostSpacingLayout.viewStart}
-                                        y1={ghostSpacingLayout.baselineY}
-                                        x2={ghostSpacingLayout.viewStart + ghostSpacingLayout.viewWidth}
-                                        y2={ghostSpacingLayout.baselineY}
-                                        stroke={isDarkMode ? '#475569' : '#94a3b8'}
-                                        strokeWidth={4}
-                                        strokeDasharray="8,8"
-                                    />
-                                    {ghostSpacingLayout.gaps.map((gap, idx) => {
-                                        const color = gap.gap >= 0 ? (isDarkMode ? '#22c55e' : '#15803d') : (isDarkMode ? '#fb7185' : '#dc2626');
-                                        const mid = (gap.startX + gap.endX) / 2;
-                                        return (
-                                            <g key={`ghost-gap-${gap.leftChar}-${gap.rightChar}-${idx}`}>
-                                                <line
-                                                    x1={gap.startX}
-                                                    x2={gap.endX}
-                                                    y1={ghostGapGuideY}
-                                                    y2={ghostGapGuideY}
-                                                    stroke={color}
-                                                    strokeWidth={6}
-                                                    strokeLinecap="round"
-                                                />
-                                                <text
-                                                    x={mid}
-                                                    y={ghostGapGuideY - 10}
-                                                    textAnchor="middle"
-                                                    fontFamily="monospace"
-                                                    fontSize={12}
-                                                    fill={isDarkMode ? '#cbd5f5' : '#475569'}
-                                                >
-                                                    {formatGapValue(gap.gap)}
-                                                </text>
-                                            </g>
-                                        );
-                                    })}
-                                    {ghostSpacingLayout.nodes.map((node, idx) => {
-                                        if (!node.pathData) return null;
-                                        return (
-                                            <g
-                                                key={`ghost-node-${node.char}-${idx}`}
-                                                transform={`translate(${node.x + node.leftSideBearing}, ${ghostSpacingLayout.baselineY + node.baselineOffset}) scale(${node.scale})`}
-                                            >
-                                                <path d={node.pathData} />
-                                            </g>
-                                        );
-                                    })}
-                                </svg>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                {ghostSpacingLayout.gaps.map((gap, idx) => {
-                                    const pairKey = `${gap.leftChar}${gap.rightChar}`;
-                                    const kerningValue = metadata.kerning?.[pairKey] ?? 0;
-                                    return (
-                                        <div
-                                            key={`ghost-gap-card-${gap.leftChar}-${gap.rightChar}-${idx}`}
-                                            className={`p-2 rounded border text-xs font-mono space-y-1 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-neutral-200 bg-white'}`}
-                                        >
-                                            <div className="flex items-center justify-between text-[10px] uppercase">
-                                                <span>{gap.leftChar}</span>
-                                                <span className={`${textSub}`}>→</span>
-                                                <span>{gap.rightChar}</span>
-                                            </div>
-                                            <input
-                                                type="number"
-                                                value={kerningValue}
-                                                onChange={(e) => handleInlineKerningChange(pairKey, parseFloat(e.target.value))}
-                                                className={`w-full text-center text-base font-bold rounded border px-1 py-0.5 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-neutral-300 text-black'}`}
-                                            />
-                                            <p className={`text-[10px] ${textSub}`}>
-                                                Gap {formatGapValue(gap.gap)}
-                                            </p>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Alignment Guides */}
-                </>)}
-                {activeTab === 'METRICS' && (<>
-                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Alignment Guides</label>
-                    <div className="space-y-2">
+                {/* Alignment Guides — secundário, colapsado */}
+                <details className={`rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
+                    <summary className={`px-2 py-2 cursor-pointer text-[9px] font-black uppercase tracking-wider opacity-80 list-none flex items-center justify-between`}>
+                        <span>Alinhamento por guia</span>
+                        <span className={`text-[9px] font-normal normal-case tracking-normal ${textSub}`}>opcional</span>
+                    </summary>
+                    <div className="p-2 pt-0 space-y-2">
                         <div className="grid grid-cols-3 gap-1">
-                            {['glyph', 'anchor', 'context'].map(target => (
+                            {(['glyph', 'anchor'] as const).map(target => (
                                 <button
                                     key={target}
-                                    onClick={() => setAlignmentTarget(target as 'glyph' | 'anchor' | 'context')}
+                                    onClick={() => setAlignmentTarget(target)}
                                     className={`text-[9px] py-1.5 rounded border font-bold uppercase tracking-wide ${alignmentTarget === target ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black') : `${textSub} ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-300'}`}`}
                                 >
                                     {target}
@@ -1476,159 +1344,39 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                             })}
                         </div>
                         <p className={`text-[10px] leading-tight ${textSub}`}>
-                            {alignmentTarget === 'glyph' && 'Moves the glyph so its top/center/bottom snaps to the chosen guide.'}
-                            {alignmentTarget === 'anchor' && 'Drops the anchor point directly on the selected guide.'}
-                            {alignmentTarget === 'context' && 'Slides the ghost/context glyph so its reference matches the guide.'}
+                            {alignmentTarget === 'glyph' && 'Encaixa o glifo (topo/centro/base) na guia escolhida.'}
+                            {alignmentTarget === 'anchor' && 'Posiciona o anchor diretamente na guia.'}
                         </p>
                     </div>
-                </div>
+                </details>
+                </>
+            )}
 
-                {/* Kerning Preview */}
-                </>)}
-                {activeTab === 'KERNING' && (<>
-                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <div className="flex items-center justify-between mb-2">
-                        <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Kerning Preview</label>
-                        <button
-                            onClick={handleOpenKerningPanelClick}
-                            className={`text-[9px] px-2 py-1.5 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'text-white border-slate-700 hover:border-white' : 'text-black border-neutral-300 hover:border-black'}`}
-                        >
-                            Open in Kerning Panel
-                        </button>
-                    </div>
-                    <div className="space-y-3">
-                        <div>
-                            <label className={`text-[10px] font-bold block mb-1 ${textSub}`}>Partner glyph</label>
-                            <input
-                                type="text"
-                                maxLength={1}
-                                list="kerning-partner-options"
-                                value={kerningPartner}
-                                onChange={(e) => setKerningPartner(e.target.value)}
-                                placeholder="A, V, O, T…"
-                                className={`w-full border rounded px-3 py-1.5 text-center font-black text-lg uppercase outline-none ${inputBg}`}
-                            />
-                        </div>
-                        {kerningPartner ? (
-                            kerningPreview?.error ? (
-                                <div className={`${textSub} text-[11px] italic`}>{kerningPreview.error}</div>
-                            ) : kerningPreview ? (
-                                <div className="space-y-2">
-                                    <div className={`text-lg md:text-xl font-mono tracking-[0.16em] text-center ${textSub}`}>
-                                        {kerningPreview.combos.join('   ')}
-                                    </div>
-                                    <div
-                                        className={`border rounded-lg p-3 overflow-hidden ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-neutral-200'} ${isPreviewPanMode ? (isPreviewPanning ? 'cursor-grabbing' : 'cursor-grab') : ''}`}
-                                        onMouseDown={handleKerningPreviewMouseDown}
-                                    >
-                                        {kerningPreviewLayout && (
-                                            <svg
-                                                viewBox={kerningPreviewLayout.viewBox}
-                                                className={`w-full h-48 md:h-64 transition-transform duration-150 ${isDarkMode ? 'fill-white' : 'fill-black'}`}
-                                                preserveAspectRatio="xMidYMid meet"
-                                                style={{ transform: `translate(${kerningPreviewPan.x}px, ${kerningPreviewPan.y}px) scale(${kerningPreviewZoom})`, transformOrigin: '50% 50%' }}
-                                            >
-                                                <line
-                                                    x1={kerningPreviewLayout.viewStart}
-                                                    y1={kerningPreviewLayout.baselineY}
-                                                    x2={kerningPreviewLayout.viewStart + kerningPreviewLayout.viewWidth}
-                                                    y2={kerningPreviewLayout.baselineY}
-                                                    stroke={isDarkMode ? '#475569' : '#94a3b8'}
-                                                    strokeWidth={6}
-                                                    strokeDasharray="12,12"
-                                                />
-                                                {kerningPreviewLayout.gaps.map((gap, idx) => {
-                                                    if (gap.leftChar === ' ' || gap.rightChar === ' ') return null;
-                                                    const color = gap.gap >= 0 ? (isDarkMode ? '#22c55e' : '#15803d') : (isDarkMode ? '#fb7185' : '#dc2626');
-                                                    const mid = (gap.startX + gap.endX) / 2;
-                                                    return (
-                                                        <g key={`kern-gap-${gap.leftChar}-${gap.rightChar}-${idx}`}>
-                                                            <line
-                                                                x1={gap.startX}
-                                                                x2={gap.endX}
-                                                                y1={kerningPreviewGapY}
-                                                                y2={kerningPreviewGapY}
-                                                                stroke={color}
-                                                                strokeWidth={6}
-                                                                strokeLinecap="round"
-                                                            />
-                                                            <text
-                                                                x={mid}
-                                                                y={kerningPreviewGapY - 20}
-                                                                textAnchor="middle"
-                                                                fontFamily="monospace"
-                                                                fontSize={12}
-                                                                fill={isDarkMode ? '#cbd5f5' : '#475569'}
-                                                            >
-                                                                {formatGapValue(gap.gap)}
-                                                            </text>
-                                                        </g>
-                                                    );
-                                                })}
-                                                {kerningPreviewLayout.nodes.map((node, idx) => {
-                                                    if (!node.pathData) return null;
-                                                    return (
-                                                        <g
-                                                            key={`kern-node-${node.char}-${idx}`}
-                                                            transform={`translate(${node.x + node.leftSideBearing}, ${kerningPreviewLayout.baselineY + node.baselineOffset}) scale(${node.scale})`}
-                                                        >
-                                                            <path d={node.pathData} />
-                                                        </g>
-                                                    );
-                                                })}
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center justify-between mb-1 gap-2">
-                                            <div>
-                                                <label className={`text-[10px] font-bold ${textSub}`}>Preview Zoom</label>
-                                                <p className={`text-[11px] font-mono ${textMain}`}>{Math.round(kerningPreviewZoom * 100)}%</p>
-                                            </div>
-                                            <button
-                                                onClick={() => setIsPreviewPanMode(prev => !prev)}
-                                                disabled={!kerningPreviewLayout}
-                                                className={`text-[10px] font-bold uppercase tracking-wide rounded-full px-3 py-1.5 border transition ${!kerningPreviewLayout ? 'opacity-40 cursor-not-allowed' : ''} ${isPreviewPanMode ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black') : (isDarkMode ? 'bg-slate-900 border-slate-700 text-white hover:bg-slate-800' : 'bg-white border-neutral-300 text-black hover:bg-neutral-100')}`}
-                                            >
-                                                {isPreviewPanMode ? 'Pan ativo' : 'Pan do preview'}
-                                            </button>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min={0.5}
-                                            max={10}
-                                            step={0.1}
-                                            value={kerningPreviewZoom}
-                                            onChange={(e) => setKerningPreviewZoom(parseFloat(e.target.value))}
-                                            className={`w-full h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`}
-                                        />
-                                        <button
-                                            onClick={() => setKerningPreviewPan({ x: 0, y: 0 })}
-                                            disabled={!kerningPreviewLayout || (kerningPreviewPan.x === 0 && kerningPreviewPan.y === 0)}
-                                            className={`w-full mt-2 text-[10px] font-bold uppercase tracking-wide rounded-lg border py-1.5 ${(!kerningPreviewLayout || (kerningPreviewPan.x === 0 && kerningPreviewPan.y === 0)) ? 'opacity-40 cursor-not-allowed' : ''} ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white hover:bg-slate-800' : 'bg-white border-neutral-300 text-black hover:bg-neutral-100'}`}
-                                        >
-                                            Reset pan
-                                        </button>
-                                    </div>
+            {activeTab === 'KERNING' && (
+                <div className="space-y-3">
+                    {/* 1. Diagnóstico compacto — 4 pills horizontais */}
+                    <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
+                        <label className={`text-[9px] font-black uppercase tracking-wider opacity-70 block mb-2`}>Diagnóstico</label>
+                        <div className="grid grid-cols-4 gap-1.5">
+                            {[
+                                { label: 'LSB', value: `${data.leftSideBearing}` },
+                                { label: 'RSB', value: `${computedRightSideBearing}` },
+                                { label: 'Adv', value: `${data.advanceWidth}` },
+                                { label: 'Bias', value: kerningBiasValue >= 0 ? `+${kerningBiasValue}` : `${kerningBiasValue}` },
+                            ].map(m => (
+                                <div key={m.label} className={`rounded border px-2 py-1.5 text-center ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-neutral-200'}`}>
+                                    <p className={`text-[9px] font-bold uppercase tracking-wider ${textSub}`}>{m.label}</p>
+                                    <p className="text-sm font-black leading-tight">{m.value}</p>
                                 </div>
-                            ) : (
-                                <div className={`${textSub} text-[11px] italic`}>Kerning preview unavailable.</div>
-                            )
-                        ) : (
-                            <div className={`${textSub} text-[11px] italic`}>Select a partner glyph to preview spacing.</div>
-                        )}
-                        <div>
+                            ))}
+                        </div>
+                        <div className="mt-2">
                             <div className="flex justify-between items-center mb-1">
-                                <label className={`text-[10px] font-bold ${textSub}`}>Kerning Bias</label>
-                                <span className={`text-xs font-mono font-bold ${textMain}`}>
-                                    {kerningBiasValue >= 0 ? `+${kerningBiasValue}` : kerningBiasValue}
-                                </span>
+                                <label className={`text-[9px] font-bold uppercase tracking-wider ${textSub}`}>Kerning Bias (classe)</label>
+                                <span className={`text-[10px] font-mono font-bold`}>{kerningBiasValue >= 0 ? `+${kerningBiasValue}` : kerningBiasValue}</span>
                             </div>
                             <input
-                                type="range"
-                                min={-20}
-                                max={20}
-                                step={1}
+                                type="range" min={-20} max={20} step={1}
                                 value={kerningBiasValue}
                                 onChange={(e) => handleChange('kerningBias', parseInt(e.target.value))}
                                 onMouseUp={handleInputCommit}
@@ -1637,193 +1385,153 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                             />
                         </div>
                     </div>
-                </div>
-                </>
-            )}
 
-            {activeTab === 'KERNING' && (
-                <div className="space-y-3">
-                    <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                        <div className="flex items-center justify-between mb-3">
-                            <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Diagnóstico de Espaçamento</label>
-                            <span className={`text-[10px] font-mono ${textSub}`}>
-                                {(kerningPairsBySide.asLeft.length + kerningPairsBySide.asRight.length)} par{(kerningPairsBySide.asLeft.length + kerningPairsBySide.asRight.length) === 1 ? '' : 'es'}
-                            </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            {[{
-                                label: 'Largura Avançada',
-                                value: `${data.advanceWidth} u`,
-                                detail: 'Largura total do slot'
-                            }, {
-                                label: 'Margem Esquerda',
-                                value: `${data.leftSideBearing} u`,
-                                detail: 'Espaço antes do desenho'
-                            }, {
-                                label: 'Margem Direita',
-                                value: `${computedRightSideBearing} u`,
-                                detail: 'Avanço menos a largura desenhada'
-                            }, {
-                                label: 'Largura Desenhada',
-                                value: activeGlyphBounds ? `${Math.round(activeGlyphBounds.width)} u` : '—',
-                                detail: 'Largura do desenho atual'
-                            }, {
-                                label: 'Deslocamento da Linha',
-                                value: `${data.baselineOffset} u`,
-                                detail: 'Ajuste vertical aplicado'
-                            }, {
-                                label: 'Viés de Kerning',
-                                value: kerningBiasValue >= 0 ? `+${kerningBiasValue}` : `${kerningBiasValue}`,
-                                detail: 'Somado automaticamente a cada par'
-                            }].map((metric, idx) => (
-                                <div
-                                    key={`diagnostic-${metric.label}-${idx}`}
-                                    className={`rounded-lg border px-3 py-2 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-neutral-200'}`}
-                                >
-                                    <p className={`text-[9px] font-bold uppercase tracking-wider ${textSub}`}>{metric.label}</p>
-                                    <p className="text-xl font-black leading-tight">{metric.value}</p>
-                                    <p className={`text-[10px] ${textSub}`}>{metric.detail}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
+                    {/* 2. Pair Visualizer unificado */}
                     <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-200'}`}>
-                        <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Construtor de Pares Rápido</label>
-                        <div className="space-y-3">
-                            {quickBuilderCards.map(card => {
-                                const storedValue = card.pairKey ? metadata.kerning?.[card.pairKey] ?? 0 : 0;
-                                return (
-                                    <div
-                                        key={`builder-${card.id}`}
-                                        className={`rounded-xl border p-3 space-y-2 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-neutral-50 border-neutral-200'}`}
-                                    >
-                                        <div className="flex items-baseline justify-between gap-2">
-                                            <div>
-                                                <p className={`text-[10px] font-semibold uppercase tracking-wide ${textSub}`}>{card.heading}</p>
-                                                <p className="text-xs uppercase font-mono">Par {card.caption}</p>
-                                            </div>
-                                            <span className={`text-[10px] ${textSub}`}>{card.description}</span>
-                                        </div>
-                                        <input
-                                            type="text"
-                                            maxLength={6}
-                                            list="kerning-partner-options"
-                                            value={card.partner}
-                                            onChange={(e) => card.setPartner(e.target.value.slice(0, 6))}
-                                            placeholder="Glifo ou grupo"
-                                            className={`w-full border rounded px-2 py-1 text-sm font-mono uppercase outline-none ${inputBg}`}
-                                        />
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                value={card.value}
-                                                onChange={(e) => {
-                                                    const next = parseInt(e.target.value, 10);
-                                                    card.setValue(Number.isNaN(next) ? 0 : next);
-                                                }}
-                                                className={`w-24 border rounded px-2 py-1 text-sm font-bold text-center no-spinner ${inputBg}`}
+                        <div className="flex items-center justify-between mb-2">
+                            <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Visualizador de Par</label>
+                            <button
+                                onClick={handleOpenKerningPanelClick}
+                                className={`text-[9px] px-2 py-1 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'text-slate-400 border-slate-700 hover:text-white' : 'text-neutral-500 border-neutral-300 hover:text-black'}`}
+                            >
+                                Painel completo →
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            <input
+                                type="text" maxLength={1} list="kerning-partner-options"
+                                value={kerningPartner}
+                                onChange={(e) => setKerningPartner(e.target.value)}
+                                placeholder="Parceiro (A, V, O, T…)"
+                                className={`w-full border rounded px-3 py-1.5 text-center font-black text-lg uppercase outline-none ${inputBg}`}
+                            />
+                            <div className="flex flex-wrap gap-1">
+                                {QUICK_PARTNERS.map(c => (
+                                    <button key={c} onClick={() => setKerningPartner(c)}
+                                        className={`w-7 h-7 rounded border text-xs font-black ${kerningPartner === c ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black') : `${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-neutral-300 text-neutral-700'}`}`}
+                                    >{c}</button>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-3 gap-1">
+                                {(['LEFT', 'BOTH', 'RIGHT'] as const).map(d => (
+                                    <button key={d} onClick={() => setKerningDirection(d)}
+                                        className={`text-[10px] py-1.5 rounded border font-bold uppercase tracking-wide ${kerningDirection === d ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black') : `${textSub} ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-300'}`}`}
+                                    >{d === 'LEFT' ? `${kerningPartner || '·'}${glyph.char}` : d === 'RIGHT' ? `${glyph.char}${kerningPartner || '·'}` : `${kerningPartner || '·'}${glyph.char}${kerningPartner || '·'}`}</button>
+                                ))}
+                            </div>
+
+                            {!kerningPartner ? (
+                                <p className={`text-[11px] italic ${textSub} text-center py-4`}>Escolha um parceiro para visualizar.</p>
+                            ) : !glyphMap.has(kerningPartner) ? (
+                                <p className={`text-[11px] italic ${textSub} text-center py-4`}>Glifo "{kerningPartner}" não existe neste estilo.</p>
+                            ) : pairLayout ? (
+                                <>
+                                    <div className={`border rounded-lg p-3 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-neutral-50 border-neutral-200'}`}>
+                                        <svg viewBox={pairLayout.viewBox}
+                                            className={`w-full h-40 ${isDarkMode ? 'fill-white' : 'fill-black'}`}
+                                            preserveAspectRatio="xMidYMid meet"
+                                        >
+                                            <line
+                                                x1={pairLayout.viewStart}
+                                                y1={pairLayout.baselineY}
+                                                x2={pairLayout.viewStart + pairLayout.viewWidth}
+                                                y2={pairLayout.baselineY}
+                                                stroke={isDarkMode ? '#475569' : '#94a3b8'}
+                                                strokeWidth={4} strokeDasharray="8,8"
                                             />
-                                            <input
-                                                type="range"
-                                                min={-400}
-                                                max={400}
-                                                step={5}
-                                                value={card.value}
-                                                onChange={(e) => card.setValue(parseInt(e.target.value, 10))}
-                                                className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`}
-                                            />
-                                        </div>
-                                        <div className="flex flex-col gap-0.5 text-[10px] font-mono">
+                                            {pairLayout.gaps.map((gap, idx) => {
+                                                const color = gap.gap >= 0 ? (isDarkMode ? '#22c55e' : '#15803d') : (isDarkMode ? '#fb7185' : '#dc2626');
+                                                const mid = (gap.startX + gap.endX) / 2;
+                                                return (
+                                                    <g key={`pv-gap-${idx}`}>
+                                                        <line x1={gap.startX} x2={gap.endX} y1={pairGapY} y2={pairGapY}
+                                                            stroke={color} strokeWidth={6} strokeLinecap="round" />
+                                                        <text x={mid} y={pairGapY - 14} textAnchor="middle"
+                                                            fontFamily="monospace" fontSize={14}
+                                                            fill={isDarkMode ? '#cbd5f5' : '#475569'}
+                                                        >{formatGapValue(gap.gap)}</text>
+                                                    </g>
+                                                );
+                                            })}
+                                            {pairLayout.nodes.map((node, idx) => {
+                                                if (!node.pathData) return null;
+                                                return (
+                                                    <g key={`pv-node-${idx}`}
+                                                        transform={`translate(${node.x + node.leftSideBearing}, ${pairLayout.baselineY + node.baselineOffset}) scale(${node.scale})`}
+                                                    ><path d={node.pathData} /></g>
+                                                );
+                                            })}
+                                        </svg>
+                                    </div>
+                                    {activePairKey && (
+                                        <div className="space-y-1.5">
                                             <div className="flex items-center justify-between">
-                                                <span className={textSub}>Kerning salvo: {formatGapValue(storedValue)}</span>
-                                                <span className={textSub}>Valor proposto: {formatGapValue(card.value)}</span>
+                                                <label className={`text-[10px] font-bold uppercase tracking-wider ${textSub}`}>
+                                                    Kerning <span className="font-mono">{activePairKey}</span>
+                                                </label>
+                                                <button onClick={() => handleInlineKerningChange(activePairKey, 0)}
+                                                    className={`text-[9px] uppercase font-bold tracking-wide ${textSub} hover:underline`}
+                                                >zerar</button>
                                             </div>
-                                            <p className={`${textSub} text-[9px]`}>O ghost do par aparece automaticamente na tela principal para ajustes visuais.</p>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => handleApplyKerningBuilder(card.direction)}
-                                                disabled={!card.partner}
-                                                className={`flex-1 text-[10px] font-bold uppercase tracking-wide rounded-lg py-1.5 border ${!card.partner ? 'opacity-50 cursor-not-allowed' : ''} ${isDarkMode ? 'bg-white text-black border-white hover:bg-neutral-200' : 'bg-black text-white border-black hover:bg-neutral-800'}`}
-                                            >
-                                                Salvar Par
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => card.setValue(0)}
-                                                className={`px-3 text-[10px] font-semibold uppercase tracking-wide rounded-lg border ${isDarkMode ? 'border-slate-700 text-slate-400 hover:text-white' : 'border-neutral-300 text-neutral-500 hover:text-black'}`}
-                                            >
-                                                Zerar
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                        <p className={`text-[10px] mt-2 ${textSub}`}>
-                            Use o mesmo campo para atingir classes de kerning. Os valores só entram em vigor após clicar em "Salvar Par".
-                        </p>
-                    </div>
-
-                    <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-200'}`}>
-                        <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Pares Salvos</label>
-                        <div className="space-y-3">
-                            {[{
-                                title: `${glyph.char} → parceiro`,
-                                pairs: kerningPairsBySide.asLeft,
-                                isGlyphLeading: true
-                            }, {
-                                title: `parceiro → ${glyph.char}`,
-                                pairs: kerningPairsBySide.asRight,
-                                isGlyphLeading: false
-                            }].map((section, idx) => (
-                                <div key={`kerning-section-${idx}`}>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <p className="text-[10px] font-semibold uppercase tracking-wide">{section.title}</p>
-                                        <span className={`text-[10px] ${textSub}`}>{section.pairs.length} par{section.pairs.length === 1 ? '' : 'es'}</span>
-                                    </div>
-                                    {section.pairs.length === 0 ? (
-                                        <p className={`text-[10px] italic ${textSub}`}>
-                                            {section.isGlyphLeading ? 'Nenhum par com este glifo na esquerda.' : 'Nenhum par com este glifo na direita.'}
-                                        </p>
-                                    ) : (
-                                        <div className="space-y-1 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
-                                            {section.pairs.map(({ pair, partner, value }) => (
-                                                <div
-                                                    key={`${section.title}-${pair}`}
-                                                    className={`flex items-center gap-2 rounded border px-2 py-1 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-neutral-50 border-neutral-200'}`}
-                                                >
-                                                    <div className="flex-1">
-                                                        <p className="text-xs font-mono">
-                                                            {section.isGlyphLeading
-                                                                ? `${glyph.char} → ${describeKerningToken(partner)}`
-                                                                : `${describeKerningToken(partner)} → ${glyph.char}`}
-                                                        </p>
-                                                        <p className={`text-[9px] ${textSub}`}>{pair}</p>
-                                                    </div>
-                                                    <input
-                                                        type="number"
-                                                        value={value}
-                                                        onChange={(e) => handleInlineKerningChange(pair, parseInt(e.target.value, 10))}
-                                                        className={`w-20 text-sm font-bold text-center border rounded px-1 py-0.5 no-spinner ${inputBg}`}
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveKerningPair(pair)}
-                                                        className={`w-7 h-7 rounded-full text-sm font-black border ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-neutral-300 text-neutral-500 hover:bg-neutral-100'}`}
-                                                        title="Remover par"
-                                                    >
-                                                        ×
-                                                    </button>
-                                                </div>
-                                            ))}
+                                            <div className="flex items-center gap-2">
+                                                <input type="number" value={activePairValue}
+                                                    onChange={(e) => handleInlineKerningChange(activePairKey, parseInt(e.target.value, 10) || 0)}
+                                                    className={`w-20 h-8 text-base font-bold text-center border rounded no-spinner ${inputBg}`}
+                                                />
+                                                <input type="range" min={-400} max={400} step={5}
+                                                    value={activePairValue}
+                                                    onChange={(e) => handleInlineKerningChange(activePairKey, parseInt(e.target.value, 10))}
+                                                    className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`}
+                                                />
+                                            </div>
+                                            {kerningDirection === 'BOTH' && (
+                                                <p className={`text-[9px] ${textSub}`}>Editando o par {glyph.char}→{kerningPartner}. Use LEFT para editar {kerningPartner}→{glyph.char}.</p>
+                                            )}
                                         </div>
                                     )}
-                                </div>
-                            ))}
+                                </>
+                            ) : null}
                         </div>
+                    </div>
+
+                    {/* 3. Pares Salvos — lista única */}
+                    <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-200'}`}>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Pares Salvos</label>
+                            <span className={`text-[10px] font-mono ${textSub}`}>
+                                {allSavedPairs.length} par{allSavedPairs.length === 1 ? '' : 'es'}
+                            </span>
+                        </div>
+                        {allSavedPairs.length === 0 ? (
+                            <p className={`text-[10px] italic ${textSub}`}>Nenhum par salvo com este glifo.</p>
+                        ) : (
+                            <div className="space-y-1 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                                {allSavedPairs.map(({ pair, partner, value, direction }) => (
+                                    <div key={pair}
+                                        className={`flex items-center gap-2 rounded border px-2 py-1 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-neutral-50 border-neutral-200'}`}
+                                    >
+                                        <span className={`w-6 text-center text-xs font-black ${value < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                            {direction === 'right' ? '→' : '←'}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs font-mono truncate">
+                                                {direction === 'right'
+                                                    ? `${glyph.char} → ${describeKerningToken(partner)}`
+                                                    : `${describeKerningToken(partner)} → ${glyph.char}`}
+                                            </p>
+                                        </div>
+                                        <input type="number" value={value}
+                                            onChange={(e) => handleInlineKerningChange(pair, parseInt(e.target.value, 10) || 0)}
+                                            className={`w-16 text-sm font-bold text-center border rounded px-1 py-0.5 no-spinner ${inputBg}`}
+                                        />
+                                        <button type="button" onClick={() => handleRemoveKerningPair(pair)}
+                                            className={`w-7 h-7 rounded-full text-sm font-black border ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-neutral-300 text-neutral-500 hover:bg-neutral-100'}`}
+                                            title="Remover par"
+                                        >×</button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
