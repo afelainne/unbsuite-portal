@@ -347,31 +347,54 @@ export const findReferenceMatches = (targetHex: string, library: ReferenceColor[
   if (!isValidHex(targetHex)) return [];
 
   const targetLab = hexToLab(targetHex);
+  const targetC = Math.sqrt(targetLab.a * targetLab.a + targetLab.b * targetLab.b);
+  const targetHueRad = Math.atan2(targetLab.b, targetLab.a);
 
-  const matches = library.map(reference => {
+  // Initial pass: ΔE2000 + lightness gating
+  const candidates = library.map(reference => {
     // We compare against cached Lab if available (Optimization)
     const pLab = reference.lab || hexToLab(reference.hex);
-    
-    // Uses CIE2000 for robust accuracy
     const dist = calculateDeltaE(targetLab, pLab);
-    
-    // Refined Ranking Logic for Perfection
-    let ranking: ColorMatch['ranking'] = 'Similar';
-    if (dist < 1.0) ranking = 'Exact'; // Imperceptible difference
-    else if (dist < 2.0) ranking = 'Very Close'; // Very hard to tell apart
-    else if (dist < 4.0) ranking = 'Close'; // Noticeable but acceptable
-    else ranking = 'Similar';
-
-    return {
-      reference,
-      deltaE: dist,
-      ranking
-    };
+    return { reference, pLab, dist };
   });
 
-  matches.sort((a, b) => a.deltaE - b.deltaE);
+  // Sort by raw ΔE and take top 12 to rerank
+  candidates.sort((a, b) => a.dist - b.dist);
+  const topPool = candidates.slice(0, Math.max(count * 3, 12));
 
-  return matches.slice(0, count);
+  // Composite perceptual score: ΔE2000 + hue penalty + asymmetric chroma penalty
+  const scored = topPool.map(({ reference, pLab, dist }) => {
+    const refC = Math.sqrt(pLab.a * pLab.a + pLab.b * pLab.b);
+    const refHueRad = Math.atan2(pLab.b, pLab.a);
+    let dHue = Math.abs(targetHueRad - refHueRad);
+    if (dHue > Math.PI) dHue = 2 * Math.PI - dHue;
+    const dHueDeg = (dHue * 180) / Math.PI;
+
+    // Hue penalty only matters when target is reasonably saturated
+    const hueWeight = Math.min(1, targetC / 25);
+    const huePenalty = (dHueDeg / 60) * hueWeight * 1.5;
+
+    // Asymmetric chroma: penalize losing saturation more than gaining
+    const dC = refC - targetC;
+    const chromaPenalty = dC < 0 ? Math.abs(dC) * 0.04 : Math.abs(dC) * 0.015;
+
+    // Lightness gating: if |ΔL| > 15, penalize heavily
+    const dL = Math.abs(targetLab.l - pLab.l);
+    const lightPenalty = dL > 15 ? (dL - 15) * 0.5 : 0;
+
+    const score = dist * 0.85 + huePenalty + chromaPenalty + lightPenalty;
+
+    let ranking: ColorMatch['ranking'] = 'Similar';
+    if (dist < 1.0) ranking = 'Exact';
+    else if (dist < 2.3) ranking = 'Very Close';
+    else if (dist < 4.5) ranking = 'Close';
+
+    return { reference, deltaE: dist, ranking, score };
+  });
+
+  scored.sort((a, b) => a.score - b.score);
+
+  return scored.slice(0, count).map(({ reference, deltaE, ranking }) => ({ reference, deltaE, ranking }));
 };
 
 // --- Color Naming System ---
