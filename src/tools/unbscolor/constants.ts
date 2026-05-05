@@ -299,8 +299,8 @@ const buildSystems = (): ColorLibrarySystem[] => {
 export const COLOR_SYSTEMS: ColorLibrarySystem[] = buildSystems();
 
 const LABEL_MAP: Record<string, string> = {
-  sys_a_fin_c: 'SYSTEM A (C)',
-  sys_a_fin_u: 'SYSTEM A (U)',
+  sys_a_fin_c: 'SYSTEM A (CP)',
+  sys_a_fin_u: 'SYSTEM A (UP)',
   sys_b_fin_c: 'SYSTEM B (C)',
   sys_b_fin_u: 'SYSTEM B (U)'
 };

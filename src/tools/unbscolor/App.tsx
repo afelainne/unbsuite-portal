@@ -127,8 +127,7 @@ const App: React.FC = () => {
 
     const normalizeRefCode = (code?: string) => {
         if (!code) return '';
-        const upper = code.toUpperCase();
-        return upper.replace(/\s+CP\b/g, ' C').replace(/\s+UP\b/g, ' U');
+        return code.toUpperCase();
     };
 
     const sendObfuscationTraffic = useCallback((value: string) => {
@@ -275,22 +274,6 @@ const App: React.FC = () => {
 
         const matchesList: { label: string; code: string; swatch: string }[] = [];
 
-        if (settings.showPmsC) {
-            matchesList.push({
-                label: t.refBridgeC,
-                    code: matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : outOfGamutLabel,
-                swatch: matchC ? matchC.reference.hex : '#e5e7eb'
-            });
-        }
-
-        if (settings.showPmsU) {
-            matchesList.push({
-                label: t.refBridgeU,
-                    code: matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : outOfGamutLabel,
-                swatch: matchU ? matchU.reference.hex : '#e5e7eb'
-            });
-        }
-
         if (settings.showPmsSolidC) {
             matchesList.push({
                 label: t.refSolidC,
@@ -304,6 +287,22 @@ const App: React.FC = () => {
                 label: t.refSolidU,
                     code: matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : outOfGamutLabel,
                 swatch: matchSolidU ? matchSolidU.reference.hex : '#e5e7eb'
+            });
+        }
+
+        if (settings.showPmsC) {
+            matchesList.push({
+                label: t.refBridgeC,
+                    code: matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : outOfGamutLabel,
+                swatch: matchC ? matchC.reference.hex : '#e5e7eb'
+            });
+        }
+
+        if (settings.showPmsU) {
+            matchesList.push({
+                label: t.refBridgeU,
+                    code: matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : outOfGamutLabel,
+                swatch: matchU ? matchU.reference.hex : '#e5e7eb'
             });
         }
 
@@ -516,10 +515,10 @@ const App: React.FC = () => {
                 if (settings.showHsb) output.push(`hsb(${s.h}, ${s.s}, ${s.v})`);
                 if (settings.showHsl) output.push(`hsl(${h.h}, ${h.s}%, ${h.l}%)`);
                 if (settings.showLab) output.push(`lab(${Math.round(l.l)}, ${Math.round(l.a)}, ${Math.round(l.b)})`);
-                if (settings.showPmsC) output.push(matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : `${t.outOfGamut} C`);
-                if (settings.showPmsU) output.push(matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : `${t.outOfGamut} U`);
-                if (settings.showPmsSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : `${t.outOfGamut} C (SOLID)`);
-                if (settings.showPmsSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : `${t.outOfGamut} U (SOLID)`);
+                if (settings.showPmsSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : `${t.outOfGamut} C`);
+                if (settings.showPmsSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : `${t.outOfGamut} U`);
+                if (settings.showPmsC) output.push(matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : `${t.outOfGamut} CP`);
+                if (settings.showPmsU) output.push(matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : `${t.outOfGamut} UP`);
 
                 return output.join('\n');
             })
@@ -636,12 +635,12 @@ const App: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">WEB REFERENCE SEARCH</p>
+                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">REFERENCE LIBRARIES</p>
                                     {[
-                                        { key: 'showPmsC', label: t.refBridgeC },
-                                        { key: 'showPmsU', label: t.refBridgeU },
                                         { key: 'showPmsSolidC', label: t.refSolidC },
-                                        { key: 'showPmsSolidU', label: t.refSolidU }
+                                        { key: 'showPmsSolidU', label: t.refSolidU },
+                                        { key: 'showPmsC', label: t.refBridgeC },
+                                        { key: 'showPmsU', label: t.refBridgeU }
                                     ].map((opt) => (
                                         <div
                                             key={opt.key}
@@ -865,28 +864,28 @@ const App: React.FC = () => {
                                                         {settings.showHsl && <p>HSL: {rgbToHsl(matches[0].reference.rgb).h}, {rgbToHsl(matches[0].reference.rgb).s}, {rgbToHsl(matches[0].reference.rgb).l}</p>}
                                                         {settings.showHsb && <p>HSB: {rgbToHsv(matches[0].reference.rgb).h}, {rgbToHsv(matches[0].reference.rgb).s}, {rgbToHsv(matches[0].reference.rgb).v}</p>}
 
-                                                        {settings.showPmsC && (
-                                                            <div className="mt-4 pt-3 border-t border-border/40">
-                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeC}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
-                                                            </div>
-                                                        )}
-                                                        {settings.showPmsU && (
-                                                            <div className={`${!settings.showPmsC ? 'mt-4 pt-3 border-t border-border/40' : 'mt-2'}`}>
-                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeU}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
-                                                            </div>
-                                                        )}
                                                         {settings.showPmsSolidC && (
-                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                            <div className="mt-4 pt-3 border-t border-border/40">
                                                                 <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refSolidC}</span>
                                                                 <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsSolidC()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsSolidU && (
-                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                            <div className={`${!settings.showPmsSolidC ? 'mt-4 pt-3 border-t border-border/40' : 'mt-2'}`}>
                                                                 <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refSolidU}</span>
                                                                 <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsSolidU()?.reference.code) || t.outOfGamut}</span>
+                                                            </div>
+                                                        )}
+                                                        {settings.showPmsC && (
+                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeC}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
+                                                            </div>
+                                                        )}
+                                                        {settings.showPmsU && (
+                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeU}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                     </div>

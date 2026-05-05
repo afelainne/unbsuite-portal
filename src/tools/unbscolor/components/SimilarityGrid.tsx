@@ -11,8 +11,7 @@ interface SimilarityGridProps {
 
 const normalizeRefCode = (code?: string) => {
     if (!code) return '';
-    const upper = code.toUpperCase();
-    return upper.replace(/\s+CP\b/g, ' C').replace(/\s+UP\b/g, ' U');
+    return code.toUpperCase();
 };
 
 const SimilarityCard: React.FC<{ match: ColorMatch; onSelect: () => void; showRefMatch: boolean }> = ({ match, onSelect, showRefMatch }) => {
