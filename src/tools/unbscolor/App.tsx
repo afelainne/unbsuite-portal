@@ -87,6 +87,10 @@ const App: React.FC = () => {
     const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
     const [showRefMatch, setShowRefMatch] = useState(false);
 
+    type CardTemplate = 'classic' | 'compact' | 'editorial' | 'swatchcard' | 'minimal' | 'mono';
+    const [cardTemplate, setCardTemplate] = useState<CardTemplate>('classic');
+    const [showAlternatives, setShowAlternatives] = useState<Set<number>>(new Set());
+
     const bridgeCoatedLibrary = useMemo(() => {
         return (
             LIBRARY_OPTIONS.find((lib) => lib.systemId === 'sys_a' && lib.finishId === 'fin_c')?.colors ||
