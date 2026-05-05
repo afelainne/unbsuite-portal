@@ -1639,6 +1639,10 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                 <option value="swatches">Swatches</option>
                                 <option value="gradient">Gradient</option>
                                 <option value="mosaic">Mosaic</option>
+                                <option value="splitscreen">Split Screen</option>
+                                <option value="columns">Columns</option>
+                                <option value="dots">Dots</option>
+                                <option value="editorial">Editorial</option>
                             </select>
                         </div>
                         {paletteTemplate === 'classic' && (
@@ -1725,13 +1729,19 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.templateLabel}:</span>
                             <select 
                                 value={albersTemplate} 
-                                onChange={(e) => setAlbersTemplate(e.target.value as 'squares' | 'circles' | 'sunset' | 'bars')}
+                                onChange={(e) => setAlbersTemplate(e.target.value as typeof albersTemplate)}
                                 className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
                             >
                                 <option value="squares">{t.templateSquares}</option>
                                 <option value="circles">{t.templateCircles}</option>
                                 <option value="sunset">{t.templateSunset}</option>
                                 <option value="bars">{t.templateBars}</option>
+                                <option value="rings">Rings</option>
+                                <option value="diamonds">Diamonds</option>
+                                <option value="frames">Frames</option>
+                                <option value="split">Split</option>
+                                <option value="targets">Targets</option>
+                                <option value="triangles">Triangles</option>
                             </select>
                         </div>
                         <div className="flex items-center gap-2">
