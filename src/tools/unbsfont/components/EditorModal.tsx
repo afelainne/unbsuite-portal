@@ -1132,10 +1132,41 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
           <div className={`flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar ${textMain}`}>
             {activeTab === 'METRICS' && (
                 <>
-                {/* Global Metrics */}
+                {/* Geometry — moved up as primary glyph control */}
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Global Vertical Limits</label>
-                    <div className="space-y-2">
+                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Glyph Geometry</label>
+                    <div className="space-y-3">
+                        {/* Scale */}
+                        <div className="flex items-center gap-2">
+                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Scale</label>
+                            <input type="range" min="0.1" max="3" step="0.01" value={data.scale} onMouseUp={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
+                            <input type="number" step="0.01" value={data.scale} onBlur={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Width</label>
+                            <input type="range" min="0" max="2000" step="10" value={data.advanceWidth} onMouseUp={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
+                            <input type="number" value={data.advanceWidth} onBlur={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>X Off</label>
+                            <input type="range" min="-500" max="500" value={data.leftSideBearing} onMouseUp={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
+                            <input type="number" value={data.leftSideBearing} onBlur={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Y Off</label>
+                            <input type="range" min="-500" max="500" value={data.baselineOffset} onMouseUp={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
+                            <input type="number" value={data.baselineOffset} onBlur={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Global Vertical Limits — collapsed by default with warning */}
+                <details className={`rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
+                    <summary className={`px-2 py-2 cursor-pointer text-[9px] font-black uppercase tracking-wider opacity-80 flex items-center justify-between gap-2 list-none`}>
+                        <span>⚠ Métricas Globais da Fonte</span>
+                        <span className={`text-[9px] font-normal normal-case tracking-normal ${textSub}`}>afeta todos os glifos</span>
+                    </summary>
+                    <div className="p-2 pt-0 space-y-2">
                         {/* Ascender */}
                         <div>
                              <div className="flex justify-between items-center mb-1">
@@ -1198,38 +1229,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                              <input type="range" min="-400" max="400" value={baselineShift} onChange={(e) => onUpdateMetadata({...metadata, baselineShift: parseInt(e.target.value)})} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
                         </div>
                     </div>
-                </div>
-
-                {/* Geometry */}
-                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Glyph Geometry</label>
-                    <div className="space-y-3">
-                        {/* Scale */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Scale</label>
-                            <input type="range" min="0.1" max="3" step="0.01" value={data.scale} onMouseUp={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" step="0.01" value={data.scale} onBlur={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        {/* Width */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Width</label>
-                            <input type="range" min="0" max="2000" step="10" value={data.advanceWidth} onMouseUp={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.advanceWidth} onBlur={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        {/* LSB */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>X Off</label>
-                            <input type="range" min="-500" max="500" value={data.leftSideBearing} onMouseUp={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.leftSideBearing} onBlur={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        {/* Baseline */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Y Off</label>
-                            <input type="range" min="-500" max="500" value={data.baselineOffset} onMouseUp={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.baselineOffset} onBlur={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                    </div>
-                </div>
+                </details>
 
                 {/* Auto Position */}
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
