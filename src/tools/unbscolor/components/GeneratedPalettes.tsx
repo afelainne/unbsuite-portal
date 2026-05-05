@@ -93,6 +93,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const [draggedColorIndex, setDraggedColorIndex] = useState<number | null>(null);
     const [fullContrastMode, setFullContrastMode] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [svgPasteValue, setSvgPasteValue] = useState('');
+    const [svgPasteHint, setSvgPasteHint] = useState<string | null>(null);
 
     // Atualizar cores quando externalColors mudar
     useEffect(() => {
@@ -228,54 +230,75 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     }, [colors]);
 
     const albersGrid = useMemo(() => {
-        const grid: { outer: string; middle: string; inner: string; weight: number }[] = [];
+        const grid: { outer: string; middle: string; inner: string; weight: number; score: number }[] = [];
         const validColors = colors.filter(c => isValidHex(c.hex));
         if (validColors.length < 2) return grid;
-        
-        // Ensure every color participates as outer at least once
+
+        // Build all combos: outer ≠ middle, and pick inner ≠ outer/middle that maximizes contrast vs middle
         for (let i = 0; i < validColors.length; i++) {
             for (let j = 0; j < validColors.length; j++) {
-                if (i !== j) {
-                    // Pick best inner for contrast with middle
-                    let bestInner = validColors[0].hex;
-                    let bestContrast = 0;
-                    for (const c of validColors) {
-                        const contrast = getContrastRatio(c.hex, validColors[j].hex);
-                        if (contrast > bestContrast) {
-                            bestContrast = contrast;
-                            bestInner = c.hex;
-                        }
+                if (i === j) continue;
+                const outer = validColors[i].hex;
+                const middle = validColors[j].hex;
+                let bestInner = '';
+                let bestInnerContrast = -1;
+                for (const c of validColors) {
+                    if (c.hex === outer || c.hex === middle) continue;
+                    const ratio = getContrastRatio(c.hex, middle);
+                    if (ratio > bestInnerContrast) {
+                        bestInnerContrast = ratio;
+                        bestInner = c.hex;
                     }
-                    const comboWeight = (validColors[i].weight + validColors[j].weight) / 2;
-                    grid.push({ 
-                        outer: validColors[i].hex, 
-                        middle: validColors[j].hex, 
-                        inner: bestInner,
-                        weight: comboWeight
-                    });
                 }
+                // Fallback when palette has only 2 colors
+                if (!bestInner) {
+                    bestInner = outer;
+                    bestInnerContrast = getContrastRatio(outer, middle);
+                }
+                const cMidInner = bestInnerContrast;
+                const cOuterMid = getContrastRatio(outer, middle);
+                const weight = (validColors[i].weight + validColors[j].weight) / 2;
+                const score = cMidInner * 0.6 + cOuterMid * 0.3 + (weight / 100) * 0.1;
+                grid.push({ outer, middle, inner: bestInner, weight, score });
             }
         }
 
-        // When fullContrastMode is active, filter to only combos with WCAG AA contrast (4.5:1)
+        // Filter by contrast mode
         let filtered = fullContrastMode
-            ? grid.filter(combo => getContrastRatio(combo.middle, combo.inner) >= 4.5)
-            : grid;
-
-        // If filtering removed everything, keep best contrast combos
-        if (filtered.length === 0) filtered = [...grid].sort((a, b) => getContrastRatio(b.middle, b.inner) - getContrastRatio(a.middle, a.inner)).slice(0, Math.min(8, grid.length));
-
-        // Sort by weight
-        filtered.sort((a, b) => b.weight - a.weight);
-        
-        // Shuffle based on seed but keep weight tendency
-        const shuffled = [...filtered];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const range = Math.min(3, i);
-            const j = i - Math.floor((Math.sin(albersSeed + i) * 10000) % range);
-            if (j >= 0) [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            ? grid.filter(c => getContrastRatio(c.middle, c.inner) >= 4.5 && getContrastRatio(c.outer, c.middle) >= 3.0)
+            : grid.slice();
+        if (filtered.length === 0) {
+            filtered = grid.slice().sort((a, b) => b.score - a.score).slice(0, Math.min(8, grid.length));
         }
-        return shuffled;
+
+        // Seeded PRNG (mulberry32) for real Fisher–Yates shuffle
+        const mulberry32 = (a: number) => () => {
+            a |= 0; a = (a + 0x6D2B79F5) | 0;
+            let t = a;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const rand = mulberry32(albersSeed * 2654435761 + 1);
+
+        // Weighted random sort: higher score → higher chance of appearing earlier
+        const decorated = filtered.map(c => ({ c, key: rand() / (0.5 + c.score) }));
+        decorated.sort((a, b) => a.key - b.key);
+        const shuffled = decorated.map(d => d.c);
+
+        // Greedy interleave: avoid adjacent items sharing the same middle or inner
+        const result: typeof shuffled = [];
+        const remaining = shuffled.slice();
+        while (remaining.length) {
+            const last = result[result.length - 1];
+            let pickIdx = 0;
+            if (last) {
+                const found = remaining.findIndex(r => r.middle !== last.middle && r.inner !== last.inner);
+                if (found !== -1) pickIdx = found;
+            }
+            result.push(remaining.splice(pickIdx, 1)[0]);
+        }
+        return result;
     }, [colors, albersSeed, fullContrastMode]);
 
     const totalWeight = useMemo(() => colors.reduce((sum, c) => sum + c.weight, 0), [colors]);
@@ -366,25 +389,30 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         const lockedPositions = baseOrder.map((_, idx) => idx).filter((idx) => comboLocks[idx]);
         const unlockedPositions = baseOrder.map((_, idx) => idx).filter((idx) => !comboLocks[idx]);
 
-        // Se não há travas, mantém comportamento antigo (novo seed)
+        // Always bump seed so albersGrid reorders too
+        setAlbersSeed((prev) => prev + 1);
+
         if (lockedPositions.length === 0) {
-            setAlbersSeed((prev) => prev + 1);
             setComboOrder([]);
             return;
         }
 
-        // Embaralha apenas os slots destravados
+        // Prefer indices not currently visible to maximize variety
+        const visible = new Set(baseOrder);
+        const pool: number[] = [];
+        for (let k = 0; k < albersGrid.length; k++) if (!visible.has(k)) pool.push(k);
+        // Mix in current unlocked values as fallback
         const unlockedValues = unlockedPositions.map((pos) => baseOrder[pos]);
-        for (let i = unlockedValues.length - 1; i > 0; i--) {
+        const candidates = pool.length >= unlockedPositions.length ? pool : [...pool, ...unlockedValues];
+        for (let i = candidates.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [unlockedValues[i], unlockedValues[j]] = [unlockedValues[j], unlockedValues[i]];
+            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
         }
 
         const newOrder = [...baseOrder];
         unlockedPositions.forEach((pos, idx) => {
-            newOrder[pos] = unlockedValues[idx];
+            newOrder[pos] = candidates[idx % candidates.length];
         });
-
         setComboOrder(newOrder);
     };
 
@@ -505,42 +533,48 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         return layers.slice(0, albersLayerCount);
     };
 
+    const extractColorsFromSvgText = (svgText: string): string[] => {
+        const colorRegex = /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\b/g;
+        const rgbRegex = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/gi;
+        const namedColorRegex = /(?:fill|stroke|stop-color|color)\s*[:=]\s*["']?(white|black|red|blue|green|yellow|orange|purple|pink|gray|grey|cyan|magenta)["']?/gi;
+        const namedColors: Record<string, string> = {
+            white: '#FFFFFF', black: '#000000', red: '#FF0000', blue: '#0000FF',
+            green: '#008000', yellow: '#FFFF00', orange: '#FFA500', purple: '#800080',
+            pink: '#FFC0CB', gray: '#808080', grey: '#808080', cyan: '#00FFFF', magenta: '#FF00FF'
+        };
+        const foundColors = new Set<string>();
+        let match: RegExpExecArray | null;
+        while ((match = colorRegex.exec(svgText)) !== null) {
+            let hex = match[0].toUpperCase();
+            if (hex.length === 4) hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+            foundColors.add(hex);
+        }
+        while ((match = rgbRegex.exec(svgText)) !== null) foundColors.add(rgbToHex(parseInt(match[1]), parseInt(match[2]), parseInt(match[3])));
+        while ((match = namedColorRegex.exec(svgText)) !== null) {
+            const colorName = match[1].toLowerCase();
+            if (namedColors[colorName]) foundColors.add(namedColors[colorName]);
+        }
+        return Array.from(foundColors);
+    };
+
+    const applyExtractedColors = (colorArray: string[]) => {
+        if (colorArray.length === 0) return false;
+        const weightPerColor = Math.floor(100 / colorArray.length);
+        const remainder = 100 - (weightPerColor * colorArray.length);
+        const newColors: PaletteColor[] = colorArray.map((hex, i) => ({
+            hex, name: getClosestColorName(hex), weight: weightPerColor + (i === 0 ? remainder : 0), locked: false
+        }));
+        setColors(newColors);
+        return true;
+    };
+
     const handleSvgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
             const svgText = event.target?.result as string;
-            const colorRegex = /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\b/g;
-            const rgbRegex = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/gi;
-            const namedColorRegex = /(?:fill|stroke|stop-color|color)\s*[:=]\s*["']?(white|black|red|blue|green|yellow|orange|purple|pink|gray|grey|cyan|magenta)["']?/gi;
-            const namedColors: Record<string, string> = {
-                white: '#FFFFFF', black: '#000000', red: '#FF0000', blue: '#0000FF', 
-                green: '#008000', yellow: '#FFFF00', orange: '#FFA500', purple: '#800080',
-                pink: '#FFC0CB', gray: '#808080', grey: '#808080', cyan: '#00FFFF', magenta: '#FF00FF'
-            };
-            const foundColors = new Set<string>();
-            let match;
-            while ((match = colorRegex.exec(svgText)) !== null) {
-                let hex = match[0].toUpperCase();
-                // Expandir hex de 3 para 6 caracteres
-                if (hex.length === 4) {
-                    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
-                }
-                foundColors.add(hex);
-            }
-            while ((match = rgbRegex.exec(svgText)) !== null) foundColors.add(rgbToHex(parseInt(match[1]), parseInt(match[2]), parseInt(match[3])));
-            while ((match = namedColorRegex.exec(svgText)) !== null) {
-                const colorName = match[1].toLowerCase();
-                if (namedColors[colorName]) foundColors.add(namedColors[colorName]);
-            }
-            if (foundColors.size > 0) {
-                const colorArray = Array.from(foundColors);
-                const weightPerColor = Math.floor(100 / colorArray.length);
-                const remainder = 100 - (weightPerColor * colorArray.length);
-                const newColors: PaletteColor[] = colorArray.map((hex, i) => ({ hex, name: getClosestColorName(hex), weight: weightPerColor + (i === 0 ? remainder : 0), locked: false }));
-                if (newColors.length > 0) setColors(newColors);
-            }
+            applyExtractedColors(extractColorsFromSvgText(svgText));
         };
         reader.readAsText(file);
     };
@@ -1215,6 +1249,33 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                         <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground/80">Upload SVG</span>
                         <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
                     </label>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-card border border-border rounded-full">
+                        <input
+                            type="text"
+                            value={svgPasteValue}
+                            onChange={(e) => { setSvgPasteValue(e.target.value); if (svgPasteHint) setSvgPasteHint(null); }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    const colorsFound = extractColorsFromSvgText(svgPasteValue);
+                                    if (applyExtractedColors(colorsFound)) { setSvgPasteValue(''); setSvgPasteHint(null); }
+                                    else setSvgPasteHint('Nenhuma cor encontrada');
+                                }
+                            }}
+                            placeholder="Cole código SVG…"
+                            className="w-44 px-2 py-1 bg-transparent font-mono text-[10px] focus:outline-none text-foreground placeholder:text-muted-foreground"
+                        />
+                        <button
+                            onClick={() => {
+                                const colorsFound = extractColorsFromSvgText(svgPasteValue);
+                                if (applyExtractedColors(colorsFound)) { setSvgPasteValue(''); setSvgPasteHint(null); }
+                                else setSvgPasteHint('Nenhuma cor encontrada');
+                            }}
+                            className="px-2 py-1 bg-foreground text-background rounded-full font-mono text-[9px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all"
+                        >
+                            Apply
+                        </button>
+                        {svgPasteHint && <span className="font-mono text-[9px] text-amber-600 ml-1">{svgPasteHint}</span>}
+                    </div>
                     <button onClick={suggestNewCombination} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">
                         <span>🎲</span> Sugerir Combinação
                     </button>
