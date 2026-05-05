@@ -219,46 +219,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
       return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleUndo, handleRedo]);
 
-  const handleKerningPreviewMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!isPreviewPanMode || !kerningPreviewLayout) return;
-      e.preventDefault();
-      e.stopPropagation();
-      previewPanStartRef.current = {
-          x: e.clientX,
-          y: e.clientY,
-          originX: kerningPreviewPan.x,
-          originY: kerningPreviewPan.y,
-      };
-      setIsPreviewPanning(true);
-  };
-
-  useEffect(() => {
-      if (!isPreviewPanning) return;
-      const handleMouseMove = (e: MouseEvent) => {
-          if (!previewPanStartRef.current) return;
-          const deltaX = e.clientX - previewPanStartRef.current.x;
-          const deltaY = e.clientY - previewPanStartRef.current.y;
-          setKerningPreviewPan({
-              x: previewPanStartRef.current.originX + deltaX,
-              y: previewPanStartRef.current.originY + deltaY,
-          });
-      };
-      const handleMouseUp = () => {
-          setIsPreviewPanning(false);
-          previewPanStartRef.current = null;
-      };
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      return () => {
-          window.removeEventListener('mousemove', handleMouseMove);
-          window.removeEventListener('mouseup', handleMouseUp);
-      };
-  }, [isPreviewPanning]);
-
-  useEffect(() => {
-      setKerningPreviewPan({ x: 0, y: 0 });
-      setIsPreviewPanMode(false);
-  }, [kerningPartner]);
+  // Pan/zoom removed — visualizer uses fit-to-view only.
 
     useEffect(() => {
         if (!leftKerningPartner) {
