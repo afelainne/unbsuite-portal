@@ -93,6 +93,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const [draggedColorIndex, setDraggedColorIndex] = useState<number | null>(null);
     const [fullContrastMode, setFullContrastMode] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [svgPasteValue, setSvgPasteValue] = useState('');
+    const [svgPasteHint, setSvgPasteHint] = useState<string | null>(null);
 
     // Atualizar cores quando externalColors mudar
     useEffect(() => {
@@ -1247,6 +1249,33 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                         <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground/80">Upload SVG</span>
                         <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
                     </label>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-card border border-border rounded-full">
+                        <input
+                            type="text"
+                            value={svgPasteValue}
+                            onChange={(e) => { setSvgPasteValue(e.target.value); if (svgPasteHint) setSvgPasteHint(null); }}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    const colorsFound = extractColorsFromSvgText(svgPasteValue);
+                                    if (applyExtractedColors(colorsFound)) { setSvgPasteValue(''); setSvgPasteHint(null); }
+                                    else setSvgPasteHint('Nenhuma cor encontrada');
+                                }
+                            }}
+                            placeholder="Cole código SVG…"
+                            className="w-44 px-2 py-1 bg-transparent font-mono text-[10px] focus:outline-none text-foreground placeholder:text-muted-foreground"
+                        />
+                        <button
+                            onClick={() => {
+                                const colorsFound = extractColorsFromSvgText(svgPasteValue);
+                                if (applyExtractedColors(colorsFound)) { setSvgPasteValue(''); setSvgPasteHint(null); }
+                                else setSvgPasteHint('Nenhuma cor encontrada');
+                            }}
+                            className="px-2 py-1 bg-foreground text-background rounded-full font-mono text-[9px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all"
+                        >
+                            Apply
+                        </button>
+                        {svgPasteHint && <span className="font-mono text-[9px] text-amber-600 ml-1">{svgPasteHint}</span>}
+                    </div>
                     <button onClick={suggestNewCombination} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">
                         <span>🎲</span> Sugerir Combinação
                     </button>
