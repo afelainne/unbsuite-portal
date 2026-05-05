@@ -387,25 +387,30 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         const lockedPositions = baseOrder.map((_, idx) => idx).filter((idx) => comboLocks[idx]);
         const unlockedPositions = baseOrder.map((_, idx) => idx).filter((idx) => !comboLocks[idx]);
 
-        // Se não há travas, mantém comportamento antigo (novo seed)
+        // Always bump seed so albersGrid reorders too
+        setAlbersSeed((prev) => prev + 1);
+
         if (lockedPositions.length === 0) {
-            setAlbersSeed((prev) => prev + 1);
             setComboOrder([]);
             return;
         }
 
-        // Embaralha apenas os slots destravados
+        // Prefer indices not currently visible to maximize variety
+        const visible = new Set(baseOrder);
+        const pool: number[] = [];
+        for (let k = 0; k < albersGrid.length; k++) if (!visible.has(k)) pool.push(k);
+        // Mix in current unlocked values as fallback
         const unlockedValues = unlockedPositions.map((pos) => baseOrder[pos]);
-        for (let i = unlockedValues.length - 1; i > 0; i--) {
+        const candidates = pool.length >= unlockedPositions.length ? pool : [...pool, ...unlockedValues];
+        for (let i = candidates.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [unlockedValues[i], unlockedValues[j]] = [unlockedValues[j], unlockedValues[i]];
+            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
         }
 
         const newOrder = [...baseOrder];
         unlockedPositions.forEach((pos, idx) => {
-            newOrder[pos] = unlockedValues[idx];
+            newOrder[pos] = candidates[idx % candidates.length];
         });
-
         setComboOrder(newOrder);
     };
 
