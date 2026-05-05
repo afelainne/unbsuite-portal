@@ -1296,6 +1296,154 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${bars}</svg>`;
     };
 
+    // Helper: compute responsive grid (cols/rows + cell size)
+    const computeAlbersGrid = (itemCount: number, width: number, height: number, padding: number, gap: number) => {
+        let bestCols = 1, bestFit = 0;
+        for (let cols = 1; cols <= itemCount; cols++) {
+            const rows = Math.ceil(itemCount / cols);
+            const cellWidth = (width - padding * 2 - gap * (cols - 1)) / cols;
+            const cellHeight = (height - padding * 2 - gap * (rows - 1)) / rows;
+            const cellSize = Math.min(cellWidth, cellHeight);
+            const lastRowItems = itemCount % cols || cols;
+            const completeness = lastRowItems / cols;
+            const fit = cellSize * cellSize * itemCount * completeness;
+            if (fit > bestFit) { bestFit = fit; bestCols = cols; }
+        }
+        const cols = bestCols;
+        const rows = Math.ceil(itemCount / cols);
+        const cellWidth = (width - padding * 2 - gap * (cols - 1)) / cols;
+        const cellHeight = (height - padding * 2 - gap * (rows - 1)) / rows;
+        return { cols, rows, cellWidth, cellHeight };
+    };
+
+    // Template 5: Rings (anéis com fundo da cor do meio)
+    const generateAlbersRingsSvg = (): string => {
+        const width = 1920, height = 1080, padding = 40, gap = 20;
+        const maxCards = getMaxCardsByTemplate('rings');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const r = Math.min(cellWidth, cellHeight) * 0.42;
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const x = padding + col * (cellWidth + gap), y = padding + row * (cellHeight + gap);
+            const cx = x + cellWidth / 2, cy = y + cellHeight / 2;
+            return `<g><rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" fill="${combo.middle}" /><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${combo.outer}" stroke-width="${r * 0.35}" /><circle cx="${cx}" cy="${cy}" r="${r * 0.5}" fill="${combo.inner}" /></g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 6: Diamonds (losangos rotacionados)
+    const generateAlbersDiamondsSvg = (): string => {
+        const width = 1920, height = 1080, padding = 60, gap = 30;
+        const maxCards = getMaxCardsByTemplate('diamonds');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const size = Math.min(cellWidth, cellHeight) * 0.78;
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
+            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
+            const layers = getComboLayers(combo);
+            const factors = [1, 0.65, 0.4, 0.22];
+            const rects = layers.map((color, i) => {
+                const s = size * (factors[i] || Math.max(0.15, 0.65 ** i));
+                return `<rect x="${cx - s / 2}" y="${cy - s / 2}" width="${s}" height="${s}" fill="${color}" transform="rotate(45 ${cx} ${cy})" />`;
+            }).join('');
+            return `<g>${rects}</g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 7: Frames (moldura grossa estilo Albers Homenagem)
+    const generateAlbersFramesSvg = (): string => {
+        const width = 1920, height = 1080, padding = 50, gap = 25;
+        const maxCards = getMaxCardsByTemplate('frames');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const size = Math.min(cellWidth, cellHeight) * 0.92;
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
+            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
+            const layers = getComboLayers(combo);
+            const factors = [1, 0.78, 0.55, 0.32];
+            const rects = layers.map((color, i) => {
+                const s = size * (factors[i] || Math.max(0.18, 0.7 ** i));
+                const offset = i > 0 ? s * 0.08 : 0;
+                return `<rect x="${cx - s / 2}" y="${cy - s / 2 + offset}" width="${s}" height="${s}" fill="${color}" />`;
+            }).join('');
+            return `<g>${rects}</g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 8: Split (cell dividido em metades + acento)
+    const generateAlbersSplitSvg = (): string => {
+        const width = 1920, height = 1080, padding = 40, gap = 18;
+        const maxCards = getMaxCardsByTemplate('split');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const x = padding + col * (cellWidth + gap), y = padding + row * (cellHeight + gap);
+            const half = cellWidth / 2;
+            const accentR = Math.min(cellWidth, cellHeight) * 0.18;
+            return `<g><rect x="${x}" y="${y}" width="${half}" height="${cellHeight}" fill="${combo.outer}" /><rect x="${x + half}" y="${y}" width="${half}" height="${cellHeight}" fill="${combo.middle}" /><circle cx="${x + cellWidth / 2}" cy="${y + cellHeight / 2}" r="${accentR}" fill="${combo.inner}" /></g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 9: Targets (alvos com anéis concêntricos múltiplos)
+    const generateAlbersTargetsSvg = (): string => {
+        const width = 1920, height = 1080, padding = 40, gap = 20;
+        const maxCards = getMaxCardsByTemplate('targets');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const r = Math.min(cellWidth, cellHeight) * 0.45;
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
+            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
+            const palette = [combo.outer, combo.middle, combo.inner, combo.outer, combo.middle];
+            const radii = [1, 0.78, 0.58, 0.4, 0.22];
+            const circles = radii.map((rf, i) => `<circle cx="${cx}" cy="${cy}" r="${r * rf}" fill="${palette[i % palette.length]}" />`).join('');
+            return `<g>${circles}</g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
+    // Template 10: Triangles (triângulos sobrepostos)
+    const generateAlbersTrianglesSvg = (): string => {
+        const width = 1920, height = 1080, padding = 60, gap = 30;
+        const maxCards = getMaxCardsByTemplate('triangles');
+        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
+        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
+        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
+        const size = Math.min(cellWidth, cellHeight) * 0.85;
+        const tri = (cx: number, cy: number, s: number, color: string, flip = false) => {
+            const h = s * 0.866;
+            const points = flip
+                ? `${cx - s / 2},${cy - h / 2} ${cx + s / 2},${cy - h / 2} ${cx},${cy + h / 2}`
+                : `${cx - s / 2},${cy + h / 2} ${cx + s / 2},${cy + h / 2} ${cx},${cy - h / 2}`;
+            return `<polygon points="${points}" fill="${color}" />`;
+        };
+        const cells = items.map((combo, idx) => {
+            const col = idx % cols, row = Math.floor(idx / cols);
+            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
+            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
+            const layers = getComboLayers(combo);
+            const factors = [1, 0.7, 0.45, 0.25];
+            const tris = layers.map((color, i) => tri(cx, cy, size * (factors[i] || 0.2), color, i % 2 === 1)).join('');
+            return `<g>${tris}</g>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    };
+
     // Função que retorna o SVG baseado no template de Albers selecionado
     const getCurrentAlbersSvg = (): string => {
         switch (albersTemplate) {
