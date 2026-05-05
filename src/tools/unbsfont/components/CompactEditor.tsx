@@ -1182,7 +1182,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                                         intensity: kerningIntensity
                                                     });
                                                     setKerningPairs(hybridPairs);
-                                                    pushNotice(`Kerning híbrido ${newStyle} applied: ${hybridPairs.length} pairs`, 'success');
+                                                    pushNotice(`Hybrid kerning ${newStyle} applied: ${hybridPairs.length} pairs`, 'success');
                                                 }
                                             }, 0);
                                         }}
@@ -1492,8 +1492,8 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                                 </svg>
                                 <div>
-                                    <h2 className="text-lg font-bold">Configuração Automática</h2>
-                                    <p className={`text-xs ${textSub}`}>Analisa geometria e configura espaçamento/kerning</p>
+                                    <h2 className="text-lg font-bold">Auto Configuration</h2>
+                                    <p className={`text-xs ${textSub}`}>Analyzes geometry and configures spacing/kerning</p>
                                 </div>
                             </div>
                             <button
@@ -1513,7 +1513,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 const quality = analyzeFontQuality(glyphs, metadata);
                                 return (
                                     <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
-                                        <p className={`text-xs font-bold mb-2 ${textSub}`}>Análise Atual</p>
+                                        <p className={`text-xs font-bold mb-2 ${textSub}`}>Current Analysis</p>
                                         <div className="grid grid-cols-3 gap-2 text-xs">
                                             <div>
                                                 <span className={textSub}>Score:</span>
@@ -1538,7 +1538,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         </div>
                                         {quality.suggestions.length > 0 && (
                                             <div className="mt-2 pt-2 border-t border-current border-opacity-10">
-                                                <p className={`text-xs ${textSub} mb-1`}>Sugestões:</p>
+                                                <p className={`text-xs ${textSub} mb-1`}>Suggestions:</p>
                                                 <ul className={`text-xs ${textSub} space-y-0.5`}>
                                                     {quality.suggestions.slice(0, 3).map((s, i) => (
                                                         <li key={i}>• {s}</li>
@@ -1575,7 +1575,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         className={`w-5 h-5 rounded ${accentColor}`}
                                     />
                                     <div>
-                                        <span className="text-sm font-medium">Spacing Automático</span>
+                                        <span className="text-sm font-medium">Automatic Spacing</span>
                                         <p className={`text-xs ${textSub}`}>Calcula advance width, LSB e RSB baseado na geometria</p>
                                     </div>
                                 </label>
@@ -1588,8 +1588,8 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         className={`w-5 h-5 rounded ${accentColor}`}
                                     />
                                     <div>
-                                        <span className="text-sm font-medium">Kerning Automático</span>
-                                        <p className={`text-xs ${textSub}`}>Gera pairs de kerning baseado em análise de formas</p>
+                                        <span className="text-sm font-medium">Automatic Kerning</span>
+                                        <p className={`text-xs ${textSub}`}>Generates kerning pairs based on shape analysis</p>
                                     </div>
                                 </label>
 
@@ -1610,7 +1610,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             {/* Configurações avançadas */}
                             <details className={`p-3 rounded-lg border ${borderCol}`}>
                                 <summary className={`text-xs font-bold uppercase tracking-wider cursor-pointer ${textSub}`}>
-                                    Configurações Avançadas
+                                    Advanced Settings
                                 </summary>
                                 <div className="mt-3 space-y-3">
                                     <div>
