@@ -18,7 +18,7 @@ const ToolLayout = ({ title, children, chrome = "page" }: ToolLayoutProps) => {
       {chrome === "app" ? (
         <main className="flex-1 flex min-h-0 overflow-hidden">{children}</main>
       ) : (
-        <main className="container-fluid py-6 md:py-10 flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto">{children}</main>
       )}
     </div>
   );

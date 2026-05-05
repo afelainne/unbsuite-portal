@@ -35,24 +35,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreateProject, onOpenProject, o
   };
 
   return (
-    <div className={`min-h-screen p-8 font-sans flex overflow-hidden transition-colors duration-300 ${bgClass}`}>
-        {/* Sidebar */}
-        <div className={`w-64 flex flex-col gap-8 border-r pr-8 shrink-0 ${sidebarClass}`}>
-            <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleProjectFileChange}
-                className="hidden"
-                accept=".unbsfo,application/json"
-            />
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 pl-12 flex flex-col h-full overflow-y-auto custom-scrollbar">
-            <header className="flex justify-between items-start mb-8 shrink-0 pt-4">
+    <div className={`h-full w-full p-8 font-sans flex flex-col overflow-y-auto transition-colors duration-300 ${bgClass}`}>
+        <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleProjectFileChange}
+            className="hidden"
+            accept=".unbsfo,application/json"
+        />
+        <div className="max-w-[1400px] mx-auto w-full flex flex-col">
+            <header className="flex justify-between items-start mb-8 shrink-0">
                 <div className="space-y-1">
-                    <h2 className="text-4xl font-bold tracking-tight">Projects</h2>
-                    <p className={`${textSub} font-medium`}>Create, open, or import your fonts.</p>
+                    <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] font-semibold text-[#232323]">Projects</h2>
+                    <p className={`${textSub} font-mono text-[10px] uppercase tracking-[0.2em]`}>Create, open, or import your fonts.</p>
                 </div>
             </header>
 

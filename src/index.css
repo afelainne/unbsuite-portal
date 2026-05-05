@@ -263,11 +263,11 @@
      Item:    .nav-tab         → underline grows on hover, full lime when active.
   */
   .tool-subheader {
-    @apply sticky top-14 z-30 border-b border-border bg-card/95 backdrop-blur px-6 md:px-8 py-4;
+    @apply sticky top-0 z-30 border-b border-[#232323]/15 bg-white px-6 md:px-8 py-2;
   }
   .nav-tab {
-    @apply relative pb-1 text-xs md:text-sm font-bold uppercase tracking-wide
-           text-muted-foreground transition-colors duration-150;
+    @apply relative pb-1 font-mono text-[10px] uppercase tracking-[0.2em] font-semibold
+           text-[#232323]/55 transition-colors duration-150;
   }
   .nav-tab::after {
     content: "";
@@ -275,20 +275,20 @@
     left: 0;
     right: 0;
     bottom: -1px;
-    height: 2px;
-    background: hsl(var(--accent));
+    height: 1px;
+    background: #232323;
     transform: scaleX(0);
     transform-origin: left center;
     transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   .nav-tab:hover {
-    @apply text-foreground;
+    @apply text-[#232323];
   }
   .nav-tab:hover::after {
     transform: scaleX(0.5);
   }
   .nav-tab.is-active {
-    @apply text-foreground;
+    @apply text-[#232323];
   }
   .nav-tab.is-active::after {
     transform: scaleX(1);
