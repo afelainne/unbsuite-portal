@@ -190,7 +190,7 @@ const hexToRgbQuick = (hex: string) => {
 };
 
 const extractCode = (raw: string) => {
-  const match = raw.match(/prefix=([^$]+)\$\$\//);
+  const match = raw.match(/prefix=([^$]+)\$\$\$/);
   if (match && match[1]) return match[1].trim();
   const cleaned = raw
     .replace(/\$\$\$\/colorbook\/[A-Z]+\/prefix=/g, '')
@@ -222,10 +222,10 @@ const SOURCE_REMAP: Record<string, { systemId: string; systemName: string; finis
 
 // Build remap dynamically from known source patterns
 const SRC_PATTERNS: Array<{ pattern: RegExp; systemId: string; finishId: string }> = [
-  { pattern: /Bridge.*Coated.*V4/i, systemId: 'cb_v4', finishId: 'coated' },
   { pattern: /Bridge.*Uncoated.*V4/i, systemId: 'cb_v4', finishId: 'uncoated' },
-  { pattern: /Solid.*Coated.*V4/i, systemId: 'sol_v4', finishId: 'coated' },
+  { pattern: /Bridge.*Coated.*V4/i, systemId: 'cb_v4', finishId: 'coated' },
   { pattern: /Solid.*Uncoated.*V4/i, systemId: 'sol_v4', finishId: 'uncoated' },
+  { pattern: /Solid.*Coated.*V4/i, systemId: 'sol_v4', finishId: 'coated' },
 ];
 
 const resolveSource = (source: string): { systemId: string; systemName: string; finishId: string; finishName: string } | null => {
@@ -299,10 +299,10 @@ const buildSystems = (): ColorLibrarySystem[] => {
 export const COLOR_SYSTEMS: ColorLibrarySystem[] = buildSystems();
 
 const LABEL_MAP: Record<string, string> = {
-  sys_a_fin_c: 'SYSTEM A (CP)',
-  sys_a_fin_u: 'SYSTEM A (UP)',
-  sys_b_fin_c: 'SYSTEM B (C)',
-  sys_b_fin_u: 'SYSTEM B (U)'
+  sys_b_fin_c: 'PANTONE C — Coated',
+  sys_b_fin_u: 'PANTONE U — Uncoated',
+  sys_a_fin_c: 'Color Bridge CP — Coated',
+  sys_a_fin_u: 'Color Bridge UP — Uncoated'
 };
 
 export const LIBRARY_OPTIONS: LibraryOption[] = COLOR_SYSTEMS.flatMap((system) =>
