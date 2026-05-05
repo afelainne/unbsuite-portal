@@ -190,7 +190,7 @@ const hexToRgbQuick = (hex: string) => {
 };
 
 const extractCode = (raw: string) => {
-  const match = raw.match(/prefix=([^$]+)\$\$\//);
+  const match = raw.match(/prefix=([^$]+)\$\$\$/);
   if (match && match[1]) return match[1].trim();
   const cleaned = raw
     .replace(/\$\$\$\/colorbook\/[A-Z]+\/prefix=/g, '')
@@ -222,10 +222,10 @@ const SOURCE_REMAP: Record<string, { systemId: string; systemName: string; finis
 
 // Build remap dynamically from known source patterns
 const SRC_PATTERNS: Array<{ pattern: RegExp; systemId: string; finishId: string }> = [
-  { pattern: /Bridge.*Coated.*V4/i, systemId: 'cb_v4', finishId: 'coated' },
   { pattern: /Bridge.*Uncoated.*V4/i, systemId: 'cb_v4', finishId: 'uncoated' },
-  { pattern: /Solid.*Coated.*V4/i, systemId: 'sol_v4', finishId: 'coated' },
+  { pattern: /Bridge.*Coated.*V4/i, systemId: 'cb_v4', finishId: 'coated' },
   { pattern: /Solid.*Uncoated.*V4/i, systemId: 'sol_v4', finishId: 'uncoated' },
+  { pattern: /Solid.*Coated.*V4/i, systemId: 'sol_v4', finishId: 'coated' },
 ];
 
 const resolveSource = (source: string): { systemId: string; systemName: string; finishId: string; finishName: string } | null => {
