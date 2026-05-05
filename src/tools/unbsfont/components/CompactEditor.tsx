@@ -1050,7 +1050,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 </div>
 
                 {/* Painel Direito - Espacamento e Kerning */}
-                <div className={`w-72 border-l flex flex-col ${borderCol} ${bgPanel}`}>
+                <div className={`w-64 border-l flex flex-col ${borderCol} ${bgPanel}`}>
                     <div className="p-4 space-y-5 overflow-y-auto flex-1">
                         
                         {/* Espacamento */}
