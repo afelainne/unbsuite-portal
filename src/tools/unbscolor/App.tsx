@@ -31,10 +31,10 @@ import { LIBRARY_OPTIONS, getLibraryById, DEFAULT_LIBRARY } from './constants';
 
 const defaultLibraryId = LIBRARY_OPTIONS[0]?.id || '';
 const LIBRARY_SHORT_LABELS: Record<string, string> = {
-    sys_a_fin_c: 'BR C',
-    sys_a_fin_u: 'BR U',
-    sys_b_fin_c: 'SOL C',
-    sys_b_fin_u: 'SOL U'
+    sys_b_fin_c: 'C',
+    sys_b_fin_u: 'U',
+    sys_a_fin_c: 'CP',
+    sys_a_fin_u: 'UP'
 };
 
 type SettingsState = {
