@@ -939,8 +939,22 @@ const App: React.FC = () => {
           return;
       }
 
-      const hasDrawnGlyphs = glyphs.some(g => (g.pathData || '').trim().length > 0);
-      if (!hasDrawnGlyphs) {
+      // Sync current style buffer into styleMap before iterating
+      const fullStyleMap: Record<string, GlyphData[]> = { ...styleMap, [currentStyle]: glyphs };
+      const styles = Object.entries(fullStyleMap);
+      const hasDrawn = (list: GlyphData[]) => list.some(g => (g.pathData || '').trim().length > 0);
+
+      const candidates: Array<{ styleName: string; glyphList: GlyphData[]; meta: FontMetadata }> = [];
+      styles.forEach(([styleName, list]) => {
+          if (!list || !hasDrawn(list)) return;
+          candidates.push({
+              styleName,
+              glyphList: list,
+              meta: { ...metadata, styleName }
+          });
+      });
+
+      if (!candidates.length) {
           pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
           return;
       }
@@ -948,23 +962,36 @@ const App: React.FC = () => {
       setIsExporting(true);
       setExportProgress(0);
 
+      const totalStyles = candidates.length;
+      const failures: string[] = [];
+      let completed = 0;
+
       try {
-          // Se tiver kerning, usar função com kerning
-          const result = kerningPairs && kerningPairs.length > 0
-              ? await downloadFontEditorFontWithKerning(metadata, glyphs, kerningPairs)
-              : await downloadFontEditorFont(metadata, glyphs);
-          setExportProgress(1);
-          const kerningInfo = kerningPairs && kerningPairs.length > 0 
-              ? ` com ${kerningPairs.length} pares de kerning` 
-              : '';
-          pushNotice(`Exportado: ${result.fileName} (${result.glyphCount} glifos${kerningInfo})`, 'success');
-      } catch (error) {
-          console.error('Falha no export fonteditor-core', error);
-          const message = error instanceof Error ? error.message : 'Falha ao exportar fonte.';
-          pushNotice(message, 'error');
+          for (const candidate of candidates) {
+              try {
+                  const result = kerningPairs && kerningPairs.length > 0
+                      ? await downloadFontEditorFontWithKerning(candidate.meta, candidate.glyphList, kerningPairs)
+                      : await downloadFontEditorFont(candidate.meta, candidate.glyphList);
+                  completed += 1;
+                  setExportProgress(completed / totalStyles);
+                  pushNotice(`Peso "${candidate.styleName}" exportado: ${result.fileName} (${result.glyphCount} glifos).`, 'success');
+              } catch (err) {
+                  console.error('Falha export', candidate.styleName, err);
+                  failures.push(candidate.styleName);
+                  const message = err instanceof Error ? err.message : 'Falha ao exportar fonte.';
+                  pushNotice(`Falha ao exportar "${candidate.styleName}": ${message}`, 'error');
+              }
+          }
       } finally {
           setIsExporting(false);
           setTimeout(() => setExportProgress(null), 300);
+      }
+
+      if (completed && totalStyles > 1) {
+          pushNotice(`Família "${metadata.familyName || 'Untitled'}" exportada (${completed}/${totalStyles} pesos).`, 'success');
+      }
+      if (failures.length) {
+          pushNotice(`Não foi possível exportar: ${failures.join(', ')}.`, 'error');
       }
   };
   const handleAutoFit = () => { if (window.confirm("Reset metrics?")) setGlyphs(prev => prev.map(g => !g.pathData ? g : { ...g, scale: 1, leftSideBearing: 50, baselineOffset: 100 })); };
