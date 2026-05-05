@@ -206,7 +206,7 @@ const buildStemOverlay = (
 });
 
 /**
- * detectVerticalStems – procura pares de segmentos quase verticais cuja distância bate com os targets.
+ * detectVerticalStems – procura pairs de segmentos quase verticais cuja distância bate com os targets.
  */
 export const detectVerticalStems = (
   glyph: GlyphModelState,

@@ -25,7 +25,7 @@ const ExportLab: React.FC<ExportLabProps> = ({ glyphs, metadata, isDarkMode }) =
       setLastResult(`✓ Exportado: ${result.fileName} (${result.glyphCount} glifos)`);
     } catch (err) {
       console.error('Export failed:', err);
-      setLastResult(`✗ Erro: ${err instanceof Error ? err.message : 'Falha na exportação'}`);
+      setLastResult(`✗ Error: ${err instanceof Error ? err.message : 'Export failed'}`);
     } finally {
       setIsExporting(false);
     }
@@ -36,7 +36,7 @@ const ExportLab: React.FC<ExportLabProps> = ({ glyphs, metadata, isDarkMode }) =
       <div className={`rounded-xl border p-4 ${panelClass}`}>
         <h3 className="text-xs font-black uppercase tracking-wide mb-3">Export Lab - Motor Alternativo</h3>
         <p className={`text-sm mb-4 ${subtle}`}>
-          Exportação usando fonteditor-core como motor alternativo ao opentype.js. 
+          Export using fonteditor-core as alternative engine to opentype.js. 
           Pode resolver problemas de serrilhamento em paths complexos.
         </p>
 
@@ -49,7 +49,7 @@ const ExportLab: React.FC<ExportLabProps> = ({ glyphs, metadata, isDarkMode }) =
               : 'bg-blue-500 hover:bg-blue-600 text-white disabled:bg-neutral-300'
           }`}
         >
-          {isExporting ? 'Exportando...' : 'Exportar OTF (fonteditor-core)'}
+          {isExporting ? 'Exporting...' : 'Export OTF (fonteditor-core)'}
         </button>
 
         {lastResult && (

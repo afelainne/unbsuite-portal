@@ -72,7 +72,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
       setFontLoaded(true);
     } catch (err) {
       console.error('Failed to load font preview:', err);
-      setError(err instanceof Error ? err.message : 'Falha ao carregar preview');
+      setError(err instanceof Error ? err.message : 'Failed to load preview');
     } finally {
       setIsLoading(false);
     }
@@ -118,9 +118,9 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
         {/* Header */}
         <div className={`flex items-center justify-between px-6 py-4 border-b ${borderCol}`}>
           <div>
-            <h2 className="text-lg font-bold">Visualização Final da Fonte</h2>
+            <h2 className="text-lg font-bold">Final Font Preview</h2>
             <p className={`text-sm ${textSub}`}>
-              {metadata.familyName || 'CustomFont'} - Preview real da fonte exportada
+              {metadata.familyName || 'CustomFont'} - Real preview of the exported font
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -149,7 +149,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
         {/* Controls */}
         <div className={`px-6 py-3 border-b flex items-center gap-6 ${borderCol} ${isDarkMode ? 'bg-slate-800/50' : 'bg-neutral-50'}`}>
           <div className="flex items-center gap-3">
-            <label className={`text-xs font-bold uppercase ${textSub}`}>Tamanho:</label>
+            <label className={`text-xs font-bold uppercase ${textSub}`}>Size:</label>
             <input
               type="range"
               min="12"
@@ -165,7 +165,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
               type="text"
               value={customText}
               onChange={(e) => setCustomText(e.target.value)}
-              placeholder="Digite texto personalizado..."
+              placeholder="Type custom text..."
               className={`w-full px-4 py-2 rounded-lg border text-sm ${inputBg}`}
             />
           </div>
@@ -190,7 +190,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
                 <div className="text-4xl mb-4 animate-pulse">⏳</div>
-                <p className={textSub}>Exportando e carregando fonte...</p>
+                <p className={textSub}>Exporting and loading font...</p>
               </div>
             </div>
           ) : fontLoaded ? (
@@ -198,7 +198,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
               {/* Custom text */}
               {customText && (
                 <div className={`p-4 rounded-xl border ${borderCol}`}>
-                  <p className={`text-xs font-bold uppercase mb-2 ${textSub}`}>Texto Personalizado</p>
+                  <p className={`text-xs font-bold uppercase mb-2 ${textSub}`}>Custom Text</p>
                   <p 
                     style={{ 
                       fontFamily: `"${FONT_FAMILY_NAME}", sans-serif`, 
@@ -266,7 +266,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
 
               {/* All glyphs grid */}
               <div className={`p-4 rounded-xl border ${borderCol}`}>
-                <p className={`text-xs font-bold uppercase mb-4 ${textSub}`}>Todos os Caracteres</p>
+                <p className={`text-xs font-bold uppercase mb-4 ${textSub}`}>All Characters</p>
                 <div 
                   className="flex flex-wrap gap-2"
                   style={{ fontFamily: `"${FONT_FAMILY_NAME}", sans-serif` }}
@@ -289,7 +289,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <p className={textSub}>Clique em "Atualizar" para carregar o preview</p>
+              <p className={textSub}>Click "Refresh" to load the preview</p>
             </div>
           )}
         </div>
@@ -301,12 +301,12 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
             UPM: {metadata.unitsPerEm || 1000} • 
             Ascender: {metadata.ascender || 800} • 
             Descender: {metadata.descender || -200} •
-            Kerning: {kerningPairsCount} pares
+            Kerning: {kerningPairsCount} pairs
           </span>
           <span>
             {kerningPairsCount > 0 
-              ? '✓ Fonte exportada com kerning embutido'
-              : '⚠ Sem pares de kerning na fonte'}
+              ? '✓ Font exported with embedded kerning'
+              : '⚠ No kerning pairs in the font'}
           </span>
         </div>
       </div>

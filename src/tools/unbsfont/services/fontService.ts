@@ -219,7 +219,7 @@ const runExport = async (metadata: FontMetadata, glyphs: GlyphExportData[], onPr
 
     const drawnGlyphs = fontGlyphs.length - 1;
     if (drawnGlyphs <= 0) {
-      throw new FontExportError('EMPTY_FONT', 'Não há glifos desenhados para este peso.');
+      throw new FontExportError('EMPTY_FONT', 'Não há glifos desenhados para este weight.');
     }
 
     const styleLabel = metadata.styleName || 'Regular';

@@ -184,9 +184,9 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                             newKerning[key] = p.value;
                         }
                     });
-                    message = `Smart + Fallback Pro: ${Object.keys(newKerning).length} pares gerados.`;
+                    message = `Smart + Fallback Pro: ${Object.keys(newKerning).length} pairs gerados.`;
                 } else {
-                    message = `Smart Auto-Kern: ${Object.keys(newKerning).length} pares gerados.`;
+                    message = `Smart Auto-Kern: ${Object.keys(newKerning).length} pairs gerados.`;
                 }
                 break;
             case 'professional': {
@@ -202,7 +202,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                 profPairs.forEach(p => {
                     newKerning[`${p.left}${p.right}`] = p.value;
                 });
-                message = `Kerning Profissional (${fontStyle}): ${profPairs.length} pares - Nota: ${quality.grade}`;
+                message = `Kerning Profissional (${fontStyle}): ${profPairs.length} pairs - Grade: ${quality.grade}`;
                 break;
             }
             case 'hybrid': {
@@ -217,7 +217,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                 hybridPairs.forEach(p => {
                     newKerning[`${p.left}${p.right}`] = p.value;
                 });
-                message = `Kerning Híbrido (${fontStyle}): ${hybridPairs.length} pares - Nota: ${quality.grade}`;
+                message = `Kerning Hybrid (${fontStyle}): ${hybridPairs.length} pairs - Grade: ${quality.grade}`;
                 break;
             }
         }
@@ -253,14 +253,14 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
         }
 
         applyKerningMap(newKerning);
-        pushNotice(`Template "${template.name}" aplicado com ${Object.keys(newKerning).length} pares.`, 'success');
+        pushNotice(`Template "${template.name}" aplicado com ${Object.keys(newKerning).length} pairs.`, 'success');
     };
     const handleResetAutoKern = () => {
         clearAllPairs();
         setSelectedPair("");
         setTestString("");
         setCurrentKernValue(0);
-        pushNotice('Todos os pares de kerning foram resetados.', 'info');
+        pushNotice('Todos os pairs de kerning foram resetados.', 'info');
     };
 
     const handleResetSelectedPair = () => {
@@ -514,7 +514,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                             
                             <div className={`p-6 rounded-2xl border space-y-4 ${cardBg}`}>
                                 <p className={`text-[11px] ${textSub}`}>
-                                    Digite 2 ou mais letras para visualizar cada espaçamento consecutivo. Os valores podem ser editados diretamente abaixo.
+                                    Type 2 or more letters to preview each consecutive spacing. Values can be edited directly below.
                                 </p>
                                 {kerningContextLayout ? (
                                     <>
@@ -685,7 +685,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                     </>
                                 ) : (
                                     <div className={`h-48 rounded-xl flex items-center justify-center border-2 border-dashed ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-100 border-neutral-300'}`}>
-                                        <span className={`${textSub} font-bold uppercase text-sm`}>Digite um texto para pré-visualizar</span>
+                                        <span className={`${textSub} font-bold uppercase text-sm`}>Type text to preview</span>
                                     </div>
                                 )}
                             </div>
@@ -712,7 +712,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                 <option key={t.id} value={t.id}>{t.name}</option>
                                             ))}
                                         </optgroup>
-                                        <optgroup label="Geométrica">
+                                        <optgroup label="Geometric">
                                             {KERNING_TEMPLATES.filter(t => t.category === 'geometric').map(t => (
                                                 <option key={t.id} value={t.id}>{t.name}</option>
                                             ))}
@@ -759,7 +759,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <input type="checkbox" id="blendGeo" checked={blendWithGeometry} onChange={(e) => setBlendWithGeometry(e.target.checked)} className="w-4 h-4" />
-                                        <label htmlFor="blendGeo" className={`text-[10px] font-bold uppercase ${textSub}`}>Mesclar com análise SVG</label>
+                                        <label htmlFor="blendGeo" className={`text-[10px] font-bold uppercase ${textSub}`}>Merge with SVG analysis</label>
                                     </div>
                                     {blendWithGeometry && (
                                         <div className="space-y-1">
@@ -774,7 +774,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                             </div>
 
                             <div className={`p-4 border-b space-y-3 ${isDarkMode ? 'border-slate-800' : 'border-neutral-200'}`}>
-                                <span className={`text-xs font-bold uppercase tracking-wider block ${textMain}`}>Auto-Kern Avançado</span>
+                                <span className={`text-xs font-bold uppercase tracking-wider block ${textMain}`}>Advanced Auto-Kern</span>
                                 
                                 {/* Seletor de Modo de Kerning */}
                                 <div className="space-y-1">
@@ -795,7 +795,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                         ))}
                                     </div>
                                     <p className={`text-[9px] ${textSub}`}>
-                                        {kerningMode === 'smart' && 'Análise geométrica SVG (formas detectadas)'}
+                                        {kerningMode === 'smart' && 'SVG geometric analysis (detected shapes)'}
                                         {kerningMode === 'professional' && 'Tabelas de fontes reais (Helvetica, Futura, etc.)'}
                                         {kerningMode === 'hybrid' && 'Combina tabelas profissionais + geometria'}
                                     </p>
@@ -804,13 +804,13 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                 {/* Estilo da Fonte - para modos profissional/híbrido */}
                                 {(kerningMode === 'professional' || kerningMode === 'hybrid') && (
                                     <div className="space-y-1">
-                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Estilo Tipográfico</label>
+                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Typographic Style</label>
                                         <select
                                             value={fontStyle}
                                             onChange={(e) => setFontStyle(e.target.value as FontStyle)}
                                             className={`w-full rounded px-2 py-2 text-sm font-bold outline-none ${inputBg}`}
                                         >
-                                            <option value="geometric-sans">Geométrica Sans (Futura, Avenir)</option>
+                                            <option value="geometric-sans">Geometric Sans (Futura, Avenir)</option>
                                             <option value="humanist-sans">Humanista Sans (Frutiger, Myriad)</option>
                                             <option value="neo-grotesque">Neo-Grotesca (Helvetica, Arial)</option>
                                             <option value="serif-oldstyle">Serifa Old Style (Garamond)</option>
@@ -832,7 +832,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                             className={`w-full rounded px-2 py-2 text-sm font-bold outline-none ${inputBg}`}
                                         >
                                             <option value="display">Display</option>
-                                            <option value="geometric">Geométrica</option>
+                                            <option value="geometric">Geometric</option>
                                             <option value="sans">Sans</option>
                                             <option value="serif">Serif</option>
                                             <option value="mono">Mono</option>
@@ -845,7 +845,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                     <input type="range" min="0" max="2" step="0.1" value={autoKernIntensity} onChange={(e) => setAutoKernIntensity(parseFloat(e.target.value))} className={`w-full h-1 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
                                 </div>
                                 <button onClick={handleAutoKern} className={`w-full py-2 rounded text-xs font-bold transition-colors ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>
-                                    {kerningMode === 'smart' ? 'Run Smart Auto-Kern' : kerningMode === 'professional' ? 'Aplicar Kerning Profissional' : 'Aplicar Kerning Híbrido'}
+                                    {kerningMode === 'smart' ? 'Run Smart Auto-Kern' : kerningMode === 'professional' ? 'Apply Professional Kerning' : 'Aplicar Kerning Hybrid'}
                                 </button>
                                 <button
                                     onClick={handleResetAutoKern}

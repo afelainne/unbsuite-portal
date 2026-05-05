@@ -162,7 +162,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                                 setOpenStyleMenu(isMenuOpen ? null : style);
                                             }}
                                             className={`ml-1 px-1.5 py-0.5 rounded text-base leading-none ${isActive ? 'hover:bg-black/10' : isDarkMode ? 'hover:bg-white/10' : 'hover:bg-black/5'}`}
-                                            aria-label={`Opções de ${style}`}
+                                            aria-label={`Options for ${style}`}
                                         >
                                             ⋯
                                         </span>
@@ -176,7 +176,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                                 type="button"
                                                 onClick={() => {
                                                     setOpenStyleMenu(null);
-                                                    const newName = prompt(`Nome do novo peso (cópia de "${style}"):`);
+                                                    const newName = prompt(`Name of the new weight (copy of "${style}"):`);
                                                     if (newName && newName.trim()) onDuplicateStyle(newName.trim());
                                                 }}
                                                 className={`w-full text-left px-3 py-2 text-[11px] font-semibold ${isDarkMode ? 'hover:bg-slate-800 text-slate-200' : 'hover:bg-neutral-100 text-neutral-700'}`}
@@ -192,7 +192,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                                     }}
                                                     className={`w-full text-left px-3 py-2 text-[11px] font-semibold ${isDarkMode ? 'hover:bg-red-500/20 text-red-300' : 'hover:bg-red-50 text-red-600'}`}
                                                 >
-                                                    Excluir
+                                                    Delete
                                                 </button>
                                             )}
                                         </div>
@@ -224,7 +224,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
                 {/* AÇÕES */}
                 <div className="space-y-2">
-                    <span className={groupLabel}>Ações</span>
+                    <span className={groupLabel}>Actions</span>
                     <button onClick={() => fileInputRef.current?.click()} className={btnGhost}>
                         <span className="flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" /></svg>
@@ -235,7 +235,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     <button onClick={handleSave} className={btnPrimary}>
                         <span className="flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                            Salvar projeto
+                            Salvar project
                         </span>
                         <span className="text-[9px] tracking-[0.14em] opacity-70">Ctrl+S</span>
                     </button>
@@ -266,7 +266,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             )}
                             Exportar TTF
                         </span>
-                        <span className="text-[9px] tracking-[0.14em] opacity-70">Família</span>
+                        <span className="text-[9px] tracking-[0.14em] opacity-70">Family</span>
                     </button>
                     {isExporting && (
                         <div className="w-full h-1 rounded-full bg-black/10 overflow-hidden">
@@ -283,7 +283,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                         {onOpenDiagnostics && (
                             <button onClick={onOpenDiagnostics} className={iconBtn}>
                                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
-                                Diagnóstico
+                                Diagnostics
                             </button>
                         )}
                     </div>
@@ -293,7 +293,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                         onClick={() => setShowAdvancedExport(v => !v)}
                         className={`w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] ${subtleText} hover:${isDarkMode ? 'text-white' : 'text-[#232323]'}`}
                     >
-                        <span>Mais opções</span>
+                        <span>More options</span>
                         <span className={`transition-transform ${showAdvancedExport ? 'rotate-180' : ''}`}>▾</span>
                     </button>
                     {showAdvancedExport && (

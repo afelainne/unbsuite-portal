@@ -217,14 +217,14 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                                   <span className={textSub}>1000 (LOOSE)</span>
                               </div>
                               <p className={`text-[10px] ${textSub}`}>
-                                  Espaço entre linhas em unidades de design.
+                                  Line spacing in design units.
                               </p>
                           </div>
 
-                          {/* Espaço entre Palavras - updates metadata directly */}
+                          {/* Word Spacing - updates metadata directly */}
                           <div className="space-y-3">
                               <div className="flex justify-between items-center">
-                                  <label className={`text-xs font-bold uppercase tracking-wider ${textMain}`}>Espaço entre Palavras</label>
+                                  <label className={`text-xs font-bold uppercase tracking-wider ${textMain}`}>Word Spacing</label>
                                   <span className={`text-xs font-mono ${textSub}`}>{wordSpacingUnits} units ({Math.round((wordSpacingUnits / upm) * 100)}%)</span>
                               </div>
                               <input 
@@ -238,13 +238,13 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                                   <span className={textSub}>600 (WIDE)</span>
                               </div>
                               <p className={`text-[10px] ${textSub}`}>
-                                  Largura do espaço. Valores típicos: 20-35% do UPM.
+                                  Space width. Typical values: 20-35% of UPM.
                               </p>
                           </div>
 
-                          {/* Presets Rápidos - no "Aplicar na Fonte" button */}
+                          {/* Quick Presets - no "Apply to Font" button */}
                           <div className="space-y-3">
-                              <label className={`text-xs font-bold uppercase tracking-wider block ${textMain}`}>Presets Rápidos</label>
+                              <label className={`text-xs font-bold uppercase tracking-wider block ${textMain}`}>Quick Presets</label>
                               <div className="grid grid-cols-2 gap-2">
                                   {[
                                       { label: 'Tight', lg: 0.1, ws: 0.2 },
@@ -262,7 +262,7 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                                   ))}
                               </div>
                               <p className={`text-[9px] text-center ${textSub}`}>
-                                  ✓ Alterações aplicadas em tempo real
+                                  ✓ Changes applied in real time
                               </p>
                           </div>
                       </div>
@@ -311,7 +311,7 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                               Profile: {activeProfile.label}
                           </p>
                           <p className={`text-[9px] ${textSub}`}>
-                              ✓ Alterações aplicadas em tempo real
+                              ✓ Changes applied in real time
                           </p>
                       </div>
                   </div>

@@ -23,7 +23,7 @@ type KerningClass = 'ROUND' | 'DIAGONAL_LEFT' | 'DIAGONAL_RIGHT' | 'OVERHANG' | 
 
 /**
  * Matriz de kerning profissional
- * Valores são fração do peso do traço (0.3 = 30% do peso)
+ * Valores são fração do weight do traço (0.3 = 30% do weight)
  * Negativos = aproximar, Positivos = afastar
  */
 const KERNING_MATRIX: Record<KerningClass, Record<KerningClass, number>> = {
@@ -160,7 +160,7 @@ interface GlyphAnalysis {
   char: string;
   points: Point[];
   bounds: { x: number; y: number; width: number; height: number } | null;
-  // Métricas calculadas
+  // Metrics calculadas
   aspectRatio: number;
   roundness: number;             // 0 = angular, 1 = circular
   density: number;               // Preenchimento
@@ -410,10 +410,10 @@ const calculateDensity = (points: Point[], bounds: { width: number; height: numb
 };
 
 /**
- * Estima o peso do traço
+ * Estima o weight do traço
  */
 const estimateStrokeWeight = (density: number, bounds: { width: number; height: number }): number => {
-  // Densidade correlaciona com peso
+  // Densidade correlaciona com weight
   // Fontes finas: ~0.15-0.25 densidade
   // Fontes display: ~0.35-0.50 densidade
   const avgDimension = Math.sqrt(bounds.width * bounds.height);
@@ -638,7 +638,7 @@ const calculateSpacing = (
       marginFactor = 0.35;
   }
   
-  // Margem proporcional ao peso
+  // Margem proporcional ao weight
   let baseMargin = avgStrokeWeight * marginFactor;
   
   // Garantir mínimo razoável
@@ -727,7 +727,7 @@ const calculateKerning = (
   // Arredondar
   kerning = Math.round(kerning);
   
-  // Limitar kerning máximo (não mais que 60% do peso)
+  // Limitar kerning máximo (não mais que 60% do weight)
   const maxKerning = -avgStrokeWeight * 0.6;
   if (kerning < maxKerning) kerning = Math.round(maxKerning);
   
@@ -738,7 +738,7 @@ const calculateKerning = (
 };
 
 /**
- * Gera todos os pares de kerning necessários
+ * Gera todos os pairs de kerning necessários
  */
 const generateKerningPairs = (
   analyses: Map<string, GlyphAnalysis>,
@@ -763,7 +763,7 @@ const generateKerningPairs = (
   // Pontuação importante
   const punctuation = ['.', ',', '-', '\'', '"', ':', ';', '!', '?'];
   
-  // Gerar pares
+  // Gerar pairs
   for (const left of kernableChars) {
     const leftAnalysis = analyses.get(left);
     if (!leftAnalysis) continue;
@@ -870,7 +870,7 @@ export const autoConfigureFont = (
       }
     }
     
-    // Espaçamento
+    // Spacing
     if (opts.autoSpacing) {
       const spacing = calculateSpacing(analysis, avgStrokeWeight, fontStyle, opts.sideMargin);
       
@@ -938,7 +938,7 @@ export const autoConfigureFont = (
     averageRoundness: Math.round(avgRoundness * 100) / 100,
     warnings,
     summary: `Estilo: ${fontStyle}. Peso: ${Math.round(avgStrokeWeight)}. Roundness: ${(avgRoundness * 100).toFixed(0)}%. ` +
-             `${glyphsUpdated} glyphs atualizados, ${kerningPairs.length} pares de kerning.`
+             `${glyphsUpdated} glyphs atualizados, ${kerningPairs.length} pairs de kerning.`
   };
   
   return { glyphUpdates, kerningPairs, metadataUpdates, report };

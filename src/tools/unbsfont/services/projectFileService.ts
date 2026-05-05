@@ -73,20 +73,20 @@ export const parseProjectFile = async (file: File): Promise<ProjectFilePayload> 
     try {
         parsed = JSON.parse(text);
     } catch (err) {
-        throw new Error('Arquivo inválido: JSON não pôde ser lido.');
+        throw new Error('Invalid file: JSON could not be read.');
     }
 
     if (!parsed || typeof parsed !== 'object') {
-        throw new Error('Arquivo inválido: estrutura base não reconhecida.');
+        throw new Error('Invalid file: base structure not recognized.');
     }
 
     const payload = parsed as Partial<ProjectFilePayload>;
     if (!payload.metadata || !payload.styleMap || typeof payload.currentStyle !== 'string') {
-        throw new Error('Arquivo inválido: metadados, estilos ou estilo atual ausente.');
+        throw new Error('Invalid file: metadata, styles or current style missing.');
     }
 
     if (!isValidStyleMap(payload.styleMap)) {
-        throw new Error('Arquivo inválido: mapa de estilos corrompido.');
+        throw new Error('Invalid file: style map corrupted.');
     }
 
     return {

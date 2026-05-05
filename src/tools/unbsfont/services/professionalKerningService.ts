@@ -106,7 +106,7 @@ export const PROFESSIONAL_KERNING_VALUES = {
     '")': -40, '\')': -40, '"]': -40,
   },
   
-  // Números (geralmente tabulares, mas alguns pares)
+  // Números (geralmente tabulares, mas alguns pairs)
   numbers: {
     '1.': -40, '1,': -40,
     '7.': -40, '7,': -40,
@@ -288,7 +288,7 @@ export interface ProfessionalKerningOptions {
   useClasses?: boolean;         // Usar kerning por classes
   includeNumbers?: boolean;
   includePunctuation?: boolean;
-  onlyProblemPairs?: boolean;   // Só pares com problemas detectados
+  onlyProblemPairs?: boolean;   // Só pairs com problemas detectados
   minValue?: number;            // Ignorar valores menores que isso
   targetOpticalBalance?: number; // 0.0 a 1.0 (quão "equilibrado" deve parecer)
 }
@@ -452,7 +452,7 @@ export function generateProfessionalKerning(
   
   const glyphChars = new Set(glyphs.filter(g => g.pathData).map(g => g.char));
   
-  // 1. Aplica pares críticos da tabela profissional
+  // 1. Aplica pairs críticos da tabela profissional
   for (const [pair, value] of Object.entries(PROFESSIONAL_KERNING_VALUES.critical)) {
     const [left, right] = [pair[0], pair.slice(1)];
     if (glyphChars.has(left) && glyphChars.has(right)) {
@@ -464,7 +464,7 @@ export function generateProfessionalKerning(
     }
   }
   
-  // 2. Aplica pares importantes
+  // 2. Aplica pairs importantes
   for (const [pair, value] of Object.entries(PROFESSIONAL_KERNING_VALUES.important)) {
     if (processed.has(pair)) continue;
     const [left, right] = [pair[0], pair.slice(1)];
@@ -477,7 +477,7 @@ export function generateProfessionalKerning(
     }
   }
   
-  // 3. Aplica pares de minúsculas
+  // 3. Aplica pairs de minúsculas
   for (const [pair, value] of Object.entries(PROFESSIONAL_KERNING_VALUES.lowercase)) {
     if (processed.has(pair)) continue;
     const [left, right] = [pair[0], pair.slice(1)];
@@ -520,7 +520,7 @@ export function generateProfessionalKerning(
     }
   }
   
-  // 6. Se useClasses, gera pares adicionais baseado em categorias
+  // 6. Se useClasses, gera pairs adicionais baseado em categorias
   if (opts.useClasses) {
     const charArray = Array.from(glyphChars);
     
@@ -564,7 +564,7 @@ export function generateHybridKerning(
   const professionalPairs = generateProfessionalKerning(glyphs, { ...options, useClasses: false });
   const processed = new Set(professionalPairs.map(p => `${p.left}${p.right}`));
   
-  // Usa calculateOptimalKerning para pares não cobertos
+  // Usa calculateOptimalKerning para pairs não cobertos
   const profiles = analyzeAllGlyphShapes(glyphs);
   const multiplier = opts.intensity || 1.0;
   const chars = Array.from(profiles.keys());
@@ -595,7 +595,7 @@ export function generateHybridKerning(
 
 export interface KerningQualityReport {
   totalPairs: number;
-  coverage: number;           // % de pares críticos cobertos
+  coverage: number;           // % de pairs críticos cobertos
   averageValue: number;
   strongestPairs: Array<{ pair: string; value: number }>;
   missingCritical: string[];
@@ -613,7 +613,7 @@ export function analyzeKerningQuality(
   const glyphChars = new Set(glyphs.filter(g => g.pathData).map(g => g.char));
   const pairSet = new Set(pairs.map(p => `${p.left}${p.right}`));
   
-  // Verifica pares críticos
+  // Verifica pairs críticos
   const criticalPairs = Object.keys(PROFESSIONAL_KERNING_VALUES.critical);
   const applicableCritical = criticalPairs.filter(pair => {
     const [left, right] = [pair[0], pair.slice(1)];
@@ -633,7 +633,7 @@ export function analyzeKerningQuality(
     ? values.reduce((a, b) => a + Math.abs(b), 0) / values.length
     : 0;
   
-  // Top 5 pares mais fortes
+  // Top 5 pairs mais fortes
   const sortedPairs = [...pairs].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
   const strongestPairs = sortedPairs.slice(0, 5).map(p => ({
     pair: `${p.left}${p.right}`,
@@ -644,7 +644,7 @@ export function analyzeKerningQuality(
   const suggestions: string[] = [];
   
   if (coverage < 50) {
-    suggestions.push('Cobertura baixa - adicione kerning para pares críticos como AV, To, LT');
+    suggestions.push('Cobertura baixa - adicione kerning para pairs críticos como AV, To, LT');
   }
   if (averageValue < 20 && pairs.length > 0) {
     suggestions.push('Valores de kerning parecem muito fracos - considere aumentar intensidade');
@@ -656,7 +656,7 @@ export function analyzeKerningQuality(
     suggestions.push(`Pares importantes faltando: ${missingCritical.join(', ')}`);
   }
   if (pairs.length < 20 && glyphChars.size > 50) {
-    suggestions.push('Poucos pares de kerning - considere usar o modo "Completo"');
+    suggestions.push('Poucos pairs de kerning - considere usar o modo "Completo"');
   }
   
   // Nota

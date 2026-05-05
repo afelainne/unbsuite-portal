@@ -1,6 +1,6 @@
 /**
  * GlyphDiagnostics Component
- * Painel de diagnóstico e correção automática de problemas em glyphs
+ * Diagnostic panel and automatic fix for glyph problems
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -149,7 +149,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-              Diagnóstico
+              Diagnostics
             </p>
             <p className={`text-[11px] ${mutedClass}`}>
               {diagnostics.glyphsWithIssues} de {diagnostics.totalGlyphs} glyphs com problemas
@@ -195,7 +195,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
             <button
               onClick={() => setMoreOpen(o => !o)}
               className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
-              aria-label="Mais ações"
+              aria-label="More actions"
             >
               ⋯
             </button>
@@ -251,7 +251,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M20 6L9 17l-5-5" />
               </svg>
-              {lastFixResult.fixed} correções aplicadas
+              {lastFixResult.fixed} fixes applied
               {lastFixResult.failed > 0 && ` (${lastFixResult.failed} falharam)`}
             </p>
           </div>
@@ -267,7 +267,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
               </svg>
               <p className="font-bold text-lg">Nenhum problema encontrado!</p>
               <p className={`text-sm ${mutedClass}`}>
-                Todos os glyphs estão com métricas consistentes.
+                All glyphs have consistent metrics.
               </p>
             </div>
           ) : (
@@ -323,7 +323,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
                             {diag.suggestion}
                           </p>
                           <p className={`text-[10px] ${mutedClass} mt-1 font-mono`}>
-                            Código: {diag.code}
+                            Code: {diag.code}
                           </p>
                         </div>
                         {diag.autoFixAvailable && (

@@ -173,13 +173,13 @@ const TIMES_NEW_ROMAN: KerningTemplate = {
 };
 
 // ============================================================================
-// FUTURA - Geométrica
+// FUTURA - Geometric
 // Kerning preciso para formas circulares perfeitas
 // ============================================================================
 const FUTURA: KerningTemplate = {
   id: 'futura',
   name: 'Futura',
-  description: 'Geométrica. Kerning otimizado para formas circulares.',
+  description: 'Geometric. Kerning otimizado para formas circulares.',
   category: 'geometric',
   source: 'URW Futura / Bitstream Futura',
   pairs: {
@@ -543,15 +543,15 @@ const DIN: KerningTemplate = {
 };
 
 // ============================================================================
-// MONOSPACE - Espaçamento fixo mínimo
+// MONOSPACE - Spacing fixo mínimo
 // Kerning muito conservador para manter ritmo
 // ============================================================================
 const MONOSPACE: KerningTemplate = {
   id: 'monospace',
   name: 'Monospace',
-  description: 'Espaçamento fixo. Kerning mínimo preservando ritmo.',
+  description: 'Spacing fixo. Kerning mínimo preservando ritmo.',
   category: 'mono',
-  source: 'Referência: SF Mono / JetBrains Mono',
+  source: 'Reference: SF Mono / JetBrains Mono',
   pairs: {
     // Só ajustes mínimos para legibilidade extrema
     'T.': -30, 'T,': -30,
@@ -832,7 +832,7 @@ const OSWALD: KerningTemplate = {
 };
 
 // ============================================================================
-// MONTSERRAT - Sans Geométrica Moderna
+// MONTSERRAT - Sans Geometric Moderna
 // Kerning balanceado para versatilidade
 // ============================================================================
 const MONTSERRAT: KerningTemplate = {

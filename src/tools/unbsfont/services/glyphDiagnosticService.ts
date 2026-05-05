@@ -47,7 +47,7 @@ const getCharCategory = (char: string): CharCategory => {
   if (code >= 97 && code <= 122) return 'lowercase';
   // Números 0-9
   if (code >= 48 && code <= 57) return 'number';
-  // Símbolos pequenos (pontuação, bullets, etc)
+  // Symbols pequenos (pontuação, bullets, etc)
   const smallSymbols = '.·•,;:\'"`^~';
   if (smallSymbols.includes(char)) return 'smallSymbol';
   // Pontuação geral
@@ -286,7 +286,7 @@ const calculateReferenceStats = (glyphs: GlyphData[]): ReferenceStats => {
 };
 
 /**
- * Diagnóstico principal de um glyph individual
+ * Diagnostics principal de um glyph individual
  */
 const diagnoseGlyph = (
   glyph: GlyphData,

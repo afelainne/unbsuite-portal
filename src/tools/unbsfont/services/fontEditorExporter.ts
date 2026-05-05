@@ -559,7 +559,7 @@ export const exportFontWithFontEditor = async (
   ttfData.head.unitsPerEm = upm;
   applyNameRecords(ttfData, metadata);
   
-  // Métricas verticais (entrelinhas)
+  // Metrics verticais (entrelinhas)
   ttfData.hhea.ascent = ascender;
   ttfData.hhea.descent = descender;
   ttfData.hhea.lineGap = lineGap; // Entrelinhas configurável!
@@ -808,7 +808,7 @@ export const exportFontWithKerning = async (
   // ADICIONAR TABELA KERN
   // =========================================================================
   if (kerningPairs.length > 0) {
-    // Converter pares de caracteres para pares de índices de glifo
+    // Converter pairs de caracteres para pairs de índices de glifo
     const kernSubtable: Array<{ left: number; right: number; value: number }> = [];
     
     for (const pair of kerningPairs) {
