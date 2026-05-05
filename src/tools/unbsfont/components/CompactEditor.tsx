@@ -381,7 +381,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                pushNotice(`Tight: ${generatedPairs.length} pairs. Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
+                pushNotice(`Tight: ${generatedPairs.length} pairs. Intensity: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
                 break;
             case 'normal':
                 suggestedIntensity = 1.0;
@@ -397,7 +397,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                pushNotice(`Loose: ${generatedPairs.length} pairs. Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
+                pushNotice(`Loose: ${generatedPairs.length} pairs. Intensity: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
                 break;
             case 'auto-smart':
                 suggestedIntensity = kerningIntensity;
@@ -463,7 +463,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         scale: suggestedIntensity,
                         overwrite: true,
                     });
-                    pushNotice(`Template "${template.name}". Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
+                    pushNotice(`Template "${template.name}". Intensity: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
                 }
                 break;
         }
@@ -613,11 +613,11 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
 
     // Categorias
     const categories: { id: GlyphCategory; label: string }[] = [
-        { id: 'all', label: 'Todos' },
+        { id: 'all', label: 'All' },
         { id: 'uppercase', label: 'A-Z' },
         { id: 'lowercase', label: 'a-z' },
         { id: 'numbers', label: '0-9' },
-        { id: 'symbols', label: 'Outros' },
+        { id: 'symbols', label: 'Other' },
     ];
 
     return (
@@ -1001,7 +1001,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 {/* Metricas */}
                                 <div className={`mt-4 p-3 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
                                     <div className="flex justify-between items-center mb-2">
-                                        <p className={`text-[10px] font-bold uppercase tracking-wider ${textSub}`}>Metricas</p>
+                                        <p className={`text-[10px] font-bold uppercase tracking-wider ${textSub}`}>Metrics</p>
                                         <button
                                             onClick={handleRecalculateCurrentWidth}
                                             disabled={!selectedGlyph.pathData}
@@ -1017,7 +1017,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div>
-                                            <label className={`text-[10px] font-bold uppercase ${textSub}`}>Largura</label>
+                                            <label className={`text-[10px] font-bold uppercase ${textSub}`}>Width</label>
                                             <input
                                                 type="number"
                                                 value={selectedGlyph.advanceWidth}
@@ -1109,7 +1109,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
 
                         {/* Kerning */}
                         <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Kerning Automatico</p>
+                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Automatic Kerning</p>
                             
                             {/* Preset Selector */}
                             <div className="mb-4">
@@ -1262,7 +1262,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     onClick={() => applyKerningPreset(kerningPreset)}
                                     className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider border ${btnSecondary}`}
                                 >
-                                    Reaplicar
+                                    Reapply
                                 </button>
                                 <button
                                     onClick={handleResetKerning}
@@ -1291,7 +1291,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                                     : `border ${btnSecondary}`
                                             }`}
                                         >
-                                            {mode === 'auto' ? 'Auto' : mode === 'fixed' ? 'Fixo' : 'Escala'}
+                                            {mode === 'auto' ? 'Auto' : mode === 'fixed' ? 'Fixed' : 'Scale'}
                                         </button>
                                     ))}
                                 </div>
