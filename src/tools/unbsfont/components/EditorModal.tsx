@@ -1309,6 +1309,8 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 </div>
 
                 {/* Context & Ghost Char */}
+                </>)}
+                {activeTab === 'KERNING' && (<>
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
                     <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Context & Ghost Char</label>
                     <div className="space-y-3">
