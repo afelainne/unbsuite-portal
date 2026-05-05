@@ -683,10 +683,10 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         const mainBlocks = mainColors.map((color, idx) => {
             const x = idx * mainColWidth;
             const textColor = getContrastColor(color.hex);
-            const vars = getColorVariations(color.hex, 3);
+            const vars = showVariations ? getColorVariations(color.hex, 3) : [];
             const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const mainBlockHeight = mainHeight * 0.7;
-            const varBlockHeight = (mainHeight - mainBlockHeight) / vars.length;
+            const mainBlockHeight = showVariations ? mainHeight * 0.7 : mainHeight;
+            const varBlockHeight = vars.length ? (mainHeight - mainBlockHeight) / vars.length : 0;
             
             const mainRect = `<rect x="${x}" y="0" width="${mainColWidth}" height="${mainBlockHeight}" fill="${color.hex}" />`;
             const nameLabel = `<text x="${x + 25}" y="55" font-size="48" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>`;
@@ -739,7 +739,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             const cardWidth = ((width - padding * 2 - gap * (topColors.length - 1)) * color.weight) / topColors.reduce((s, c) => s + c.weight, 0);
             const textColor = getContrastColor(color.hex);
             const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const vars = getColorVariations(color.hex, 3);
+            const vars = showVariations ? getColorVariations(color.hex, 3) : [];
             const varHeight = 40;
             
             const codeLabels = codes.map((code, i) => 
@@ -781,7 +781,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             const y = topHeight + padding * 2;
             const textColor = getContrastColor(color.hex);
             const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const vars = getColorVariations(color.hex, 2);
+            const vars = showVariations ? getColorVariations(color.hex, 2) : [];
             const varHeight = 30;
             
             const codeLabels = codes.map((code, i) => 
