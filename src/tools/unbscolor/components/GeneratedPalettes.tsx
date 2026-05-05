@@ -586,7 +586,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const generatePaletteSvg = (): string => {
         const width = 1920;
         const height = 1080;
-        const mainAreaWidth = width * (splitRatio / 100);
+        const mainAreaWidth = showVariations ? width * (splitRatio / 100) : width;
         const variationsAreaWidth = width - mainAreaWidth;
         let yOffset = 0;
         const mainBlocks = colors.map((color) => {
@@ -617,8 +617,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             yOffset += blockHeight;
             return block;
         }).join('');
-        const colWidth = variationsAreaWidth / colors.length;
-        const variationBlocks = colors.map((color, colIdx) => {
+        const colWidth = colors.length ? variationsAreaWidth / colors.length : 0;
+        const variationBlocks = !showVariations ? '' : colors.map((color, colIdx) => {
             const vars = getColorVariations(color.hex, variationCount);
             const varHeight = height / vars.length;
             return vars
