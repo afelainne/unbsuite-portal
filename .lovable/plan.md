@@ -1,98 +1,101 @@
-## Problemas atuais no Toolbar lateral (modo Avançado)
 
-Arquivo: `src/tools/unbsfont/components/Toolbar.tsx` (412 linhas, 14+ botões em 5 seções).
+# Reorganização dos modais Edit Glyph + Diagnóstico
 
-1. **Exportação inflada e ambígua**
-   - "Exportar Tabela" aparece **duas vezes** com legendas SVG/Sheet — usuário não sabe a diferença.
-   - "Preview Final", "Diagnóstico", "Exportar TTF", "Exportar Tabela (vazia)", "Exportar Tabela (preenchida)" amontoados sem hierarquia.
-   - 3 variações visuais de botão (`primaryButtonBase` ativo, passivo, `quickActionButtonBase`) sem critério claro.
+Após auditoria de `EditorModal.tsx` (1931 linhas) e `GlyphDiagnostics.tsx` (377 linhas), os dois modais sofrem do mesmo problema: muitas ações e seções competindo pelo mesmo espaço, com sobreposições funcionais.
 
-2. **Projeto com 5 botões redundantes**
-   - "Salvar projeto" (localStorage) vs "Baixar arquivo .unbsfo" — ambos salvam, diferença só no destino.
-   - "Abrir projeto (.unbsfo)" + "Dashboard" navegam — duplicam o caminho Home.
-   - "Import SVG" misturado com ações de projeto (deveria ficar perto da edição).
+---
 
-3. **Seção "Tipografia" vazia** — só mostra um aviso "vá para outra aba". Ocupa espaço sem ação.
+## 1. EditorModal — Edit Glyph
 
-4. **Designer name escondido** num double-click da versão. Quase invisível.
+### Problemas detectados
 
-5. **Pesos & Estilos** funciona bem, mas cada linha tem 3 botões (usar/duplicar/excluir) — denso. Duplicar pode virar menu.
+- **Aba METRICS está sobrecarregada (7 seções)**: Global Vertical Limits, Glyph Geometry, Auto Position, Context & Ghost Char, Ghost Gap Visualization, Alignment Guides e **Kerning Preview**.
+- **Duplicação**: "Kerning Preview", "Context & Ghost Char" e "Ghost Gap Visualization" são funcionalidades de kerning vivendo dentro de METRICS, enquanto existe uma aba **KERNING** dedicada. Usuário não sabe onde mexer.
+- **"Global Vertical Limits"** (Ascender, Cap Height, x-Height, Descender, Baseline Shift) altera **metadata da fonte inteira**, não do glifo — não deveria aparecer dentro do editor de um glifo individual (ou pelo menos não sem aviso e em destaque), porque o usuário acha que ajusta só aquela letra e altera todos os glifos.
+- **Tabs em 9px com 5 colunas** ficam ilegíveis em viewports menores; "STROKE" raramente é usado mas ocupa um quinto da largura.
+- **Header confuso**: dois botões "⚖️ Centralizar" + "Reset LSB" sem hierarquia, ao lado do título.
+- **Footer**: "Close" e "Save" sem distinção visual clara — ambos do mesmo tamanho.
 
-6. **Preferências** mistura "Modo Compact" (mudança crítica de fluxo) com "Tema" (cosmético).
+### Reorganização proposta
 
-## Reorganização proposta
+**Cabeçalho** — uma única linha:
+- `Edit '{char}' · {name}` à esquerda
+- Botão único `⚖ Centralizar` (mantém função, mais visível)
+- Botão `↶ Undo` / `↷ Redo` (atualmente só atalho — expor)
+- Fechar `×` à direita
 
-Reduzir a **3 seções claras**, ~9 botões totais (de 14+):
+**Tabs reduzidas de 5 → 3 + menu "More"**:
+- `GLYPH` (geometria + auto position)
+- `KERNING` (tudo que é espaçamento entre pares)
+- `ACCENTS` (anchors/derivativos)
+- Menu `⋯` com `Components` e `Stroke` (uso raro)
 
-```
-┌─ HEADER (compacto)
-│  Family name [editável]      v1.0 · Designer ✎
-│  ───────────────────────────────────────────
-│
-├─ ESTILOS (Pesos)
-│  • Regular        [ATIVO]  ⋯
-│  • Bold                    ⋯
-│  + Adicionar estilo
-│  ───────────────────────────────────────────
-│
-├─ AÇÕES                        (botão principal grande)
-│  ⬇  Importar SVG               Ctrl+V
-│  💾  Salvar                     Ctrl+S      ← unifica save+download
-│  📂  Abrir .unbsfo
-│  ───────────────────────────────────────────
-│
-├─ EXPORTAR FONTE
-│  ⭐ Exportar TTF              [primário]   ← ação principal
-│  👁  Preview da fonte
-│  ⚠  Diagnóstico
-│  ▾  Mais opções (collapse)                  ← esconde sheet/tabela
-│       · Tabela SVG (vazia)
-│       · Tabela SVG (preenchida)
-│  ───────────────────────────────────────────
-│
-└─ FOOTER (rodapé fixo)
-   ◐ Tema   ⇄ Modo Compact   ⌂ Dashboard
-```
+**Aba GLYPH (era METRICS, enxuta):**
+1. **Geometry** (Scale, Width, X Off, Y Off) — fica
+2. **Auto Position** — fica (importante)
+3. **Alignment Guides** — fica (snap em ascender/baseline/etc., útil aqui)
+4. **Font Metrics (avançado, recolhido)** — collapse fechado por padrão com aviso "altera a fonte inteira"; contém Ascender/Cap/x-Height/Descender/Baseline Shift. Evita edição acidental.
 
-### Mudanças concretas
+**Aba KERNING (consolidada):**
+1. **Diagnóstico de Espaçamento** (cards de métricas) — fica
+2. **Partner Preview** (movido de METRICS — Partner glyph + render SVG + zoom/pan + Kerning Bias) — UMA visualização ao invés de duas
+3. **Ghost Gap Visualization** (movido de METRICS — par triplo `XaX` com gaps editáveis)
+4. **Construtor de Pares Rápido** — fica
+5. **Pares Salvos** — fica
+6. Botão "Open in Kerning Panel" no topo
 
-**A. Header**
-- Tornar o campo "Designer" visível (input pequeno abaixo do nome) em vez de double-click invisível.
-- Versão fica como tag pequena ao lado do nome.
+Remove: aba KERNING não duplica mais com METRICS; "Context & Ghost Char" funde com "Ghost Gap Visualization" (mesma ideia: glifo fantasma ao lado).
 
-**B. Estilos**
-- Manter lista, mas colapsar Duplicar/Excluir num menu `⋯` (popover ou inline ao hover) para reduzir ruído visual. Botão "Usar/Ativo" vira o próprio item clicável.
+**Footer** — hierarquia clara:
+- `Close` (ghost, esquerda)
+- `Save & Close` (primário preto, direita, maior)
 
-**C. Seção "Ações" (renomeada de "Projeto")**
-- 3 botões só: **Importar SVG**, **Salvar** (unifica `onSaveProject` + `onDownloadProjectFile` num único fluxo — salva local + oferece download), **Abrir .unbsfo**.
-- Remover botão "Dashboard" daqui (vai pro footer junto com Tema/Compact).
+---
 
-**D. Seção "Exportar fonte"**
-- **Exportar TTF** vira único botão primário grande (estilo `activePrimaryClasses`).
-- **Preview** e **Diagnóstico** ficam como botões secundários menores lado a lado.
-- **Tabela SVG vazia/preenchida** vão pra um collapse "Mais opções" — uso raro, não polui o topo.
+## 2. GlyphDiagnostics — Diagnóstico de Glyphs
 
-**E. Remover seção "Tipografia"** (placeholder vazio).
+### Problemas detectados
 
-**F. Footer fixo no fundo do sidebar**
-- 3 ícones pequenos: **Tema** (claro/escuro), **Modo Compact**, **Dashboard** (Home).
-- Libera espaço vertical no corpo principal.
+- **Toolbar superior amontoada**: 4 stat cards + 4 filter chips + 2 botões grandes ("Normalizar Tamanhos" azul, "Auto-Corrigir Tudo" verde) + ícone fechar — em viewports < 1100px tudo quebra de linha.
+- **Duas ações primárias competindo**: "Normalizar Tamanhos" e "Auto-Corrigir Tudo" parecem rivais; usuário não sabe a diferença sem ler código.
+- **"Normalizar Tamanhos" global** duplica funcionalidade do botão "Normalizar" que já existe em cada card de glifo.
+- **Footer redundante**: contém apenas texto resumo + botão "Fechar" (já existe × no topo).
+- **Per-glyph card**: bom, mas três botões na mesma linha (Normalizar, Editar, e por issue → Corrigir) gera ruído.
 
-**G. Estilos visuais**
-- Reduzir a 2 variantes: `primary` (ações principais — TTF, Salvar) e `ghost` (tudo o mais).
-- Remover `quickActionButtonBase` redundante.
-- Padding e espaçamentos consistentes (todos `py-2 px-3 rounded-lg`).
+### Reorganização proposta
 
-### Comportamento dos botões (sem quebrar API)
+**Cabeçalho compacto (uma linha):**
+- Título + descrição
+- `×` fechar (sem footer com botão duplicado)
 
-`Toolbar.tsx` continua recebendo as mesmas props. Mudanças internas:
-- `onSaveProject` + `onDownloadProjectFile` são chamados **sequencialmente** ao clicar "Salvar" (salva local primeiro, depois baixa). Mantém ambos os efeitos.
-- `onExportSvgSheet` e `onExportEmptySvgSheet` movidos para dentro do collapse, sem mudança de comportamento.
-- Adicionar `useState` local para o collapse "Mais opções" e `useState` para o menu `⋯` por estilo.
+**Barra de resumo (segunda linha, agrupada):**
+- 4 stats em pílulas pequenas: `Total · Erros · Avisos · Info`
+- Filtros como `Tabs` (não chips espalhadas): `Todos | Erros | Avisos | Info`
+- Uma única ação primária: **`Auto-Corrigir Tudo`** (botão grande, verde)
+- "Normalizar Tamanhos" vai para um menu `⋯ Mais ações` (junto com possíveis futuros: "Resetar métricas", "Exportar relatório")
 
-### Verificação
-- Mesma quantidade de funcionalidades, **menos botões visíveis**.
-- Hierarquia clara: Identidade → Estilos → Ações → Exportar → (rodapé global).
-- Nenhuma prop nova, nenhuma quebra em `App.tsx`.
+**Lista de glyphs:**
+- Card por glifo mantém preview + nome + contagem
+- Apenas **um botão** primário por card: `Editar` (abre o glifo)
+- Ações secundárias (`Normalizar`) viram ícone `⋯` no canto do card
+- Cada issue mantém botão `Corrigir` quando `autoFixAvailable`
 
-Apenas `src/tools/unbsfont/components/Toolbar.tsx` é alterado.
+**Remove footer** (estado vazio + close já comunicados acima)
+
+---
+
+## Arquivos a editar
+
+- `src/tools/unbsfont/components/EditorModal.tsx` — reorganização de tabs e seções (movimentação de blocos JSX existentes; sem mudança de props ou lógica de negócio)
+- `src/tools/unbsfont/components/GlyphDiagnostics.tsx` — reagrupa toolbar, remove botão duplicado, simplifica cards, remove footer
+
+## O que NÃO muda
+
+- Nenhuma prop dos componentes
+- Nenhuma lógica de cálculo (kerning, métricas, autoFix, normalização)
+- Nenhum hook ou serviço
+- Comportamento de undo/redo, drag de guides, persistência
+
+## Riscos
+
+- Reorganização puramente visual/estrutural; teste manual em ambos os modais (abrir, trocar tabs, salvar, auto-fix) ao final.

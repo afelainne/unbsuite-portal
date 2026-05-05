@@ -54,6 +54,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
     const [data, setData] = useState<GlyphData>(() => ensureKerningBias(glyph));
         const [activeTab, setActiveTab] = useState<'METRICS' | 'KERNING' | 'ACCENTS' | 'COMPS' | 'STROKE'>('METRICS');
   const [strokeWidth, setStrokeWidth] = useState(10);
+  const [moreTabsOpen, setMoreTabsOpen] = useState(false);
   
   // History State
     const [history, setHistory] = useState<GlyphData[]>([ensureKerningBias(glyph)]);
@@ -1080,17 +1081,46 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
         <div className={`w-80 border-l flex flex-col shrink-0 ${panelBg}`}>
           <div className={`p-3 border-b flex flex-col gap-2 ${isDarkMode ? 'border-slate-800' : 'border-neutral-200'}`}>
              <div className="flex justify-between items-center">
-                <h2 className={`text-lg font-bold flex items-baseline gap-2 ${textMain}`}>Edit '{glyph.char}' <span className={`text-xs font-normal ${textSub}`}>({glyph.name})</span></h2>
-                <div className="flex gap-1">
-                    <button onClick={handleCenterGlyph} className={`text-[10px] px-2 h-7 rounded border ${isDarkMode ? 'bg-emerald-900/50 border-emerald-700 text-emerald-300 hover:bg-emerald-800' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'}`} title="Centraliza o glifo baseado no centro real do vetor">⚖️ Centralizar</button>
-                    <button onClick={handleAutoCenter} className={`text-[10px] px-2 h-7 rounded border ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-neutral-100 hover:bg-neutral-200 border-neutral-300 text-black'}`}>Reset LSB</button>
+                <h2 className={`text-base font-bold flex items-baseline gap-2 ${textMain} truncate`}>Edit '{glyph.char}' <span className={`text-[11px] font-normal ${textSub} truncate`}>({glyph.name})</span></h2>
+                <div className="flex gap-1 items-center">
+                    <button onClick={handleUndo} disabled={historyIndex <= 0} className={`w-7 h-7 rounded border text-xs ${btnSec} disabled:opacity-40`} title="Undo (Ctrl+Z)">↶</button>
+                    <button onClick={handleRedo} disabled={historyIndex >= history.length - 1} className={`w-7 h-7 rounded border text-xs ${btnSec} disabled:opacity-40`} title="Redo (Ctrl+Y)">↷</button>
+                    <button onClick={handleCenterGlyph} className={`text-[10px] px-2 h-7 rounded border ${isDarkMode ? 'bg-emerald-900/50 border-emerald-700 text-emerald-300 hover:bg-emerald-800' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'}`} title="Centraliza o glifo baseado no centro real do vetor">⚖ Centralizar</button>
                 </div>
              </div>
-             {/* MENU BUTTONS - GRID LAYOUT FIXED - 5 Columns */}
-                 <div className={`grid grid-cols-5 gap-1 p-1 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
-                     {['METRICS', 'KERNING', 'ACCENTS', 'COMPS', 'STROKE'].map(tab => (
-                    <button key={tab} onClick={() => setActiveTab(tab as any)} className={`text-[9px] py-1.5 px-0.5 rounded font-bold uppercase transition-colors text-center truncate ${activeTab === tab ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : (isDarkMode ? 'text-slate-400 hover:text-white' : 'text-neutral-500 hover:text-black')}`}>{tab}</button>
-                ))}
+             {/* TABS — 3 principais + menu More */}
+             <div className={`flex gap-1 p-1 rounded-lg relative ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
+                 {([
+                     { key: 'METRICS', label: 'Glyph' },
+                     { key: 'KERNING', label: 'Kerning' },
+                     { key: 'ACCENTS', label: 'Accents' },
+                 ] as const).map(tab => (
+                     <button
+                         key={tab.key}
+                         onClick={() => { setActiveTab(tab.key); setMoreTabsOpen(false); }}
+                         className={`flex-1 text-[10px] py-1.5 px-1 rounded font-bold uppercase tracking-wider transition-colors text-center ${activeTab === tab.key ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : (isDarkMode ? 'text-slate-400 hover:text-white' : 'text-neutral-500 hover:text-black')}`}
+                     >
+                         {tab.label}
+                     </button>
+                 ))}
+                 <button
+                     onClick={() => setMoreTabsOpen(o => !o)}
+                     className={`w-9 text-[12px] py-1.5 rounded font-black transition-colors ${(activeTab === 'COMPS' || activeTab === 'STROKE') ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : (isDarkMode ? 'text-slate-400 hover:text-white' : 'text-neutral-500 hover:text-black')}`}
+                     title="Mais"
+                 >⋯</button>
+                 {moreTabsOpen && (
+                     <div className={`absolute right-0 top-full mt-1 z-10 w-36 rounded-lg border shadow-lg p-1 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-200'}`}>
+                         {(['COMPS', 'STROKE'] as const).map(t => (
+                             <button
+                                 key={t}
+                                 onClick={() => { setActiveTab(t); setMoreTabsOpen(false); }}
+                                 className={`w-full text-left px-3 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${activeTab === t ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : (isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-neutral-700 hover:bg-neutral-100')}`}
+                             >
+                                 {t === 'COMPS' ? 'Components' : 'Stroke'}
+                             </button>
+                         ))}
+                     </div>
+                 )}
              </div>
                  <datalist id="kerning-partner-options">
                      {partnerOptions.map(option => (
@@ -1102,10 +1132,41 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
           <div className={`flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar ${textMain}`}>
             {activeTab === 'METRICS' && (
                 <>
-                {/* Global Metrics */}
+                {/* Geometry — moved up as primary glyph control */}
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Global Vertical Limits</label>
-                    <div className="space-y-2">
+                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Glyph Geometry</label>
+                    <div className="space-y-3">
+                        {/* Scale */}
+                        <div className="flex items-center gap-2">
+                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Scale</label>
+                            <input type="range" min="0.1" max="3" step="0.01" value={data.scale} onMouseUp={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
+                            <input type="number" step="0.01" value={data.scale} onBlur={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Width</label>
+                            <input type="range" min="0" max="2000" step="10" value={data.advanceWidth} onMouseUp={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
+                            <input type="number" value={data.advanceWidth} onBlur={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>X Off</label>
+                            <input type="range" min="-500" max="500" value={data.leftSideBearing} onMouseUp={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
+                            <input type="number" value={data.leftSideBearing} onBlur={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Y Off</label>
+                            <input type="range" min="-500" max="500" value={data.baselineOffset} onMouseUp={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
+                            <input type="number" value={data.baselineOffset} onBlur={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Global Vertical Limits — collapsed by default with warning */}
+                <details className={`rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
+                    <summary className={`px-2 py-2 cursor-pointer text-[9px] font-black uppercase tracking-wider opacity-80 flex items-center justify-between gap-2 list-none`}>
+                        <span>⚠ Métricas Globais da Fonte</span>
+                        <span className={`text-[9px] font-normal normal-case tracking-normal ${textSub}`}>afeta todos os glifos</span>
+                    </summary>
+                    <div className="p-2 pt-0 space-y-2">
                         {/* Ascender */}
                         <div>
                              <div className="flex justify-between items-center mb-1">
@@ -1168,38 +1229,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                              <input type="range" min="-400" max="400" value={baselineShift} onChange={(e) => onUpdateMetadata({...metadata, baselineShift: parseInt(e.target.value)})} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
                         </div>
                     </div>
-                </div>
-
-                {/* Geometry */}
-                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Glyph Geometry</label>
-                    <div className="space-y-3">
-                        {/* Scale */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Scale</label>
-                            <input type="range" min="0.1" max="3" step="0.01" value={data.scale} onMouseUp={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" step="0.01" value={data.scale} onBlur={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        {/* Width */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Width</label>
-                            <input type="range" min="0" max="2000" step="10" value={data.advanceWidth} onMouseUp={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.advanceWidth} onBlur={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        {/* LSB */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>X Off</label>
-                            <input type="range" min="-500" max="500" value={data.leftSideBearing} onMouseUp={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.leftSideBearing} onBlur={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        {/* Baseline */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Y Off</label>
-                            <input type="range" min="-500" max="500" value={data.baselineOffset} onMouseUp={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.baselineOffset} onBlur={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                    </div>
-                </div>
+                </details>
 
                 {/* Auto Position */}
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
@@ -1279,6 +1309,8 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 </div>
 
                 {/* Context & Ghost Char */}
+                </>)}
+                {activeTab === 'KERNING' && (<>
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
                     <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Context & Ghost Char</label>
                     <div className="space-y-3">
@@ -1412,6 +1444,8 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 </div>
 
                 {/* Alignment Guides */}
+                </>)}
+                {activeTab === 'METRICS' && (<>
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
                     <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Alignment Guides</label>
                     <div className="space-y-2">
@@ -1450,6 +1484,8 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 </div>
 
                 {/* Kerning Preview */}
+                </>)}
+                {activeTab === 'KERNING' && (<>
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
                     <div className="flex items-center justify-between mb-2">
                         <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Kerning Preview</label>
@@ -1919,8 +1955,9 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
             
           </div>
           <div className={`p-3 border-t flex gap-2 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-neutral-200'}`}>
-             <button onClick={handleCloseWithAutoSave} className={`flex-1 py-2 rounded-lg border transition-colors text-xs font-bold ${btnSec}`}>Close</button>
-             <button onClick={handleSave} className={`flex-1 py-2 rounded-lg font-bold transition-colors text-xs ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>Save</button>
+             <button onClick={handleAutoCenter} className={`text-[10px] px-3 rounded-lg border ${btnSec}`} title="Reset Left Side Bearing">Reset LSB</button>
+             <button onClick={handleCloseWithAutoSave} className={`px-3 py-2 rounded-lg border text-xs font-bold ${btnSec}`}>Close</button>
+             <button onClick={handleSave} className={`flex-[2] py-2 rounded-lg font-black uppercase tracking-wider transition-colors text-xs ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>Save & Close</button>
           </div>
         </div>
       </div>

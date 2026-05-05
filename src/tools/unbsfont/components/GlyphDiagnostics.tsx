@@ -63,6 +63,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
   const [filter, setFilter] = useState<DiagnosticSeverity | 'all'>('all');
   const [isFixing, setIsFixing] = useState(false);
   const [lastFixResult, setLastFixResult] = useState<{ fixed: number; failed: number } | null>(null);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const diagnostics = useMemo<DiagnosticSummary>(() => {
     return runFullDiagnostics(glyphs, metadata);
@@ -140,20 +141,77 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
         role="dialog"
         aria-modal="true"
       >
-        {/* Header */}
-        <div className={`flex items-center justify-between px-6 py-4 border-b ${borderClass}`}>
-          <div>
-            <p className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        {/* Header — single row */}
+        <div className={`flex items-center gap-4 px-6 py-3 border-b ${borderClass}`}>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-black uppercase tracking-tight flex items-center gap-2">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />
                 <path d="M21 21l-4.35-4.35" />
               </svg>
-              Diagnóstico de Glyphs
+              Diagnóstico
             </p>
-            <p className={`text-xs ${mutedClass}`}>
-              Detecta e corrige problemas de tamanho, alinhamento e métricas
+            <p className={`text-[11px] ${mutedClass}`}>
+              {diagnostics.glyphsWithIssues} de {diagnostics.totalGlyphs} glyphs com problemas
             </p>
           </div>
+
+          {/* Stats pills */}
+          <div className={`hidden sm:flex items-center gap-1 text-[11px] font-bold rounded-full border px-3 py-1.5 ${borderClass}`}>
+            <span>{diagnostics.totalGlyphs}</span>
+            <span className={`mx-1 ${mutedClass}`}>·</span>
+            <span className="text-red-500">{diagnostics.errors}E</span>
+            <span className={`mx-1 ${mutedClass}`}>·</span>
+            <span className="text-amber-500">{diagnostics.warnings}A</span>
+            <span className={`mx-1 ${mutedClass}`}>·</span>
+            <span className="text-blue-500">{diagnostics.infos}I</span>
+          </div>
+
+          {/* Primary action */}
+          <button
+            onClick={handleAutoFixAll}
+            disabled={isFixing || diagnostics.diagnostics.filter(d => d.autoFixAvailable).length === 0}
+            className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition flex items-center gap-2 ${
+              isDarkMode
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-700 disabled:text-slate-500'
+                : 'bg-emerald-500 hover:bg-emerald-600 text-white disabled:bg-neutral-200 disabled:text-neutral-400'
+            }`}
+          >
+            {isFixing ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
+                Corrigindo
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" /></svg>
+                Auto-Corrigir
+              </>
+            )}
+          </button>
+
+          {/* More actions */}
+          <div className="relative">
+            <button
+              onClick={() => setMoreOpen(o => !o)}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
+              aria-label="Mais ações"
+            >
+              ⋯
+            </button>
+            {moreOpen && (
+              <div className={`absolute right-0 top-11 z-10 w-56 rounded-xl border shadow-lg p-1 ${bgClass} ${borderClass}`}>
+                <button
+                  onClick={() => { setMoreOpen(false); handleNormalizeAll(); }}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-neutral-100'}`}
+                >
+                  Normalizar tamanhos
+                  <p className={`text-[10px] font-normal ${mutedClass}`}>Equaliza altura visual entre todos os glyphs.</p>
+                </button>
+              </div>
+            )}
+          </div>
+
           <button
             type="button"
             onClick={onClose}
@@ -164,90 +222,26 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
           </button>
         </div>
 
-        {/* Summary Bar */}
-        <div className={`px-6 py-4 border-b ${borderClass} flex items-center gap-6 flex-wrap`}>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <p className="text-2xl font-black">{diagnostics.totalGlyphs}</p>
-              <p className={`text-[10px] uppercase tracking-wider ${mutedClass}`}>Total</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-black text-red-500">{diagnostics.errors}</p>
-              <p className={`text-[10px] uppercase tracking-wider ${mutedClass}`}>Erros</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-black text-amber-500">{diagnostics.warnings}</p>
-              <p className={`text-[10px] uppercase tracking-wider ${mutedClass}`}>Avisos</p>
-            </div>
-            <div className="text-center">
-              <p className="text-2xl font-black text-blue-500">{diagnostics.infos}</p>
-              <p className={`text-[10px] uppercase tracking-wider ${mutedClass}`}>Info</p>
-            </div>
-          </div>
-
-          <div className="flex-1" />
-
-          {/* Filters */}
-          <div className="flex items-center gap-2">
-            <span className={`text-xs ${mutedClass}`}>Filtrar:</span>
-            {(['all', 'error', 'warning', 'info'] as const).map(f => (
+        {/* Filter tabs */}
+        <div className={`flex items-center gap-1 px-6 py-2 border-b ${borderClass}`}>
+          {(['all', 'error', 'warning', 'info'] as const).map(f => {
+            const count = f === 'all' ? diagnostics.diagnostics.length : f === 'error' ? diagnostics.errors : f === 'warning' ? diagnostics.warnings : diagnostics.infos;
+            const label = f === 'all' ? 'Todos' : f === 'error' ? 'Erros' : f === 'warning' ? 'Avisos' : 'Info';
+            const active = filter === f;
+            return (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1 text-xs font-bold rounded-full border transition ${
-                  filter === f
+                className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition ${
+                  active
                     ? isDarkMode ? 'bg-white text-black' : 'bg-black text-white'
-                    : btnClass
+                    : `${mutedClass} hover:${textClass}`
                 }`}
               >
-                {f === 'all' ? 'Todos' : f === 'error' ? 'Erros' : f === 'warning' ? 'Avisos' : 'Info'}
+                {label} <span className="opacity-60">{count}</span>
               </button>
-            ))}
-          </div>
-
-          {/* Normalize Sizes Button */}
-          <button
-            onClick={handleNormalizeAll}
-            className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition ${
-              isDarkMode 
-                ? 'bg-blue-600 hover:bg-blue-500 text-white' 
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            }`}
-          >
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 6H3M15 12H3M18 18H3" />
-              </svg>
-              Normalizar Tamanhos
-            </span>
-          </button>
-
-          {/* Auto Fix Button */}
-          <button
-            onClick={handleAutoFixAll}
-            disabled={isFixing || diagnostics.diagnostics.filter(d => d.autoFixAvailable).length === 0}
-            className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition ${
-              isDarkMode 
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-700 disabled:text-slate-500' 
-                : 'bg-emerald-500 hover:bg-emerald-600 text-white disabled:bg-neutral-200 disabled:text-neutral-400'
-            }`}
-          >
-            {isFixing ? (
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 12a9 9 0 11-6.219-8.56" />
-              </svg>
-              Corrigindo...
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-              </svg>
-              Auto-Corrigir Tudo
-            </span>
-          )}
-          </button>
+            );
+          })}
         </div>
 
         {/* Last Fix Result */}
@@ -296,17 +290,6 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleNormalizeGlyph(char)}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-full border ${btnClass} flex items-center gap-1.5`}
-                        title="Normalizar baseado em outros glyphs"
-                      >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10" />
-                          <circle cx="12" cy="12" r="3" />
-                        </svg>
-                        Normalizar
-                      </button>
-                      <button
                         onClick={() => { onEditGlyph(char); onClose(); }}
                         className={`px-3 py-1.5 text-xs font-bold rounded-full border ${btnClass} flex items-center gap-1.5`}
                       >
@@ -315,6 +298,13 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
                           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
                         Editar
+                      </button>
+                      <button
+                        onClick={() => handleNormalizeGlyph(char)}
+                        className={`w-8 h-8 text-lg font-black rounded-full border ${btnClass} flex items-center justify-center`}
+                        title="Normalizar baseado em outros glyphs"
+                      >
+                        ⋯
                       </button>
                     </div>
                   </div>
@@ -355,19 +345,6 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
               ))}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className={`px-6 py-4 border-t ${borderClass} flex items-center justify-between`}>
-          <p className={`text-xs ${mutedClass}`}>
-            {diagnostics.glyphsWithIssues} de {diagnostics.totalGlyphs} glyphs com problemas
-          </p>
-          <button
-            onClick={onClose}
-            className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider border ${btnClass}`}
-          >
-            Fechar
-          </button>
         </div>
       </div>
     </div>
