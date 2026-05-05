@@ -28,7 +28,7 @@ const ToolButton: React.FC<Props> = ({
   children,
   ...rest
 }) => {
-  const activeCls = active ? "bg-[#232323] text-[#F0FF00] border-[#232323]" : "";
+  const activeCls = active ? "bg-[#F0FF00] text-[#232323] border-[#232323]" : "";
   return (
     <button
       {...rest}
