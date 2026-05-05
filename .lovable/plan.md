@@ -1,62 +1,47 @@
-## Auditoria — gargalos atuais
+## Goal
 
-**Aba METRICS (4 cards):**
-1. Glyph Geometry — Scale, Width, X Off, Y Off ✅ essencial
-2. ⚠ Métricas Globais (Asc/Cap/x-Height/Desc/Baseline) — colapsado ✅ ok
-3. Auto Position — referência + posição manual ✅ ok
-4. Alignment Guides — botões alvo (glyph/anchor/context) + guias ⚠ pouco usado, ocupa muito
+Improve the **Albers Interaction Squares** (section 2) and **Custom Combinations** (section 3) shuffle so results vary more and prefer high-contrast combos, and add a small **SVG paste field** next to the existing Upload SVG button so users can paste raw `<svg>` markup as an alternative to file upload.
 
-**Aba KERNING (6 cards — excessivo, com 3 visualizadores fazendo a mesma coisa):**
-1. Context & Ghost Char (input + LEFT/OVERLAP/RIGHT + sliders X/Y) — só posiciona o ghost na tela
-2. Ghost Gap Visualization (SVG grande + grid de cards de gap com input de kerning) — visualizador 1
-3. Alignment Guides (duplicado, também aparece em METRICS na verdade)
-4. Kerning Preview (Partner glyph + SVG enorme com pan/zoom + combos) — visualizador 2
-5. Diagnóstico de Espaçamento (6 cards de métricas — vários duplicam info de Geometry)
-6. Construtor de Pares Rápido (cards com partner+slider+Save) — visualizador 3 / editor
-7. Pares Salvos (lista asLeft/asRight)
+## Changes — `src/tools/unbscolor/components/GeneratedPalettes.tsx`
 
-Resultado: usuário vê **3 inputs diferentes de "partner glyph"**, **3 SVGs de visualização**, e **2 lugares para editar valor de kerning**. Confusão total.
+### 1. Smarter combo generation (`albersGrid` useMemo, ~L230–279)
 
-## Reorganização proposta
+Replace the current naive nested loop + sin-based shuffle with a richer, less repetitive generator:
 
-### METRICS (3 seções, mais limpo)
-1. **Glyph Geometry** (igual)
-2. **Auto Position** (igual)
-3. **⚠ Métricas Globais da Fonte** colapsado (igual)
-4. **Alignment Guides** — mover para dentro de Geometry como `<details>` "Alinhamento por guia" (uso secundário)
+- For every ordered pair `(outer, middle)` with `outer ≠ middle`, pick the `inner` color from the palette (excluding outer/middle) that maximizes the contrast ratio against `middle`. Today it can pick the same color as `middle` because the loop scans all colors — fix that.
+- Score each combo by `comboScore = contrast(middle, inner) * 0.6 + contrast(outer, middle) * 0.3 + weightFactor * 0.1`.
+- Deduplicate combos that share the same `{middle, inner}` pair regardless of outer when there are too many; keep the top-N variants per middle to reduce repetition.
+- Sort by score descending; in non-FullContrast mode keep all, in FullContrast filter to `contrast(middle, inner) >= 4.5` and `contrast(outer, middle) >= 3.0`.
+- Apply a **proper Fisher–Yates shuffle seeded by `albersSeed`** (use a small mulberry32 PRNG from the seed) instead of the broken `Math.sin(...) % range` trick, so each shuffle truly reorders the list.
+- Interleave by hue: after shuffle, walk the list and push items so adjacent positions don't share the same `middle` or `inner` hue (greedy reorder). This visibly reduces repetition.
 
-### KERNING (3 seções unificadas)
+### 2. `shuffleAlbers` (~L364–389)
 
-**1. Diagnóstico Compacto (1 linha de pills)**
-Manter apenas 4 métricas que importam para kerning:
-- `LSB` (margem esq.) · `RSB` (margem dir.) · `Advance` · `Bias` (kerning class)
-Remover: "Largura Desenhada", "Deslocamento da Linha" (já em Geometry/Auto Position) e contador de pares (movido para o cabeçalho da seção 3).
+- Increment `albersSeed` *and* clear `comboOrder` whenever there are no locks (already done), but also bump seed when there are locks so unlocked positions pull from a freshly reshuffled grid (currently locked-mode never advances the seed, so unlocked slots repeat).
+- When picking replacements for unlocked slots, prefer combos not already visible to maximize variety.
 
-**2. Pair Visualizer (UNIFICADO — substitui Context, Ghost Gap, Kerning Preview, Construtor)**
-Componente único:
-- Input "Partner glyph" + chips rápidos (A V O T H N c o e)
-- Toggle posição: `LEFT (XA)` · `BOTH (AXA)` · `RIGHT (AX)` — define qual combo o SVG renderiza
-- 1 SVG grande mostrando o combo escolhido com baseline, gap colorido e label do gap
-- Abaixo do SVG: input numérico grande + slider (-400…400) editando o valor de kerning do par diretamente (live, sem botão "Salvar Par")
-- Link discreto "Open in Kerning Panel"
+### 3. SVG paste field (header bar, ~L1212–1217)
 
-Remove sliders X/Y de Ghost (posicionamento manual do ghost não tem valor — o kerning JÁ posiciona), remove pan/zoom (complexidade desnecessária num modal), remove cards "Construtor de Pares Rápido" inteiros (o input + slider já fazem o trabalho).
+Next to the existing "Upload SVG" label, add a compact paste input:
 
-**3. Pares Salvos (Pares Salvos compacto)**
-Lista única (não mais dividida em duas seções) com badge `→` ou `←` indicando direção, ordenada por |valor| desc. Header mostra "N pares · Limpar todos". Mantém input inline de valor e botão remover.
+```text
+[ Upload SVG ]  [ <svg…/> paste here ▸ Apply ]  [ Sugerir Combinação ] …
+```
 
-## Mudanças técnicas
+- A small `<input type="text">` (mono, 220px wide, h-9) with placeholder `Cole código SVG…`.
+- An `Apply` button that runs the same color-extraction logic as `handleSvgUpload` but on the pasted string. Refactor the regex/extraction block from `handleSvgUpload` into a `extractColorsFromSvgText(text: string)` helper, called by both file upload and paste.
+- On success: replace `colors` (same behavior as upload) and clear the field. On no colors found: brief inline hint text.
 
-**Arquivo:** `src/tools/unbsfont/components/EditorModal.tsx`
+### 4. i18n (optional, low priority)
 
-- METRICS: mover bloco `Alignment Guides` (linhas ~1448-1485) para dentro de um `<details>` no card de Geometry.
-- KERNING: 
-  - Substituir os blocos das linhas 1313-1444 (Context+Ghost Gap), 1488-1640 (Kerning Preview) e 1691-1768 (Construtor) por um único `PairVisualizer` inline.
-  - Reduzir Diagnóstico (1646-1689) de 6 para 4 métricas em layout horizontal de pills.
-  - Unificar Pares Salvos (1770-1827) em lista única com indicador de direção.
-- Reaproveitar estado existente: `kerningPartner`, `kerningPreviewLayout`, `handleInlineKerningChange`, `metadata.kerning`. Remover estados/handlers órfãos: `contextChar`, `contextPos`, `contextOffset`, `quickBuilderCards`, `handleApplyKerningBuilder`, pan/zoom (`kerningPreviewPan`, `kerningPreviewZoom`, `isPreviewPanMode`).
-- Sem mudança de props, hooks de dados, ou serviços.
+Add keys `pasteSvgPlaceholder` / `pasteSvgApply` to `src/tools/unbscolor/i18n/translations.ts` (en/pt/es). If skipped, hardcode PT strings to match the existing PT-heavy UI in this section.
 
-**Resultado:** aba KERNING passa de ~520 linhas / 6 cards para ~200 linhas / 3 cards, com 1 só lugar para visualizar e editar kerning de um par.
+## Out of scope
 
-Sem testes automatizados — verificação manual no preview.
+- No changes to template SVG generators, layer count, background, or download flow.
+- No DB / auth changes.
+
+## Files touched
+
+- `src/tools/unbscolor/components/GeneratedPalettes.tsx` (logic + small UI addition)
+- `src/tools/unbscolor/i18n/translations.ts` (3 strings, optional)
