@@ -148,8 +148,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
         setHistoryIndex(0);
         loadedGlyphChar.current = glyph.char;
         setKerningPartner("");
-        setKerningPreviewPan({ x: 0, y: 0 });
-        setIsPreviewPanMode(false);
+        setKerningDirection('BOTH');
         setLeftKerningPartner("");
         setRightKerningPartner("");
         setLeftKerningValue(0);
