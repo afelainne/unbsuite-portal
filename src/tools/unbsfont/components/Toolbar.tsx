@@ -308,7 +308,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             <button onClick={onExportSvgSheet} className={btnGhost}>
                                 <span className="flex items-center gap-2">
                                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-                                    Tabela atual
+                                    Current sheet
                                 </span>
                                 <span className="text-[9px] tracking-[0.14em] opacity-70">Sheet</span>
                             </button>
