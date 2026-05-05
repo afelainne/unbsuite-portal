@@ -6,57 +6,41 @@ interface ModeSelectorProps {
 }
 
 const ModeSelector: React.FC<ModeSelectorProps> = ({ onSelectMode, isDarkMode }) => {
-    const bgMain = isDarkMode ? 'bg-slate-950' : 'bg-white';
-    const textMain = isDarkMode ? 'text-white' : 'text-black';
-    const textSub = isDarkMode ? 'text-slate-400' : 'text-neutral-500';
-    const cardBg = isDarkMode ? 'bg-slate-900 border-slate-800 hover:border-white' : 'bg-white border-neutral-200 hover:border-black';
-    const badgeBg = isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-neutral-100 text-neutral-600';
-
     return (
-        <div className={`flex flex-col items-center justify-center min-h-screen ${bgMain} ${textMain} p-8`}>
-            <h2 className="text-2xl font-black uppercase tracking-wider mb-1">Select Editor Mode</h2>
-            <p className={`text-xs ${textSub} mb-12 tracking-wide`}>Choose how you want to work on your font</p>
+        <div className="h-full w-full bg-white text-[#232323] p-8 flex flex-col items-center justify-center overflow-y-auto">
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.2em] font-semibold mb-2">Select Editor Mode</h2>
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#232323]/55 mb-10">Choose how you want to work on your font</p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl w-full">
-                {/* Compact */}
-                <button
-                    onClick={() => onSelectMode('COMPACT')}
-                    className={`flex flex-col items-start p-8 border-2 rounded-2xl transition-all cursor-pointer group text-left ${cardBg}`}
-                >
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="text-3xl">⚡</span>
-                        <div>
-                            <h3 className="text-sm font-black uppercase tracking-wider">Compact</h3>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${badgeBg}`}>Recommended</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl w-full">
+                {[
+                    { id: 'COMPACT' as const, label: 'Compact', badge: 'Recommended', accent: '#F0FF00', items: [
+                        'Streamlined single-panel interface',
+                        'Quick glyph editing with inline tools',
+                        'Auto kerning & spacing controls',
+                        'Ideal for rapid font creation'
+                    ]},
+                    { id: 'ADVANCED' as const, label: 'Advanced', badge: 'Full Control', accent: '#232323', items: [
+                        'Complete glyph grid with categories',
+                        'Full vector canvas editor',
+                        'Spacing manager & diagnostics',
+                        'For detailed typographic work'
+                    ]}
+                ].map(card => (
+                    <button
+                        key={card.id}
+                        onClick={() => onSelectMode(card.id)}
+                        className="flex flex-col items-start p-6 border border-[#232323]/25 hover:border-[#232323] hover:bg-[#F7E043]/15 transition-all cursor-pointer text-left rounded-none"
+                    >
+                        <div className="flex items-center gap-3 mb-4">
+                            <span className="h-3 w-3 border border-[#232323]" style={{ background: card.accent }} />
+                            <h3 className="font-mono text-[11px] font-semibold uppercase tracking-[0.2em]">{card.label}</h3>
+                            <span className="font-mono text-[9px] font-semibold uppercase tracking-[0.2em] px-1.5 py-0.5 border border-[#232323]/30 text-[#232323]/70">{card.badge}</span>
                         </div>
-                    </div>
-                    <ul className={`text-xs space-y-1.5 ${textSub}`}>
-                        <li>• Streamlined single-panel interface</li>
-                        <li>• Quick glyph editing with inline tools</li>
-                        <li>• Auto kerning & spacing controls</li>
-                        <li>• Ideal for rapid font creation</li>
-                    </ul>
-                </button>
-
-                {/* Advanced */}
-                <button
-                    onClick={() => onSelectMode('ADVANCED')}
-                    className={`flex flex-col items-start p-8 border-2 rounded-2xl transition-all cursor-pointer group text-left ${cardBg}`}
-                >
-                    <div className="flex items-center gap-3 mb-4">
-                        <span className="text-3xl">🔬</span>
-                        <div>
-                            <h3 className="text-sm font-black uppercase tracking-wider">Advanced</h3>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${badgeBg}`}>Full Control</span>
-                        </div>
-                    </div>
-                    <ul className={`text-xs space-y-1.5 ${textSub}`}>
-                        <li>• Complete glyph grid with categories</li>
-                        <li>• Full vector canvas editor</li>
-                        <li>• Spacing manager & diagnostics</li>
-                        <li>• For detailed typographic work</li>
-                    </ul>
-                </button>
+                        <ul className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#232323]/60 space-y-1.5">
+                            {card.items.map(t => <li key={t}>— {t}</li>)}
+                        </ul>
+                    </button>
+                ))}
             </div>
         </div>
     );
