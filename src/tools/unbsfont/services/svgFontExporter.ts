@@ -187,7 +187,7 @@ export const buildOutlineFontFromGlyphs = async (
     glyphs: fontGlyphs
   });
 
-  // Kerning leve baseado no metadata atual (quando existir). Mantém pares diretos char-char.
+  // Kerning leve baseado no metadata atual (quando existir). Mantém pairs diretos char-char.
   const kerningSource = metadata?.kerning || {};
   Object.entries(kerningSource).forEach(([pair, rawVal]) => {
     if (!pair || pair.length < 2) return;
@@ -266,7 +266,7 @@ export const exportSvgBasedFont = async (
   metadata?: Partial<FontMetadata>
 ): Promise<ArrayBuffer> => {
   if (!options || !options.familyName || !options.styleName) {
-    throw new Error("Parâmetros de exportação inválidos: defina familyName e styleName.");
+    throw new Error("Invalid export parameters: define familyName and styleName.");
   }
 
   const mode = options.mode ?? "outline_only";

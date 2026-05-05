@@ -69,7 +69,7 @@ export function applyKerningPreset(
         style: fontStyle,
         intensity: 1.3 * intensity
       });
-      message = `Tight: ${generatedPairs.length} pares.`;
+      message = `Tight: ${generatedPairs.length} pairs.`;
       break;
 
     case 'normal':
@@ -77,7 +77,7 @@ export function applyKerningPreset(
         style: fontStyle,
         intensity
       });
-      message = `Normal: ${generatedPairs.length} pares.`;
+      message = `Normal: ${generatedPairs.length} pairs.`;
       break;
 
     case 'loose':
@@ -85,7 +85,7 @@ export function applyKerningPreset(
         style: fontStyle,
         intensity: 0.5 * intensity
       });
-      message = `Loose: ${generatedPairs.length} pares.`;
+      message = `Loose: ${generatedPairs.length} pairs.`;
       break;
 
     case 'auto-smart':
@@ -102,10 +102,10 @@ export function applyKerningPreset(
           intensity
         });
         newKerning = {};
-        message = `Smart (fallback pro): ${generatedPairs.length} pares.`;
+        message = `Smart (fallback pro): ${generatedPairs.length} pairs.`;
       } else {
         const stats = getKerningStats(newKerning);
-        message = `Smart: ${stats?.totalPairs || 0} pares.`;
+        message = `Smart: ${stats?.totalPairs || 0} pairs.`;
       }
       break;
 
@@ -117,10 +117,10 @@ export function applyKerningPreset(
           intensity
         });
         newKerning = {};
-        message = `Comum (fallback pro): ${generatedPairs.length} pares.`;
+        message = `Comum (fallback pro): ${generatedPairs.length} pairs.`;
       } else {
         const stats = getKerningStats(newKerning);
-        message = `Comum: ${stats?.totalPairs || 0} pares.`;
+        message = `Comum: ${stats?.totalPairs || 0} pairs.`;
       }
       break;
 
@@ -131,7 +131,7 @@ export function applyKerningPreset(
       });
       {
         const q = analyzeKerningQuality(glyphs, generatedPairs);
-        message = `Pro: ${generatedPairs.length} pares (${q.grade}).`;
+        message = `Pro: ${generatedPairs.length} pairs (${q.grade}).`;
       }
       break;
 
@@ -142,7 +142,7 @@ export function applyKerningPreset(
       });
       {
         const q = analyzeKerningQuality(glyphs, generatedPairs);
-        message = `Híbrido: ${generatedPairs.length} pares (${q.grade}).`;
+        message = `Hybrid: ${generatedPairs.length} pairs (${q.grade}).`;
       }
       break;
 
@@ -156,7 +156,7 @@ export function applyKerningPreset(
         });
         message = `Template "${template.name}".`;
       } else {
-        message = 'Preset não encontrado.';
+        message = 'Preset not found.';
       }
       break;
     }

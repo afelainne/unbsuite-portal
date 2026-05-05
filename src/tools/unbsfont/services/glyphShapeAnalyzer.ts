@@ -30,7 +30,7 @@ export interface GlyphProfile {
   hasLeftOpen: boolean;        // Abertura/buraco esquerdo (C)
   hasRightOpen: boolean;       // Abertura/buraco direito (quase nunca)
   
-  // Métricas de espaço negativo
+  // Metrics de espaço negativo
   leftNegativeSpace: number;   // Espaço vazio à esquerda (0-1)
   rightNegativeSpace: number;  // Espaço vazio à direita (0-1)
   
@@ -495,8 +495,8 @@ export const analyzeGlyphShape = (glyph: GlyphData): GlyphProfile | null => {
 /**
  * Calcula o valor de kerning ideal entre dois glyphs baseado em suas geometrias reais
  * 
- * IMPORTANTE: O kerning deve ser CONSERVADOR. A maioria dos pares não precisa de kerning.
- * Apenas pares problemáticos (diagonal+round, overhang+small, etc.) precisam de ajustes.
+ * IMPORTANTE: O kerning deve ser CONSERVADOR. A maioria dos pairs não precisa de kerning.
+ * Apenas pairs problemáticos (diagonal+round, overhang+small, etc.) precisam de ajustes.
  */
 export const calculateOptimalKerning = (
   leftProfile: GlyphProfile,

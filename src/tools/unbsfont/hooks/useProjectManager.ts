@@ -43,7 +43,7 @@ export function useProjectManager(options: ProjectManagerOptions) {
         } catch (e: any) {
             console.error("Storage Save Error:", e);
             if (e.name === 'QuotaExceededError') {
-                pushNotice('Armazenamento do navegador cheio. Exporte o projeto (.otf) e remova pesos ou glifos para liberar espaço.', 'error');
+                pushNotice('Browser storage is full. Export the project (.otf) and remove weights or glyphs to free up space.', 'error');
             }
         }
     }, [projects, pushNotice]);
@@ -84,8 +84,8 @@ export function useProjectManager(options: ProjectManagerOptions) {
         const project = projects.find(p => p.id === projectId);
         if (!project) return;
 
-        const projectName = project.metadata.familyName || project.name || 'este projeto';
-        const confirmed = window.confirm(`Deseja excluir "${projectName}"? Essa ação não pode ser desfeita.`);
+        const projectName = project.metadata.familyName || project.name || 'this project';
+        const confirmed = window.confirm(`Delete "${projectName}"? This action cannot be undone.`);
         if (!confirmed) return;
 
         setProjects(prev => prev.filter(p => p.id !== projectId));
@@ -102,7 +102,7 @@ export function useProjectManager(options: ProjectManagerOptions) {
             setScreen('DASHBOARD');
         }
 
-        pushNotice('Projeto excluído.', 'warning');
+        pushNotice('Project deleted.', 'warning');
     }, [projects, activeProjectId, pushNotice, setMetadata, setStyleMap, setCurrentStyle, setGlyphs, setSelectedGlyph, setSelectedChars, setScreen]);
 
     return {

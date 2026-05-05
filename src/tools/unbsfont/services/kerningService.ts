@@ -74,7 +74,7 @@ export interface SmartKerningOptions {
   targetDensity: number;       // Densidade alvo de espaço (0.1 a 0.3)
   includeNumbers: boolean;
   includePunctuation: boolean;
-  onlyMissingPairs: boolean;   // Só gerar para pares sem kerning
+  onlyMissingPairs: boolean;   // Só gerar para pairs sem kerning
 }
 
 const DEFAULT_OPTIONS: SmartKerningOptions = {
@@ -89,7 +89,7 @@ const DEFAULT_OPTIONS: SmartKerningOptions = {
 /**
  * Gera kerning inteligente analisando a geometria real de cada glyph
  * 
- * ABORDAGEM CONSERVADORA: Só gera kerning para pares que realmente precisam.
+ * ABORDAGEM CONSERVADORA: Só gera kerning para pairs que realmente precisam.
  * A maioria das combinações de letras funciona bem com espaçamento padrão.
  */
 export const generateSmartAutoKerning = (
@@ -136,7 +136,7 @@ export const generateSmartAutoKerning = (
     }
   }
   
-  // Só gera pares entre glyphs problemáticos
+  // Só gera pairs entre glyphs problemáticos
   const processedPairs = new Set<string>();
   
   for (const leftChar of problematicLeft) {
@@ -173,7 +173,7 @@ export const generateSmartAutoKerning = (
     }
   }
   
-  // Também processa pares com pontuação se habilitado
+  // Também processa pairs com pontuação se habilitado
   if (opts.includePunctuation) {
     const punctGlyphs = glyphs.filter(g => {
       const hasPath = (g.pathData || '').trim().length > 0;
@@ -205,7 +205,7 @@ export const generateSmartAutoKerning = (
 // ============================================================================
 
 /**
- * Gera kerning apenas para pares problemáticos comuns
+ * Gera kerning apenas para pairs problemáticos comuns
  */
 export const generateCommonPairsKerning = (
   glyphs: GlyphData[],

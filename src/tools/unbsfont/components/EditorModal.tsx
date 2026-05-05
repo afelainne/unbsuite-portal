@@ -610,7 +610,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
   const handleAddManualComponent = () => {
       if (!manualComponentChar || !allGlyphs) return;
       const targetG = allGlyphs.find(g => g.char === manualComponentChar);
-    if (!targetG || !targetG.pathData) { pushNotice('Caractere não encontrado ou vazio.', 'error'); return; }
+    if (!targetG || !targetG.pathData) { pushNotice('Character not found or empty.', 'error'); return; }
       const newData = { ...data, components: [...data.components, { char: manualComponentChar, dx: 0, dy: 0, scale: 1 }] };
       setData(newData);
       pushToHistory(newData);
@@ -667,7 +667,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
   // Centralizar glifo baseado no centro real do vetor
   const handleCenterGlyph = () => {
       if (!data.pathData) {
-          pushNotice('Este glifo não tem path para centralizar.', 'warning');
+          pushNotice('This glyph has no path to center.', 'warning');
           return;
       }
       const centered = centerGlyphInBox(data, 50); // 50u de margem
@@ -678,7 +678,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
       };
       setData(newData);
       pushToHistory(newData);
-      pushNotice(`Glifo centralizado: LSB=${centered.leftSideBearing}, Width=${centered.advanceWidth}`, 'success');
+      pushNotice(`Glyph centralizado: LSB=${centered.leftSideBearing}, Width=${centered.advanceWidth}`, 'success');
   };
   
   const handleBuildDerivativesClick = () => {
@@ -1165,7 +1165,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 {/* Global Vertical Limits — collapsed by default with warning */}
                 <details className={`rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
                     <summary className={`px-2 py-2 cursor-pointer text-[9px] font-black uppercase tracking-wider opacity-80 flex items-center justify-between gap-2 list-none`}>
-                        <span>⚠ Métricas Globais da Fonte</span>
+                        <span>⚠ Global Font Metrics</span>
                         <span className={`text-[9px] font-normal normal-case tracking-normal ${textSub}`}>afeta todos os glifos</span>
                     </summary>
                     <div className="p-2 pt-0 space-y-2">
@@ -1239,7 +1239,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                     <div className="space-y-2">
                         {metadata.autoPosition ? (
                             <div className={`text-[10px] p-2 rounded border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-neutral-200'}`}>
-                                <p className={`font-bold ${textSub}`}>Referência: <span className={textMain}>'{metadata.autoPosition.sourceChar}'</span></p>
+                                <p className={`font-bold ${textSub}`}>Reference: <span className={textMain}>'{metadata.autoPosition.sourceChar}'</span></p>
                                 <div className={`grid grid-cols-3 gap-1 mt-1 text-[9px] font-mono ${textSub}`}>
                                     <span>H: {metadata.autoPosition.targetVisualHeight.toFixed(0)}</span>
                                     <span>Y: {metadata.autoPosition.baselineOffset}</span>
@@ -1247,7 +1247,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                                 </div>
                             </div>
                         ) : (
-                            <p className={`text-[10px] italic ${textSub}`}>Nenhuma referência definida.</p>
+                            <p className={`text-[10px] italic ${textSub}`}>No reference defined.</p>
                         )}
                         <div className="flex items-center gap-2">
                             <input 
@@ -1260,7 +1260,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                                 }}
                                 className="rounded w-3 h-3 accent-black"
                             />
-                            <label className={`text-[10px] font-bold ${textSub}`}>Posição manual (ignora auto)</label>
+                            <label className={`text-[10px] font-bold ${textSub}`}>Manual position (ignores auto)</label>
                         </div>
                         <div className="flex gap-1">
                             <button
@@ -1280,7 +1280,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                                 }}
                                 className={`flex-1 text-[9px] py-1.5 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'bg-white text-black border-white hover:bg-neutral-200' : 'bg-black text-white border-black hover:bg-neutral-800'}`}
                             >
-                                Usar como referência
+                                Use as reference
                             </button>
                             {metadata.autoPosition && (
                                 <button
@@ -1354,9 +1354,9 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
 
             {activeTab === 'KERNING' && (
                 <div className="space-y-3">
-                    {/* 1. Diagnóstico compacto — 4 pills horizontais */}
+                    {/* 1. Diagnostics compacto — 4 pills horizontais */}
                     <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                        <label className={`text-[9px] font-black uppercase tracking-wider opacity-70 block mb-2`}>Diagnóstico</label>
+                        <label className={`text-[9px] font-black uppercase tracking-wider opacity-70 block mb-2`}>Diagnostics</label>
                         <div className="grid grid-cols-4 gap-1.5">
                             {[
                                 { label: 'LSB', value: `${data.leftSideBearing}` },
@@ -1423,7 +1423,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                             {!kerningPartner ? (
                                 <p className={`text-[11px] italic ${textSub} text-center py-4`}>Escolha um parceiro para visualizar.</p>
                             ) : !glyphMap.has(kerningPartner) ? (
-                                <p className={`text-[11px] italic ${textSub} text-center py-4`}>Glifo "{kerningPartner}" não existe neste estilo.</p>
+                                <p className={`text-[11px] italic ${textSub} text-center py-4`}>Glyph "{kerningPartner}" does not exist in this style.</p>
                             ) : pairLayout ? (
                                 <>
                                     <div className={`border rounded-lg p-3 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-neutral-50 border-neutral-200'}`}>
@@ -1494,10 +1494,10 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                         </div>
                     </div>
 
-                    {/* 3. Pares Salvos — lista única */}
+                    {/* 3. Saved Pairs — lista única */}
                     <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-200'}`}>
                         <div className="flex items-center justify-between mb-2">
-                            <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Pares Salvos</label>
+                            <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Saved Pairs</label>
                             <span className={`text-[10px] font-mono ${textSub}`}>
                                 {allSavedPairs.length} par{allSavedPairs.length === 1 ? '' : 'es'}
                             </span>

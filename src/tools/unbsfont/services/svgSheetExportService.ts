@@ -42,11 +42,11 @@ export const exportGlyphSvgSheet = (
     options: SvgSheetOptions = {}
 ) => {
     if (typeof document === 'undefined') {
-        throw new Error('SVG export disponível apenas no navegador.');
+        throw new Error('SVG export only available in browser.');
     }
 
     if (!glyphs || glyphs.length === 0) {
-        throw new Error('Nenhum slot disponível para exportar.');
+        throw new Error('No slot available to export.');
     }
 
     const {

@@ -276,9 +276,9 @@ const App: React.FC = () => {
           localStorage.setItem('font_studio_projects', JSON.stringify(projects));
       } catch (e: any) {
           if (e?.name === 'QuotaExceededError') {
-              pushNotice('Armazenamento do navegador cheio. Exporte o projeto (.otf) e remova pesos ou glifos para liberar espaço.', 'error');
+              pushNotice('Browser storage is full. Export the project (.otf) and remove weights or glyphs to free up space.', 'error');
           } else {
-              pushNotice('Não foi possível salvar o projeto localmente.', 'error');
+              pushNotice('Could not save the project locally.', 'error');
           }
       }
     }, [projects, pushNotice]);
@@ -406,8 +406,8 @@ const App: React.FC = () => {
       const project = projects.find(p => p.id === projectId);
       if (!project) return;
 
-      const projectName = project.metadata.familyName || project.name || 'este projeto';
-      const confirmed = window.confirm(`Deseja excluir "${projectName}"? Essa ação não pode ser desfeita.`);
+      const projectName = project.metadata.familyName || project.name || 'this project';
+      const confirmed = window.confirm(`Delete "${projectName}"? This action cannot be undone.`);
       if (!confirmed) return;
 
       setProjects(prev => prev.filter(p => p.id !== projectId));
@@ -424,7 +424,7 @@ const App: React.FC = () => {
           setScreen('DASHBOARD');
       }
 
-      pushNotice('Projeto excluído.', 'warning');
+      pushNotice('Project deleted.', 'warning');
   }, [projects, activeProjectId, pushNotice]);
 
   const handleGoHome = () => {
@@ -454,30 +454,30 @@ const App: React.FC = () => {
   };
 
   const handleAddStyle = (styleName: string) => {
-        if (styleMap[styleName]) { pushNotice('Esse peso já existe.', 'warning'); return; }
+        if (styleMap[styleName]) { pushNotice('This weight already exists.', 'warning'); return; }
     const newGlyphs = generateInitialGlyphs();
     setStyleMap(prev => ({ ...prev, [styleName]: newGlyphs }));
     handleSwitchStyle(styleName);
   };
 
   const handleDuplicateStyle = useCallback((newName: string) => {
-    if (styleMap[newName]) { pushNotice('Esse peso já existe.', 'warning'); return; }
+    if (styleMap[newName]) { pushNotice('This weight already exists.', 'warning'); return; }
     const clonedGlyphs = JSON.parse(JSON.stringify(glyphs)) as typeof glyphs;
     setStyleMap(prev => ({ ...prev, [newName]: clonedGlyphs }));
     setCurrentStyle(newName);
     setGlyphs(clonedGlyphs);
     setMetadata(prev => ({ ...prev, styleName: newName }));
-    pushNotice(`Peso "${newName}" criado como cópia de "${currentStyle}".`, 'success');
+    pushNotice(`Weight "${newName}" created as copy of "${currentStyle}".`, 'success');
   }, [styleMap, glyphs, currentStyle, pushNotice]);
 
     const handleRemoveStyle = useCallback((styleName: string) => {
       const styleKeys = Object.keys(styleMap);
       if (!styleMap[styleName]) return;
       if (styleKeys.length <= 1) {
-          pushNotice('Você precisa manter pelo menos um peso.', 'warning');
+          pushNotice('You must keep at least one weight.', 'warning');
           return;
       }
-      const confirmed = window.confirm(`Excluir o peso "${styleName}"? Esta ação não pode ser desfeita.`);
+      const confirmed = window.confirm(`Delete the weight "${styleName}"? This action cannot be undone.`);
       if (!confirmed) return;
 
       const remainingStyles = styleKeys.filter(name => name !== styleName);
@@ -511,7 +511,7 @@ const App: React.FC = () => {
           setMetadata(prev => ({ ...prev, styleName: nextActiveStyle }));
       }
 
-      pushNotice(`Peso "${styleName}" removido.`, 'info');
+      pushNotice(`Weight "${styleName}" removido.`, 'info');
   }, [styleMap, currentStyle, pushNotice, activeProjectId, setProjects, setGlyphs, setMetadata]);
 
   const getCasePairChar = (char: string): string | null => {
@@ -773,7 +773,7 @@ const App: React.FC = () => {
           pushNotice('Projeto carregado do arquivo.', 'success');
       } catch (error) {
           console.error('Failed to load project file', error);
-          const message = error instanceof Error ? error.message : 'Falha ao abrir arquivo de projeto.';
+          const message = error instanceof Error ? error.message : 'Falha ao abrir arquivo de project.';
           pushNotice(message, 'error');
       }
   };
@@ -803,7 +803,7 @@ const App: React.FC = () => {
 
   const handleExport = async () => {
       if (isExporting) {
-          pushNotice('Uma exportação já está em andamento. Aguarde a fila concluir.', 'warning');
+          pushNotice('An export is already in progress. Wait for the queue to finish.', 'warning');
           return;
       }
 
@@ -827,7 +827,7 @@ const App: React.FC = () => {
           styles.forEach(([styleName, styleGlyphs]) => {
               if (!styleGlyphs) return;
               if (!hasDrawnGlyphs(styleGlyphs)) {
-                  pushNotice(`Peso "${styleName}" ignorado: não há glifos desenhados.`, 'warning');
+                  pushNotice(`Weight "${styleName}" ignored: no glyphs drawn.`, 'warning');
                   return;
               }
               candidates.push({
@@ -838,7 +838,7 @@ const App: React.FC = () => {
           });
 
           if (!candidates.length) {
-              pushNotice('Nenhum peso pôde ser exportado.', 'error');
+              pushNotice('No weight could be exported.', 'error');
               return;
           }
       }
@@ -847,8 +847,8 @@ const App: React.FC = () => {
       setExportProgress(0);
       pushNotice(
           candidates.length > 1
-              ? `Fila criada para ${candidates.length} peso${candidates.length > 1 ? 's' : ''}.`
-              : 'Exportação iniciada.',
+              ? `Fila criada para ${candidates.length} weight${candidates.length > 1 ? 's' : ''}.`
+              : 'Export started.',
           'info'
       );
 
@@ -862,7 +862,7 @@ const App: React.FC = () => {
                       onProgress: (p) => setExportProgress(p),
                   });
                   completed += 1;
-                  pushNotice(`Peso "${candidate.styleName}" exportado.`, 'success');
+                  pushNotice(`Weight "${candidate.styleName}" exportado.`, 'success');
               } catch (error) {
                   const message = error instanceof FontExportError ? error.message : 'Falha ao exportar fonte.';
                   failures.push(candidate.styleName);
@@ -875,16 +875,16 @@ const App: React.FC = () => {
       }
 
       if (completed) {
-          pushNotice(`Exportação concluída (${completed} peso${completed > 1 ? 's' : ''}).`, 'success');
+          pushNotice(`Export completed (${completed} weight${completed > 1 ? 's' : ''}).`, 'success');
       }
       if (failures.length) {
-          pushNotice(`Não foi possível exportar ${failures.join(', ')}.`, 'error');
+          pushNotice(`Could not export ${failures.join(', ')}.`, 'error');
       }
   };
 
   const handleExportSvgFirst = async () => {
       if (isExporting) {
-          pushNotice('Uma exportação já está em andamento. Aguarde a fila concluir.', 'warning');
+          pushNotice('An export is already in progress. Wait for the queue to finish.', 'warning');
           return;
       }
 
@@ -922,7 +922,7 @@ const App: React.FC = () => {
           const blob = new Blob([buffer], { type: 'font/otf' });
           downloadBlob(blob, fileName);
           setExportProgress(1);
-          pushNotice('Exportação SVG-first gerada (outline + camada SVG stub).', 'success');
+          pushNotice('SVG-first export generated (outline + SVG stub layer).', 'success');
       } catch (error) {
           console.error('Falha no export SVG-first', error);
           const message = error instanceof Error ? error.message : 'Falha ao exportar fonte SVG-first.';
@@ -935,7 +935,7 @@ const App: React.FC = () => {
 
   const handleExportFontEditor = async (kerningPairs?: KerningPair[]) => {
       if (isExporting) {
-          pushNotice('Uma exportação já está em andamento. Aguarde.', 'warning');
+          pushNotice('An export is already in progress. Please wait.', 'warning');
           return;
       }
 
@@ -974,7 +974,7 @@ const App: React.FC = () => {
                       : await downloadFontEditorFont(candidate.meta, candidate.glyphList);
                   completed += 1;
                   setExportProgress(completed / totalStyles);
-                  pushNotice(`Peso "${candidate.styleName}" exportado: ${result.fileName} (${result.glyphCount} glifos).`, 'success');
+                  pushNotice(`Weight "${candidate.styleName}" exportado: ${result.fileName} (${result.glyphCount} glifos).`, 'success');
               } catch (err) {
                   console.error('Falha export', candidate.styleName, err);
                   failures.push(candidate.styleName);
@@ -988,10 +988,10 @@ const App: React.FC = () => {
       }
 
       if (completed && totalStyles > 1) {
-          pushNotice(`Família "${metadata.familyName || 'Untitled'}" exportada (${completed}/${totalStyles} pesos).`, 'success');
+          pushNotice(`Family "${metadata.familyName || 'Untitled'}" exported (${completed}/${totalStyles} weights).`, 'success');
       }
       if (failures.length) {
-          pushNotice(`Não foi possível exportar: ${failures.join(', ')}.`, 'error');
+          pushNotice(`Could not export: ${failures.join(', ')}.`, 'error');
       }
   };
   const handleAutoFit = () => { if (window.confirm("Reset metrics?")) setGlyphs(prev => prev.map(g => !g.pathData ? g : { ...g, scale: 1, leftSideBearing: 50, baselineOffset: 100 })); };
@@ -1025,7 +1025,7 @@ const App: React.FC = () => {
   const handleMoveGlyph = (fromChar: string, toChar: string) => {
       let target = toChar;
       if (GLYPH_NAME_MAP[toChar.toLowerCase()]) target = GLYPH_NAME_MAP[toChar.toLowerCase()];
-      if (!glyphs.some(g => g.char === target)) { pushNotice('Destino inválido para mover o glifo.', 'error'); return; }
+      if (!glyphs.some(g => g.char === target)) { pushNotice('Invalid destination to move the glyph.', 'error'); return; }
       performSwap(fromChar, target);
   };
 
@@ -1135,7 +1135,7 @@ const App: React.FC = () => {
               handleUpdateGlyph(char, data);
           }
       } else {
-          pushNotice('Não foi possível interpretar o SVG copiado.', 'error');
+          pushNotice('Could not parse the copied SVG.', 'error');
       }
   };
 
@@ -1156,7 +1156,7 @@ const App: React.FC = () => {
           anchorOverrides: oldGlyph.anchorOverrides,
       });
       setPasteConfirmModal(null);
-      pushNotice('SVG atualizado mantendo configurações anteriores.', 'success');
+      pushNotice('SVG updated keeping previous settings.', 'success');
   };
 
   const handlePasteConfirmResetSettings = () => {
@@ -1165,7 +1165,7 @@ const App: React.FC = () => {
       // Usar todas as novas configurações do SVG importado
       handleUpdateGlyph(char, newData);
       setPasteConfirmModal(null);
-      pushNotice('SVG atualizado com novas configurações.', 'success');
+      pushNotice('SVG updated with new settings.', 'success');
   };
 
   const handleContextMenu = (e: React.MouseEvent, char: string) => {
@@ -1298,11 +1298,11 @@ const App: React.FC = () => {
       }
       const [targetChar] = Array.from(trimmedChar) as string[];
       if (!targetChar) {
-          setNewSymbolError('Caractere inválido.');
+          setNewSymbolError('Invalid character.');
           return;
       }
       if (glyphs.some(g => g.char === targetChar)) {
-          setNewSymbolError('Esse símbolo já existe.');
+          setNewSymbolError('This symbol already exists.');
           return;
       }
       const displayName = newSymbolName.trim() || undefined;
@@ -1328,7 +1328,7 @@ const App: React.FC = () => {
       setNewSymbolName('');
       setNewSymbolError(null);
       handleCloseCustomSlotModal();
-      pushNotice(`Símbolo ${targetChar} criado.`, 'success');
+      pushNotice(`Symbol ${targetChar} created.`, 'success');
   }, [newSymbolChar, newSymbolName, glyphs, currentStyle, pushNotice, handleCloseCustomSlotModal]);
 
   // Funções de troca de modo
@@ -1464,9 +1464,9 @@ const App: React.FC = () => {
                                 type="button"
                                 onClick={handleAutoFit}
                                 className={topToolButtonBase}
-                                title="Métricas"
+                                title="Metrics"
                             >
-                                <span className="sr-only">Métricas</span>
+                                <span className="sr-only">Metrics</span>
                                 <svg
                                     className="w-4 h-4"
                                     viewBox="0 0 24 24"
@@ -1485,9 +1485,9 @@ const App: React.FC = () => {
                                 type="button"
                                 onClick={() => setIsSpacingManagerOpen(true)}
                                 className={topToolButtonBase}
-                                title="Espaçamento"
+                                title="Spacing"
                             >
-                                <span className="sr-only">Espaçamento</span>
+                                <span className="sr-only">Spacing</span>
                                 <svg
                                     className="w-4 h-4"
                                     viewBox="0 0 24 24"
@@ -1679,7 +1679,7 @@ const App: React.FC = () => {
                   <div className={`flex items-center justify-between px-6 py-4 border-b ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
                       <div>
                           <p className="text-base font-black uppercase tracking-tight">Atualizar Glyph "{pasteConfirmModal.char}"</p>
-                          <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Este slot já possui um SVG. Como deseja atualizar?</p>
+                          <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>This slot already has an SVG. How would you like to update?</p>
                       </div>
                       <button
                           type="button"
@@ -1692,7 +1692,7 @@ const App: React.FC = () => {
                   </div>
                   <div className="px-6 py-6 flex flex-col gap-4">
                       <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                          <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Configurações atuais</p>
+                          <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Current settings</p>
                           <div className="grid grid-cols-2 gap-2 text-xs">
                               <div><span className={isDarkMode ? 'text-slate-500' : 'text-neutral-400'}>Scale:</span> <span className="font-semibold">{pasteConfirmModal.oldGlyph.scale?.toFixed(2) ?? '1.00'}</span></div>
                               <div><span className={isDarkMode ? 'text-slate-500' : 'text-neutral-400'}>Baseline:</span> <span className="font-semibold">{pasteConfirmModal.oldGlyph.baselineOffset ?? 0}</span></div>
@@ -1705,15 +1705,15 @@ const App: React.FC = () => {
                               onClick={handlePasteConfirmKeepSettings}
                               className={`w-full p-4 rounded-xl border text-left transition ${isDarkMode ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20' : 'border-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}
                           >
-                              <p className="font-black text-sm uppercase tracking-wide text-emerald-600">Manter Configurações</p>
-                              <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Atualiza apenas o desenho SVG, mantendo scale, baseline, advance width e outras configurações.</p>
+                              <p className="font-black text-sm uppercase tracking-wide text-emerald-600">Keep Settings</p>
+                              <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Updates only the SVG drawing, keeping scale, baseline, advance width and other settings.</p>
                           </button>
                           <button
                               onClick={handlePasteConfirmResetSettings}
                               className={`w-full p-4 rounded-xl border text-left transition ${isDarkMode ? 'border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20' : 'border-blue-500 bg-blue-50 hover:bg-blue-100'}`}
                           >
-                              <p className="font-black text-sm uppercase tracking-wide text-blue-600">Reiniciar Configurações</p>
-                              <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Aplica as novas configurações calculadas do SVG, resetando scale, baseline e métricas.</p>
+                              <p className="font-black text-sm uppercase tracking-wide text-blue-600">Reset Settings</p>
+                              <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Applies the new settings calculated from the SVG, resetting scale, baseline and metrics.</p>
                           </button>
                       </div>
                       <button

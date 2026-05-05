@@ -169,7 +169,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         analyzeKerningQuality(glyphs, kerningPairs)
     , [glyphs, kerningPairs]);
     
-    // Converter pares para Record para uso no preview
+    // Converter pairs para Record para uso no preview
     const kerningRecord = useMemo(() => {
         const record: Record<string, number> = { ...kerning };
         kerningPairs.forEach(pair => {
@@ -178,7 +178,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         return record;
     }, [kerning, kerningPairs]);
 
-    // Glifo selecionado
+    // Glyph selecionado
     const selectedGlyph = useMemo(() => 
         glyphs.find(g => g.char === selectedChar) || null
     , [glyphs, selectedChar]);
@@ -216,7 +216,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         const data = extractSingleGlyphFromSVG(content);
         if (data && data.pathData) {
             onUpdateGlyph(targetChar, data);
-            pushNotice(`Glifo "${targetChar}" atualizado!`, 'success');
+            pushNotice(`Glyph "${targetChar}" atualizado!`, 'success');
             return true;
         } else {
             pushNotice('Nenhum path encontrado no SVG.', 'error');
@@ -293,7 +293,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             baselineOffset: 0,
             scale: 1
         });
-        pushNotice(`Glifo "${selectedChar}" limpo.`, 'success');
+        pushNotice(`Glyph "${selectedChar}" limpo.`, 'success');
     }, [selectedChar, onUpdateGlyph, pushNotice]);
 
     // Auto-Configuração da fonte
@@ -342,7 +342,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             // Mostrar relatório
             const report = result.report;
             pushNotice(
-                `Auto-Config: ${report.glyphsUpdated} glifos atualizados, ${report.kerningPairsGenerated} pares de kerning gerados`,
+                `Auto-Config: ${report.glyphsUpdated} glifos atualizados, ${report.kerningPairsGenerated} pairs de kerning gerados`,
                 'success'
             );
             
@@ -354,7 +354,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             
             setShowAutoConfigModal(false);
         } catch (error) {
-            pushNotice(`Erro na auto-configuração: ${error}`, 'error');
+            pushNotice(`Auto-configuration error: ${error}`, 'error');
         } finally {
             setIsAutoConfiguring(false);
         }
@@ -381,7 +381,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                pushNotice(`Tight: ${generatedPairs.length} pares. Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
+                pushNotice(`Tight: ${generatedPairs.length} pairs. Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
                 break;
             case 'normal':
                 suggestedIntensity = 1.0;
@@ -389,7 +389,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                pushNotice(`Normal: ${generatedPairs.length} pares.`, 'success');
+                pushNotice(`Normal: ${generatedPairs.length} pairs.`, 'success');
                 break;
             case 'loose':
                 suggestedIntensity = 0.5;
@@ -397,7 +397,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                pushNotice(`Loose: ${generatedPairs.length} pares. Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
+                pushNotice(`Loose: ${generatedPairs.length} pairs. Intensidade: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
                 break;
             case 'auto-smart':
                 suggestedIntensity = kerningIntensity;
@@ -412,10 +412,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         style: fontStyle,
                         intensity: suggestedIntensity
                     });
-                    pushNotice(`Smart (fallback): ${generatedPairs.length} pares.`, 'success');
+                    pushNotice(`Smart (fallback): ${generatedPairs.length} pairs.`, 'success');
                 } else {
                     const smartStats = getKerningStats(newKerning);
-                    pushNotice(`Smart: ${smartStats?.totalPairs || 0} pares.`, 'success');
+                    pushNotice(`Smart: ${smartStats?.totalPairs || 0} pairs.`, 'success');
                 }
                 break;
             case 'auto-common':
@@ -426,10 +426,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         style: fontStyle,
                         intensity: suggestedIntensity
                     });
-                    pushNotice(`Comum (fallback): ${generatedPairs.length} pares.`, 'success');
+                    pushNotice(`Comum (fallback): ${generatedPairs.length} pairs.`, 'success');
                 } else {
                     const commonStats = getKerningStats(newKerning);
-                    pushNotice(`Comum: ${commonStats?.totalPairs || 0} pares.`, 'success');
+                    pushNotice(`Comum: ${commonStats?.totalPairs || 0} pairs.`, 'success');
                 }
                 break;
             case 'professional':
@@ -440,7 +440,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 });
                 {
                     const profQuality = analyzeKerningQuality(glyphs, generatedPairs);
-                    pushNotice(`Pro: ${generatedPairs.length} pares (${profQuality.grade}).`, 'success');
+                    pushNotice(`Pro: ${generatedPairs.length} pairs (${profQuality.grade}).`, 'success');
                 }
                 break;
             case 'hybrid':
@@ -451,7 +451,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 });
                 {
                     const hybridQuality = analyzeKerningQuality(glyphs, generatedPairs);
-                    pushNotice(`Híbrido: ${generatedPairs.length} pares (${hybridQuality.grade}).`, 'success');
+                    pushNotice(`Hybrid: ${generatedPairs.length} pairs (${hybridQuality.grade}).`, 'success');
                 }
                 break;
             default:
@@ -574,7 +574,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             advanceWidth: centered.advanceWidth,
             leftSideBearing: centered.leftSideBearing 
         });
-        pushNotice(`Glifo "${selectedGlyph.char}" centralizado.`, 'success');
+        pushNotice(`Glyph "${selectedGlyph.char}" centralizado.`, 'success');
     }, [selectedGlyph, globalSideMargin, onUpdateGlyph, pushNotice]);
 
     // Centralizar todos os glifos
@@ -709,7 +709,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             </header>
 
             <div className="flex flex-1 overflow-hidden">
-                {/* Painel Esquerdo - Glifos */}
+                {/* Painel Esquerdo - Glyphs */}
                 <div className={`w-64 flex flex-col border-r ${borderCol} ${bgPanel}`}>
                     {/* Busca */}
                     <div className="p-3">
@@ -745,7 +745,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         ))}
                     </div>
 
-                    {/* Grid de Glifos */}
+                    {/* Grid de Glyphs */}
                     <div className="flex-1 overflow-y-auto p-3">
                         <div className="grid grid-cols-5 gap-1">
                             {filteredGlyphs.map(g => (
@@ -905,7 +905,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         />
                     </div>
 
-                    {/* Editor de Glifo - Area Scrollavel */}
+                    {/* Editor de Glyph - Area Scrollavel */}
                     <div 
                         className="flex-1 flex items-center justify-center p-6 overflow-auto"
                         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
@@ -914,7 +914,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     >
                         {selectedGlyph ? (
                             <div className={`w-full max-w-md p-5 rounded-2xl border transition-all ${isDragging ? 'border-emerald-500 bg-emerald-500/10' : cardBg}`}>
-                                {/* Header do Glifo */}
+                                {/* Header do Glyph */}
                                 <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-3">
                                         <span className="text-4xl font-black">{selectedGlyph.char}</span>
@@ -1127,11 +1127,11 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     </optgroup>
                                     <optgroup label="Automatico">
                                         <option value="auto-smart">Auto Smart (geometria)</option>
-                                        <option value="auto-common">Auto Comum (pares)</option>
+                                        <option value="auto-common">Auto Comum (pairs)</option>
                                     </optgroup>
                                     <optgroup label="🌟 Profissional (Real Fonts)">
                                         <option value="professional">🎯 Profissional (Tabelas Reais)</option>
-                                        <option value="hybrid">⚡ Híbrido (Tabelas + Geometria)</option>
+                                        <option value="hybrid">⚡ Hybrid (Tabelas + Geometria)</option>
                                     </optgroup>
                                     <optgroup label="Templates Profissionais">
                                         {KERNING_TEMPLATES.slice(0, 8).map(t => (
@@ -1175,20 +1175,20 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                                         intensity: kerningIntensity
                                                     });
                                                     setKerningPairs(profPairs);
-                                                    pushNotice(`Kerning ${newStyle} aplicado: ${profPairs.length} pares`, 'success');
+                                                    pushNotice(`Kerning ${newStyle} applied: ${profPairs.length} pairs`, 'success');
                                                 } else if (kerningPreset === 'hybrid') {
                                                     const hybridPairs = generateHybridKerning(glyphs, {
                                                         style: newStyle,
                                                         intensity: kerningIntensity
                                                     });
                                                     setKerningPairs(hybridPairs);
-                                                    pushNotice(`Kerning híbrido ${newStyle} aplicado: ${hybridPairs.length} pares`, 'success');
+                                                    pushNotice(`Hybrid kerning ${newStyle} applied: ${hybridPairs.length} pairs`, 'success');
                                                 }
                                             }, 0);
                                         }}
                                         className={`w-full px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
                                     >
-                                        <option value="geometric-sans">Geométrica Sans (Futura, Avenir)</option>
+                                        <option value="geometric-sans">Geometric Sans (Futura, Avenir)</option>
                                         <option value="humanist-sans">Humanista Sans (Frutiger, Myriad)</option>
                                         <option value="neo-grotesque">Neo-Grotesca (Helvetica, Arial)</option>
                                         <option value="serif-oldstyle">Serifa Old Style (Garamond, Caslon)</option>
@@ -1197,7 +1197,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         <option value="display">Display (Decorativa)</option>
                                         <option value="script">Script (Manuscrita)</option>
                                     </select>
-                                    <p className={`text-[10px] mt-1 ${textSub}`}>Ajusta o kerning para o estilo tipográfico</p>
+                                    <p className={`text-[10px] mt-1 ${textSub}`}>Adjusts kerning for the typographic style</p>
                                 </div>
                             )}
 
@@ -1210,7 +1210,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     (isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-200')
                                 }`}>
                                     <div className="flex items-center justify-between mb-2">
-                                        <p className={`text-[10px] font-bold uppercase ${textSub}`}>Análise de Qualidade</p>
+                                        <p className={`text-[10px] font-bold uppercase ${textSub}`}>Quality Analysis</p>
                                         <span className={`text-xl font-black ${
                                             kerningQuality.grade === 'A' ? 'text-green-500' :
                                             kerningQuality.grade === 'B' ? 'text-blue-500' :
@@ -1252,7 +1252,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             {Object.keys(kerning).length > 0 && (
                                 <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
                                     <p className={`text-[10px] font-bold uppercase mb-1 ${textSub}`}>Ativo</p>
-                                    <p className="text-sm font-bold">{Object.keys(kerning).length} pares</p>
+                                    <p className="text-sm font-bold">{Object.keys(kerning).length} pairs</p>
                                 </div>
                             )}
 
@@ -1361,9 +1361,9 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             </button>
                         </div>
 
-                        {/* Centralização */}
+                        {/* Centering */}
                         <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>⚖️ Centralização</p>
+                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>⚖️ Centering</p>
                             <p className={`text-[10px] mb-3 ${textSub}`}>
                                 Centraliza automaticamente os glifos dentro de suas caixas (advance width).
                             </p>
@@ -1492,8 +1492,8 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                                 </svg>
                                 <div>
-                                    <h2 className="text-lg font-bold">Configuração Automática</h2>
-                                    <p className={`text-xs ${textSub}`}>Analisa geometria e configura espaçamento/kerning</p>
+                                    <h2 className="text-lg font-bold">Auto Configuration</h2>
+                                    <p className={`text-xs ${textSub}`}>Analyzes geometry and configures spacing/kerning</p>
                                 </div>
                             </div>
                             <button
@@ -1513,7 +1513,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 const quality = analyzeFontQuality(glyphs, metadata);
                                 return (
                                     <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
-                                        <p className={`text-xs font-bold mb-2 ${textSub}`}>Análise Atual</p>
+                                        <p className={`text-xs font-bold mb-2 ${textSub}`}>Current Analysis</p>
                                         <div className="grid grid-cols-3 gap-2 text-xs">
                                             <div>
                                                 <span className={textSub}>Score:</span>
@@ -1524,11 +1524,11 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                                 }`}>{quality.score}/100</span>
                                             </div>
                                             <div>
-                                                <span className={textSub}>Glifos:</span>
+                                                <span className={textSub}>Glyphs:</span>
                                                 <span className="ml-1 font-bold">{glyphs.filter(g => g.pathData).length}</span>
                                             </div>
                                             <div>
-                                                <span className={textSub}>Nota:</span>
+                                                <span className={textSub}>Grade:</span>
                                                 <span className={`ml-1 font-bold ${
                                                     quality.score >= 90 ? 'text-emerald-500' :
                                                     quality.score >= 70 ? 'text-yellow-500' :
@@ -1538,7 +1538,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         </div>
                                         {quality.suggestions.length > 0 && (
                                             <div className="mt-2 pt-2 border-t border-current border-opacity-10">
-                                                <p className={`text-xs ${textSub} mb-1`}>Sugestões:</p>
+                                                <p className={`text-xs ${textSub} mb-1`}>Suggestions:</p>
                                                 <ul className={`text-xs ${textSub} space-y-0.5`}>
                                                     {quality.suggestions.slice(0, 3).map((s, i) => (
                                                         <li key={i}>• {s}</li>
@@ -1575,7 +1575,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         className={`w-5 h-5 rounded ${accentColor}`}
                                     />
                                     <div>
-                                        <span className="text-sm font-medium">Espaçamento Automático</span>
+                                        <span className="text-sm font-medium">Automatic Spacing</span>
                                         <p className={`text-xs ${textSub}`}>Calcula advance width, LSB e RSB baseado na geometria</p>
                                     </div>
                                 </label>
@@ -1588,8 +1588,8 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         className={`w-5 h-5 rounded ${accentColor}`}
                                     />
                                     <div>
-                                        <span className="text-sm font-medium">Kerning Automático</span>
-                                        <p className={`text-xs ${textSub}`}>Gera pares de kerning baseado em análise de formas</p>
+                                        <span className="text-sm font-medium">Automatic Kerning</span>
+                                        <p className={`text-xs ${textSub}`}>Generates kerning pairs based on shape analysis</p>
                                     </div>
                                 </label>
 
@@ -1601,7 +1601,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         className={`w-5 h-5 rounded ${accentColor}`}
                                     />
                                     <div>
-                                        <span className="text-sm font-medium">Otimizar Métricas Globais</span>
+                                        <span className="text-sm font-medium">Otimizar Metrics Globais</span>
                                         <p className={`text-xs ${textSub}`}>Ajusta ascender/descender baseado nos glyphs</p>
                                     </div>
                                 </label>
@@ -1610,7 +1610,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             {/* Configurações avançadas */}
                             <details className={`p-3 rounded-lg border ${borderCol}`}>
                                 <summary className={`text-xs font-bold uppercase tracking-wider cursor-pointer ${textSub}`}>
-                                    Configurações Avançadas
+                                    Advanced Settings
                                 </summary>
                                 <div className="mt-3 space-y-3">
                                     <div>

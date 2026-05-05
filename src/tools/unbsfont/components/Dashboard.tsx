@@ -146,7 +146,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onCreateProject, onOpenProject, o
                                     <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); onDeleteProject(project.id); }}
-                                        aria-label={`Excluir ${project.metadata.familyName || 'projeto'}`}
+                                        aria-label={`Delete ${project.metadata.familyName || 'project'}`}
                                         className={`p-2 rounded-full border transition ${isDarkMode ? 'border-slate-800 text-slate-400 hover:border-red-400 hover:text-red-300 hover:bg-red-500/10' : 'border-neutral-200 text-neutral-600 hover:border-red-400 hover:text-red-600 hover:bg-red-50'}`}
                                     >
                                         <svg
