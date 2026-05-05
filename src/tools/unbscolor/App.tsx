@@ -723,12 +723,11 @@ const App: React.FC = () => {
 
                             <button
                                 onClick={() => setShowSettings(true)}
-                                className="h-10 w-10 rounded-md border border-border bg-card transition-colors flex items-center justify-center shrink-0 hover:bg-foreground/5 hover:border-foreground/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-                                style={{ appearance: 'none', WebkitAppearance: 'none', padding: 0, margin: 0, background: 'transparent', lineHeight: 0 }}
+                                className="h-7 w-7 border border-[#232323]/30 bg-white text-[#232323] flex items-center justify-center shrink-0 hover:bg-[#F7E043]/40"
                                 title={t.settings}
                                 aria-label={t.settings}
                             >
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 13.5a7.97 7.97 0 000-3l1.4-1.1a.9.9 0 00.2-1.2l-1.6-2.7a.9.9 0 00-1.1-.4l-1.6.6a8 8 0 00-2.6-1.5l-.2-1.7A.9.9 0 0013 2h-3a.9.9 0 00-.9.8l-.2 1.7a8 8 0 00-2.6 1.5l-1.6-.6a.9.9 0 00-1.1.4L2 8.2a.9.9 0 00.2 1.2l1.4 1.1a7.97 7.97 0 000 3L2.2 14.6a.9.9 0 00-.2 1.2l1.6 2.7a.9.9 0 001.1.4l1.6-.6a8 8 0 002.6 1.5l.2 1.7A.9.9 0 0010 22h3a.9.9 0 00.9-.8l.2-1.7a8 8 0 002.6-1.5l1.6.6a.9.9 0 001.1-.4l1.6-2.7a.9.9 0 00-.2-1.2l-1.4-1.1z" />
                                 </svg>
