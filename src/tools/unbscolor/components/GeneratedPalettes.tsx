@@ -953,6 +953,10 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             case 'swatches': return generateSwatchesSvg();
             case 'gradient': return generateGradientSvg();
             case 'mosaic': return generateMosaicSvg();
+            case 'splitscreen': return generateSplitScreenSvg();
+            case 'columns': return generateColumnsSvg();
+            case 'dots': return generateDotsSvg();
+            case 'editorial': return generateEditorialSvg();
             default: return generatePaletteSvg();
         }
     };
