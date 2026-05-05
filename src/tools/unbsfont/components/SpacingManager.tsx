@@ -202,7 +202,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                 profPairs.forEach(p => {
                     newKerning[`${p.left}${p.right}`] = p.value;
                 });
-                message = `Kerning Profissional (${fontStyle}): ${profPairs.length} pairs - Grade: ${quality.grade}`;
+                message = `Professional Kerning (${fontStyle}): ${profPairs.length} pairs - Grade: ${quality.grade}`;
                 break;
             }
             case 'hybrid': {
@@ -260,7 +260,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
         setSelectedPair("");
         setTestString("");
         setCurrentKernValue(0);
-        pushNotice('Todos os pairs de kerning foram resetados.', 'info');
+        pushNotice('All kerning pairs were reset.', 'info');
     };
 
     const handleResetSelectedPair = () => {
@@ -754,7 +754,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                         </p>
                                     )}
                                     <div className="space-y-1">
-                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Escala: {(templateScale * 100).toFixed(0)}%</label>
+                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Scale: {(templateScale * 100).toFixed(0)}%</label>
                                         <input type="range" min="0.5" max="1.5" step="0.05" value={templateScale} onChange={(e) => setTemplateScale(parseFloat(e.target.value))} className={`w-full h-1 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -763,12 +763,12 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                     </div>
                                     {blendWithGeometry && (
                                         <div className="space-y-1">
-                                            <label className={`text-[10px] font-bold uppercase ${textSub}`}>Blend: {(blendFactor * 100).toFixed(0)}% geometria</label>
+                                            <label className={`text-[10px] font-bold uppercase ${textSub}`}>Blend: {(blendFactor * 100).toFixed(0)}% geometry</label>
                                             <input type="range" min="0" max="1" step="0.1" value={blendFactor} onChange={(e) => setBlendFactor(parseFloat(e.target.value))} className={`w-full h-1 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
                                         </div>
                                     )}
                                     <button onClick={handleApplyTemplate} disabled={!selectedTemplate} className={`w-full py-2 rounded text-xs font-bold transition-colors ${selectedTemplate ? (isDarkMode ? 'bg-emerald-600 text-white hover:bg-emerald-500' : 'bg-emerald-600 text-white hover:bg-emerald-700') : 'bg-neutral-400 text-neutral-200 cursor-not-allowed'}`}>
-                                        Aplicar Template
+                                        Apply Template
                                     </button>
                                 </div>
                             </div>
@@ -841,11 +841,11 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                 )}
 
                                 <div className="space-y-1">
-                                    <label className={`text-[10px] font-bold uppercase ${textSub}`}>Intensidade: {(autoKernIntensity * 100).toFixed(0)}%</label>
+                                    <label className={`text-[10px] font-bold uppercase ${textSub}`}>Intensity: {(autoKernIntensity * 100).toFixed(0)}%</label>
                                     <input type="range" min="0" max="2" step="0.1" value={autoKernIntensity} onChange={(e) => setAutoKernIntensity(parseFloat(e.target.value))} className={`w-full h-1 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
                                 </div>
                                 <button onClick={handleAutoKern} className={`w-full py-2 rounded text-xs font-bold transition-colors ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>
-                                    {kerningMode === 'smart' ? 'Run Smart Auto-Kern' : kerningMode === 'professional' ? 'Apply Professional Kerning' : 'Aplicar Kerning Hybrid'}
+                                    {kerningMode === 'smart' ? 'Run Smart Auto-Kern' : kerningMode === 'professional' ? 'Apply Professional Kerning' : 'Apply Hybrid Kerning'}
                                 </button>
                                 <button
                                     onClick={handleResetAutoKern}
