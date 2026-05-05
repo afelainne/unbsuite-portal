@@ -1,101 +1,62 @@
+## Auditoria — gargalos atuais
 
-# Reorganização dos modais Edit Glyph + Diagnóstico
+**Aba METRICS (4 cards):**
+1. Glyph Geometry — Scale, Width, X Off, Y Off ✅ essencial
+2. ⚠ Métricas Globais (Asc/Cap/x-Height/Desc/Baseline) — colapsado ✅ ok
+3. Auto Position — referência + posição manual ✅ ok
+4. Alignment Guides — botões alvo (glyph/anchor/context) + guias ⚠ pouco usado, ocupa muito
 
-Após auditoria de `EditorModal.tsx` (1931 linhas) e `GlyphDiagnostics.tsx` (377 linhas), os dois modais sofrem do mesmo problema: muitas ações e seções competindo pelo mesmo espaço, com sobreposições funcionais.
+**Aba KERNING (6 cards — excessivo, com 3 visualizadores fazendo a mesma coisa):**
+1. Context & Ghost Char (input + LEFT/OVERLAP/RIGHT + sliders X/Y) — só posiciona o ghost na tela
+2. Ghost Gap Visualization (SVG grande + grid de cards de gap com input de kerning) — visualizador 1
+3. Alignment Guides (duplicado, também aparece em METRICS na verdade)
+4. Kerning Preview (Partner glyph + SVG enorme com pan/zoom + combos) — visualizador 2
+5. Diagnóstico de Espaçamento (6 cards de métricas — vários duplicam info de Geometry)
+6. Construtor de Pares Rápido (cards com partner+slider+Save) — visualizador 3 / editor
+7. Pares Salvos (lista asLeft/asRight)
 
----
+Resultado: usuário vê **3 inputs diferentes de "partner glyph"**, **3 SVGs de visualização**, e **2 lugares para editar valor de kerning**. Confusão total.
 
-## 1. EditorModal — Edit Glyph
+## Reorganização proposta
 
-### Problemas detectados
+### METRICS (3 seções, mais limpo)
+1. **Glyph Geometry** (igual)
+2. **Auto Position** (igual)
+3. **⚠ Métricas Globais da Fonte** colapsado (igual)
+4. **Alignment Guides** — mover para dentro de Geometry como `<details>` "Alinhamento por guia" (uso secundário)
 
-- **Aba METRICS está sobrecarregada (7 seções)**: Global Vertical Limits, Glyph Geometry, Auto Position, Context & Ghost Char, Ghost Gap Visualization, Alignment Guides e **Kerning Preview**.
-- **Duplicação**: "Kerning Preview", "Context & Ghost Char" e "Ghost Gap Visualization" são funcionalidades de kerning vivendo dentro de METRICS, enquanto existe uma aba **KERNING** dedicada. Usuário não sabe onde mexer.
-- **"Global Vertical Limits"** (Ascender, Cap Height, x-Height, Descender, Baseline Shift) altera **metadata da fonte inteira**, não do glifo — não deveria aparecer dentro do editor de um glifo individual (ou pelo menos não sem aviso e em destaque), porque o usuário acha que ajusta só aquela letra e altera todos os glifos.
-- **Tabs em 9px com 5 colunas** ficam ilegíveis em viewports menores; "STROKE" raramente é usado mas ocupa um quinto da largura.
-- **Header confuso**: dois botões "⚖️ Centralizar" + "Reset LSB" sem hierarquia, ao lado do título.
-- **Footer**: "Close" e "Save" sem distinção visual clara — ambos do mesmo tamanho.
+### KERNING (3 seções unificadas)
 
-### Reorganização proposta
+**1. Diagnóstico Compacto (1 linha de pills)**
+Manter apenas 4 métricas que importam para kerning:
+- `LSB` (margem esq.) · `RSB` (margem dir.) · `Advance` · `Bias` (kerning class)
+Remover: "Largura Desenhada", "Deslocamento da Linha" (já em Geometry/Auto Position) e contador de pares (movido para o cabeçalho da seção 3).
 
-**Cabeçalho** — uma única linha:
-- `Edit '{char}' · {name}` à esquerda
-- Botão único `⚖ Centralizar` (mantém função, mais visível)
-- Botão `↶ Undo` / `↷ Redo` (atualmente só atalho — expor)
-- Fechar `×` à direita
+**2. Pair Visualizer (UNIFICADO — substitui Context, Ghost Gap, Kerning Preview, Construtor)**
+Componente único:
+- Input "Partner glyph" + chips rápidos (A V O T H N c o e)
+- Toggle posição: `LEFT (XA)` · `BOTH (AXA)` · `RIGHT (AX)` — define qual combo o SVG renderiza
+- 1 SVG grande mostrando o combo escolhido com baseline, gap colorido e label do gap
+- Abaixo do SVG: input numérico grande + slider (-400…400) editando o valor de kerning do par diretamente (live, sem botão "Salvar Par")
+- Link discreto "Open in Kerning Panel"
 
-**Tabs reduzidas de 5 → 3 + menu "More"**:
-- `GLYPH` (geometria + auto position)
-- `KERNING` (tudo que é espaçamento entre pares)
-- `ACCENTS` (anchors/derivativos)
-- Menu `⋯` com `Components` e `Stroke` (uso raro)
+Remove sliders X/Y de Ghost (posicionamento manual do ghost não tem valor — o kerning JÁ posiciona), remove pan/zoom (complexidade desnecessária num modal), remove cards "Construtor de Pares Rápido" inteiros (o input + slider já fazem o trabalho).
 
-**Aba GLYPH (era METRICS, enxuta):**
-1. **Geometry** (Scale, Width, X Off, Y Off) — fica
-2. **Auto Position** — fica (importante)
-3. **Alignment Guides** — fica (snap em ascender/baseline/etc., útil aqui)
-4. **Font Metrics (avançado, recolhido)** — collapse fechado por padrão com aviso "altera a fonte inteira"; contém Ascender/Cap/x-Height/Descender/Baseline Shift. Evita edição acidental.
+**3. Pares Salvos (Pares Salvos compacto)**
+Lista única (não mais dividida em duas seções) com badge `→` ou `←` indicando direção, ordenada por |valor| desc. Header mostra "N pares · Limpar todos". Mantém input inline de valor e botão remover.
 
-**Aba KERNING (consolidada):**
-1. **Diagnóstico de Espaçamento** (cards de métricas) — fica
-2. **Partner Preview** (movido de METRICS — Partner glyph + render SVG + zoom/pan + Kerning Bias) — UMA visualização ao invés de duas
-3. **Ghost Gap Visualization** (movido de METRICS — par triplo `XaX` com gaps editáveis)
-4. **Construtor de Pares Rápido** — fica
-5. **Pares Salvos** — fica
-6. Botão "Open in Kerning Panel" no topo
+## Mudanças técnicas
 
-Remove: aba KERNING não duplica mais com METRICS; "Context & Ghost Char" funde com "Ghost Gap Visualization" (mesma ideia: glifo fantasma ao lado).
+**Arquivo:** `src/tools/unbsfont/components/EditorModal.tsx`
 
-**Footer** — hierarquia clara:
-- `Close` (ghost, esquerda)
-- `Save & Close` (primário preto, direita, maior)
+- METRICS: mover bloco `Alignment Guides` (linhas ~1448-1485) para dentro de um `<details>` no card de Geometry.
+- KERNING: 
+  - Substituir os blocos das linhas 1313-1444 (Context+Ghost Gap), 1488-1640 (Kerning Preview) e 1691-1768 (Construtor) por um único `PairVisualizer` inline.
+  - Reduzir Diagnóstico (1646-1689) de 6 para 4 métricas em layout horizontal de pills.
+  - Unificar Pares Salvos (1770-1827) em lista única com indicador de direção.
+- Reaproveitar estado existente: `kerningPartner`, `kerningPreviewLayout`, `handleInlineKerningChange`, `metadata.kerning`. Remover estados/handlers órfãos: `contextChar`, `contextPos`, `contextOffset`, `quickBuilderCards`, `handleApplyKerningBuilder`, pan/zoom (`kerningPreviewPan`, `kerningPreviewZoom`, `isPreviewPanMode`).
+- Sem mudança de props, hooks de dados, ou serviços.
 
----
+**Resultado:** aba KERNING passa de ~520 linhas / 6 cards para ~200 linhas / 3 cards, com 1 só lugar para visualizar e editar kerning de um par.
 
-## 2. GlyphDiagnostics — Diagnóstico de Glyphs
-
-### Problemas detectados
-
-- **Toolbar superior amontoada**: 4 stat cards + 4 filter chips + 2 botões grandes ("Normalizar Tamanhos" azul, "Auto-Corrigir Tudo" verde) + ícone fechar — em viewports < 1100px tudo quebra de linha.
-- **Duas ações primárias competindo**: "Normalizar Tamanhos" e "Auto-Corrigir Tudo" parecem rivais; usuário não sabe a diferença sem ler código.
-- **"Normalizar Tamanhos" global** duplica funcionalidade do botão "Normalizar" que já existe em cada card de glifo.
-- **Footer redundante**: contém apenas texto resumo + botão "Fechar" (já existe × no topo).
-- **Per-glyph card**: bom, mas três botões na mesma linha (Normalizar, Editar, e por issue → Corrigir) gera ruído.
-
-### Reorganização proposta
-
-**Cabeçalho compacto (uma linha):**
-- Título + descrição
-- `×` fechar (sem footer com botão duplicado)
-
-**Barra de resumo (segunda linha, agrupada):**
-- 4 stats em pílulas pequenas: `Total · Erros · Avisos · Info`
-- Filtros como `Tabs` (não chips espalhadas): `Todos | Erros | Avisos | Info`
-- Uma única ação primária: **`Auto-Corrigir Tudo`** (botão grande, verde)
-- "Normalizar Tamanhos" vai para um menu `⋯ Mais ações` (junto com possíveis futuros: "Resetar métricas", "Exportar relatório")
-
-**Lista de glyphs:**
-- Card por glifo mantém preview + nome + contagem
-- Apenas **um botão** primário por card: `Editar` (abre o glifo)
-- Ações secundárias (`Normalizar`) viram ícone `⋯` no canto do card
-- Cada issue mantém botão `Corrigir` quando `autoFixAvailable`
-
-**Remove footer** (estado vazio + close já comunicados acima)
-
----
-
-## Arquivos a editar
-
-- `src/tools/unbsfont/components/EditorModal.tsx` — reorganização de tabs e seções (movimentação de blocos JSX existentes; sem mudança de props ou lógica de negócio)
-- `src/tools/unbsfont/components/GlyphDiagnostics.tsx` — reagrupa toolbar, remove botão duplicado, simplifica cards, remove footer
-
-## O que NÃO muda
-
-- Nenhuma prop dos componentes
-- Nenhuma lógica de cálculo (kerning, métricas, autoFix, normalização)
-- Nenhum hook ou serviço
-- Comportamento de undo/redo, drag de guides, persistência
-
-## Riscos
-
-- Reorganização puramente visual/estrutural; teste manual em ambos os modais (abrir, trocar tabs, salvar, auto-fix) ao final.
+Sem testes automatizados — verificação manual no preview.
