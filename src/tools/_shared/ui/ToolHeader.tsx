@@ -24,7 +24,7 @@ const ToolHeader: React.FC<Props> = ({ name, nav, actions }) => (
         {nav.map((n, i) => {
           const cls = `font-mono text-[10px] uppercase tracking-[0.2em] px-2 h-7 inline-flex items-center border ${
             n.active
-              ? "bg-[#232323] text-[#F0FF00] border-[#232323]"
+              ? "bg-[#F0FF00] text-[#232323] border-[#232323]"
               : "border-transparent text-[#232323] hover:bg-[#F7E043]/40"
           }`;
           return n.href ? (

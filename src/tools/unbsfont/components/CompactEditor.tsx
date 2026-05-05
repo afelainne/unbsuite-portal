@@ -621,7 +621,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
     ];
 
     return (
-        <div className={`flex flex-col h-screen ${bgMain} ${textMain}`}>
+        <div className={`flex flex-col h-full w-full ${bgMain} ${textMain}`}>
             {/* Header */}
             <header className={`flex items-center justify-between px-6 py-3 border-b ${borderCol}`}>
                 <div className="flex items-center gap-4">
@@ -1050,7 +1050,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 </div>
 
                 {/* Painel Direito - Espacamento e Kerning */}
-                <div className={`w-72 border-l flex flex-col ${borderCol} ${bgPanel}`}>
+                <div className={`w-64 border-l flex flex-col ${borderCol} ${bgPanel}`}>
                     <div className="p-4 space-y-5 overflow-y-auto flex-1">
                         
                         {/* Espacamento */}
