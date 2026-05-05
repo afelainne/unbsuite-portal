@@ -299,10 +299,10 @@ const buildSystems = (): ColorLibrarySystem[] => {
 export const COLOR_SYSTEMS: ColorLibrarySystem[] = buildSystems();
 
 const LABEL_MAP: Record<string, string> = {
-  sys_a_fin_c: 'SYSTEM A (CP)',
-  sys_a_fin_u: 'SYSTEM A (UP)',
-  sys_b_fin_c: 'SYSTEM B (C)',
-  sys_b_fin_u: 'SYSTEM B (U)'
+  sys_b_fin_c: 'PANTONE C — Coated',
+  sys_b_fin_u: 'PANTONE U — Uncoated',
+  sys_a_fin_c: 'Color Bridge CP — Coated',
+  sys_a_fin_u: 'Color Bridge UP — Uncoated'
 };
 
 export const LIBRARY_OPTIONS: LibraryOption[] = COLOR_SYSTEMS.flatMap((system) =>
