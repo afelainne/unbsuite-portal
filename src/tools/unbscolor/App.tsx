@@ -421,8 +421,8 @@ const App: React.FC = () => {
                 return `<g transform="translate(${x}, ${y})">
                     <rect width="${cellW}" height="${cellH}" rx="10" fill="#ffffff" stroke="#e5e7eb" />
                     <rect x="8" y="8" width="44" height="${cellH - 16}" rx="8" fill="${a.hex}" />
-                    <text x="62" y="26" font-size="11" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">${a.code || a.name}</text>
-                    <text x="62" y="46" font-size="10" font-family="Arial, sans-serif" fill="#9ca3af">${a.name}</text>
+                    <text x="62" y="26" font-size="11" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">${(a.code || a.name).replace(/PANTONE/gi, 'P.')}</text>
+                    <text x="62" y="46" font-size="10" font-family="Arial, sans-serif" fill="#9ca3af">${a.name.replace(/PANTONE/gi, 'P.')}</text>
                     <text x="62" y="66" font-size="10" font-family="Arial, sans-serif" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>
                 </g>`;
             }).join('');
