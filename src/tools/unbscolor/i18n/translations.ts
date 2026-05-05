@@ -432,6 +432,15 @@ export interface Translations {
   backgroundWhite: string;
   backgroundGray: string;
 
+  // Card templates (Multi-Slot)
+  cardTemplateLabel: string;
+  cardTemplateClassic: string;
+  cardTemplateCompact: string;
+  cardTemplateEditorial: string;
+  cardTemplateSwatch: string;
+  cardTemplateMinimal: string;
+  cardTemplateMono: string;
+
   // Palette Magic
   paletteMagic: string;
   contextBrand: string;
