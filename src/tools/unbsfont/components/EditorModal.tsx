@@ -1444,6 +1444,8 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 </div>
 
                 {/* Alignment Guides */}
+                </>)}
+                {activeTab === 'METRICS' && (<>
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
                     <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Alignment Guides</label>
                     <div className="space-y-2">
@@ -1482,6 +1484,8 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 </div>
 
                 {/* Kerning Preview */}
+                </>)}
+                {activeTab === 'KERNING' && (<>
                 <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
                     <div className="flex items-center justify-between mb-2">
                         <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Kerning Preview</label>
