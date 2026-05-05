@@ -138,25 +138,25 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         if (settings.showHsl) codes.push(`HSL ${hsl.h}, ${hsl.s}%, ${hsl.l}%`);
         if (settings.showHsb) codes.push(`HSB ${hsv.h}, ${hsv.s}, ${hsv.v}`);
         
-        // System A (C)
-        if (settings.showPmsC && bridgeCoatedLibrary.length > 0) {
-            const match = findReferenceMatches(hex, bridgeCoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code} C`);
-        }
-        // System A (U)
-        if (settings.showPmsU && bridgeUncoatedLibrary.length > 0) {
-            const match = findReferenceMatches(hex, bridgeUncoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code} U`);
-        }
-        // System B (C)
+        // System B (C) — primary (Solid Coated)
         if (settings.showPmsSolidC && solidCoatedLibrary.length > 0) {
             const match = findReferenceMatches(hex, solidCoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code} C`);
+            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code}`);
         }
-        // System B (U)
+        // System B (U) — primary (Solid Uncoated)
         if (settings.showPmsSolidU && solidUncoatedLibrary.length > 0) {
             const match = findReferenceMatches(hex, solidUncoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code} U`);
+            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code}`);
+        }
+        // System A (CP) — secondary (Bridge Coated)
+        if (settings.showPmsC && bridgeCoatedLibrary.length > 0) {
+            const match = findReferenceMatches(hex, bridgeCoatedLibrary, 1)[0];
+            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code}`);
+        }
+        // System A (UP) — secondary (Bridge Uncoated)
+        if (settings.showPmsU && bridgeUncoatedLibrary.length > 0) {
+            const match = findReferenceMatches(hex, bridgeUncoatedLibrary, 1)[0];
+            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code}`);
         }
 
         return codes;
