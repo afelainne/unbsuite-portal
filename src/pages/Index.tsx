@@ -1,18 +1,4 @@
 import { Link } from "react-router-dom";
-import {
-  Palette,
-  LayoutGrid,
-  FileText,
-  Monitor,
-  ALargeSmall,
-  Type,
-  ArrowRight,
-  ArrowDown,
-  Plus,
-  Shield,
-  Github,
-  Mail,
-} from "lucide-react";
 import UnbsToolsLogo from "@/components/UnbsToolsLogo";
 
 type ToolStatus = "FEATURED" | "STABLE" | "NEW" | "SOON";
@@ -35,7 +21,7 @@ const TOOLS: Tool[] = [
     copy: "Filtro brutal de paletas. PMS, CMYK, LAB. Sem achismo de cor.",
     status: "FEATURED",
     path: "/unbscolor",
-    icon: Palette,
+    icon: null as any,
   },
   {
     index: "02",
@@ -44,7 +30,7 @@ const TOOLS: Tool[] = [
     copy: "Malha geométrica pra logo. Razão áurea, espirais, eixos. Sem desculpa.",
     status: "STABLE",
     path: "/unbsgrid",
-    icon: LayoutGrid,
+    icon: null as any,
   },
   {
     index: "03",
@@ -53,7 +39,7 @@ const TOOLS: Tool[] = [
     copy: "Assistente de impressão honesto. Bleed, sangria, malha — pronto pra gráfica.",
     status: "NEW",
     path: "/unbsformat",
-    icon: FileText,
+    icon: null as any,
   },
   {
     index: "04",
@@ -62,7 +48,7 @@ const TOOLS: Tool[] = [
     copy: "Mockups que parecem produto, não Behance. Edite o conteúdo, não o estilo.",
     status: "NEW",
     path: "/unbsmockup",
-    icon: Monitor,
+    icon: null as any,
   },
   {
     index: "05",
@@ -71,7 +57,7 @@ const TOOLS: Tool[] = [
     copy: "Pareamentos curados. Sem combinar Roboto com Roboto.",
     status: "NEW",
     path: "/unbstype",
-    icon: ALargeSmall,
+    icon: null as any,
   },
   {
     index: "06",
@@ -80,7 +66,7 @@ const TOOLS: Tool[] = [
     copy: "Editor de fontes vetorial. Glyphs, kerning, export OTF. Sem floreios.",
     status: "NEW",
     path: "/unbsfont",
-    icon: Type,
+    icon: null as any,
   },
 ];
 
