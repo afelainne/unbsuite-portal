@@ -531,42 +531,48 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         return layers.slice(0, albersLayerCount);
     };
 
+    const extractColorsFromSvgText = (svgText: string): string[] => {
+        const colorRegex = /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\b/g;
+        const rgbRegex = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/gi;
+        const namedColorRegex = /(?:fill|stroke|stop-color|color)\s*[:=]\s*["']?(white|black|red|blue|green|yellow|orange|purple|pink|gray|grey|cyan|magenta)["']?/gi;
+        const namedColors: Record<string, string> = {
+            white: '#FFFFFF', black: '#000000', red: '#FF0000', blue: '#0000FF',
+            green: '#008000', yellow: '#FFFF00', orange: '#FFA500', purple: '#800080',
+            pink: '#FFC0CB', gray: '#808080', grey: '#808080', cyan: '#00FFFF', magenta: '#FF00FF'
+        };
+        const foundColors = new Set<string>();
+        let match: RegExpExecArray | null;
+        while ((match = colorRegex.exec(svgText)) !== null) {
+            let hex = match[0].toUpperCase();
+            if (hex.length === 4) hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
+            foundColors.add(hex);
+        }
+        while ((match = rgbRegex.exec(svgText)) !== null) foundColors.add(rgbToHex(parseInt(match[1]), parseInt(match[2]), parseInt(match[3])));
+        while ((match = namedColorRegex.exec(svgText)) !== null) {
+            const colorName = match[1].toLowerCase();
+            if (namedColors[colorName]) foundColors.add(namedColors[colorName]);
+        }
+        return Array.from(foundColors);
+    };
+
+    const applyExtractedColors = (colorArray: string[]) => {
+        if (colorArray.length === 0) return false;
+        const weightPerColor = Math.floor(100 / colorArray.length);
+        const remainder = 100 - (weightPerColor * colorArray.length);
+        const newColors: PaletteColor[] = colorArray.map((hex, i) => ({
+            hex, name: getClosestColorName(hex), weight: weightPerColor + (i === 0 ? remainder : 0), locked: false
+        }));
+        setColors(newColors);
+        return true;
+    };
+
     const handleSvgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
             const svgText = event.target?.result as string;
-            const colorRegex = /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\b/g;
-            const rgbRegex = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/gi;
-            const namedColorRegex = /(?:fill|stroke|stop-color|color)\s*[:=]\s*["']?(white|black|red|blue|green|yellow|orange|purple|pink|gray|grey|cyan|magenta)["']?/gi;
-            const namedColors: Record<string, string> = {
-                white: '#FFFFFF', black: '#000000', red: '#FF0000', blue: '#0000FF', 
-                green: '#008000', yellow: '#FFFF00', orange: '#FFA500', purple: '#800080',
-                pink: '#FFC0CB', gray: '#808080', grey: '#808080', cyan: '#00FFFF', magenta: '#FF00FF'
-            };
-            const foundColors = new Set<string>();
-            let match;
-            while ((match = colorRegex.exec(svgText)) !== null) {
-                let hex = match[0].toUpperCase();
-                // Expandir hex de 3 para 6 caracteres
-                if (hex.length === 4) {
-                    hex = `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`;
-                }
-                foundColors.add(hex);
-            }
-            while ((match = rgbRegex.exec(svgText)) !== null) foundColors.add(rgbToHex(parseInt(match[1]), parseInt(match[2]), parseInt(match[3])));
-            while ((match = namedColorRegex.exec(svgText)) !== null) {
-                const colorName = match[1].toLowerCase();
-                if (namedColors[colorName]) foundColors.add(namedColors[colorName]);
-            }
-            if (foundColors.size > 0) {
-                const colorArray = Array.from(foundColors);
-                const weightPerColor = Math.floor(100 / colorArray.length);
-                const remainder = 100 - (weightPerColor * colorArray.length);
-                const newColors: PaletteColor[] = colorArray.map((hex, i) => ({ hex, name: getClosestColorName(hex), weight: weightPerColor + (i === 0 ? remainder : 0), locked: false }));
-                if (newColors.length > 0) setColors(newColors);
-            }
+            applyExtractedColors(extractColorsFromSvgText(svgText));
         };
         reader.readAsText(file);
     };
