@@ -432,6 +432,15 @@ export interface Translations {
   backgroundWhite: string;
   backgroundGray: string;
 
+  // Card templates (Multi-Slot)
+  cardTemplateLabel: string;
+  cardTemplateClassic: string;
+  cardTemplateCompact: string;
+  cardTemplateEditorial: string;
+  cardTemplateSwatch: string;
+  cardTemplateMinimal: string;
+  cardTemplateMono: string;
+
   // Palette Magic
   paletteMagic: string;
   contextBrand: string;
@@ -887,6 +896,13 @@ export const translations: Record<Language, Translations> = {
     templateCircles: 'Circles',
     templateSunset: 'Atardecer',
     templateBars: 'Bars',
+    cardTemplateLabel: 'Card Template',
+    cardTemplateClassic: 'Classic',
+    cardTemplateCompact: 'Compact',
+    cardTemplateEditorial: 'Editorial',
+    cardTemplateSwatch: 'Swatch',
+    cardTemplateMinimal: 'Minimal',
+    cardTemplateMono: 'Mono',
     backgroundBlack: 'Black',
     backgroundWhite: 'White',
     backgroundGray: 'Gray',
@@ -1338,6 +1354,13 @@ export const translations: Record<Language, Translations> = {
     colorGuidePreview: 'Prévia do Guia de Cores',
     printSavePdfHint: 'Use a função "Imprimir" do navegador para Salvar como PDF',
     closeButton: 'FECHAR',
+    cardTemplateLabel: 'Modelo do Card',
+    cardTemplateClassic: 'Clássico',
+    cardTemplateCompact: 'Compacto',
+    cardTemplateEditorial: 'Editorial',
+    cardTemplateSwatch: 'Amostra',
+    cardTemplateMinimal: 'Mínimo',
+    cardTemplateMono: 'Mono',
     printSavePdf: 'IMPRIMIR / SALVAR PDF',
     
     // GeneratedPalettes - Template options
@@ -1789,6 +1812,13 @@ export const translations: Record<Language, Translations> = {
     internalColorLabel: 'Int',
     resetCombo: 'Resetear',
     availableCombinations: 'combinaciones disponibles',
+    cardTemplateLabel: 'Plantilla del Card',
+    cardTemplateClassic: 'Clásico',
+    cardTemplateCompact: 'Compacto',
+    cardTemplateEditorial: 'Editorial',
+    cardTemplateSwatch: 'Muestra',
+    cardTemplateMinimal: 'Mínimo',
+    cardTemplateMono: 'Mono',
     backgroundLabel: 'Fondo',
     cardsLabel: 'Tarjetas',
     
