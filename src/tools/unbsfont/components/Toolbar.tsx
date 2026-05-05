@@ -214,7 +214,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             </form>
                         ) : (
                             <button onClick={() => setIsAddingStyle(true)} className={`w-full border border-dashed rounded-lg px-3 py-2 text-[11px] font-semibold ${isDarkMode ? 'border-slate-700 text-slate-400 hover:border-white hover:text-white' : 'border-neutral-300 text-neutral-500 hover:border-black hover:text-[#232323]'}`}>
-                                + Adicionar estilo
+                                + Add style
                             </button>
                         )}
                     </div>
@@ -222,36 +222,36 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
                 <div className={divider} />
 
-                {/* AÇÕES */}
+                {/* ACTIONS */}
                 <div className="space-y-2">
                     <span className={groupLabel}>Actions</span>
                     <button onClick={() => fileInputRef.current?.click()} className={btnGhost}>
                         <span className="flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" /></svg>
-                            Importar SVG
+                            Import SVG
                         </span>
                         <span className="text-[9px] tracking-[0.14em] opacity-70">Ctrl+V</span>
                     </button>
                     <button onClick={handleSave} className={btnPrimary}>
                         <span className="flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                            Salvar project
+                            Save project
                         </span>
                         <span className="text-[9px] tracking-[0.14em] opacity-70">Ctrl+S</span>
                     </button>
                     <button onClick={() => projectFileInputRef.current?.click()} className={btnGhost}>
                         <span className="flex items-center gap-2">
                             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>
-                            Abrir .unbsfo
+                            Open .unbsfo
                         </span>
                     </button>
                 </div>
 
                 <div className={divider} />
 
-                {/* EXPORTAR FONTE */}
+                {/* EXPORT FONT */}
                 <div className="space-y-2">
-                    <span className={groupLabel}>Exportar</span>
+                    <span className={groupLabel}>Export</span>
                     <button
                         onClick={onExportFontEditor}
                         disabled={isExporting}
@@ -264,7 +264,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             ) : (
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             )}
-                            Exportar TTF
+                            Export TTF
                         </span>
                         <span className="text-[9px] tracking-[0.14em] opacity-70">Family</span>
                     </button>
