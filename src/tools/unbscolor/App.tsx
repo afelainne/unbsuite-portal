@@ -337,7 +337,7 @@ const App: React.FC = () => {
         };
     };
 
-    const generateCardSvg = (payload: CardExportPayload) => {
+    const renderClassicCard = (payload: CardExportPayload) => {
         const width = 420;
         const padding = 24;
         const headerHeight = 160;
@@ -403,6 +403,34 @@ const App: React.FC = () => {
             .join('');
 
         cursor += 74; // extra space for codes below strip
+
+        // Alternatives expanded grid
+        let altSvg = '';
+        if (payload.alternatives && payload.alternatives.length) {
+            cursor += 8;
+            const altLabelY = cursor;
+            cursor += 24;
+            const cols = 3;
+            const cellW = (width - padding * 2 - 12 * (cols - 1)) / cols;
+            const cellH = 76;
+            const cells = payload.alternatives.map((a, i) => {
+                const r = Math.floor(i / cols);
+                const c = i % cols;
+                const x = padding + c * (cellW + 12);
+                const y = cursor + r * (cellH + 10);
+                return `<g transform="translate(${x}, ${y})">
+                    <rect width="${cellW}" height="${cellH}" rx="10" fill="#ffffff" stroke="#e5e7eb" />
+                    <rect x="8" y="8" width="44" height="${cellH - 16}" rx="8" fill="${a.hex}" />
+                    <text x="62" y="26" font-size="10" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">${(a.code || a.name).slice(0, 18)}</text>
+                    <text x="62" y="44" font-size="9" font-family="Arial, sans-serif" fill="#9ca3af">${a.name.slice(0, 20)}</text>
+                    <text x="62" y="60" font-size="9" font-family="Arial, sans-serif" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>
+                </g>`;
+            }).join('');
+            const rows = Math.ceil(payload.alternatives.length / cols);
+            cursor += rows * (cellH + 10);
+            altSvg = `<text x="${padding}" y="${altLabelY}" font-size="11" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${t.nearbyAlternatives.toUpperCase()}</text>${cells}`;
+        }
+
         const height = cursor + padding;
 
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${t.slotLabel} ${payload.index + 1} ${t.colorCardAria}" shape-rendering="geometricPrecision" text-rendering="optimizeLegibility">
@@ -423,9 +451,214 @@ const App: React.FC = () => {
         <clipPath id="stripClip"><rect x="${padding}" y="${stripY}" width="${stripWidth}" height="40" rx="10" /></clipPath>
         ${stripRects}
     </g>
+    ${altSvg}
 </svg>`;
 
         return { svg, width, height };
+    };
+
+    const renderCompactCard = (payload: CardExportPayload) => {
+        const width = 360;
+        const pad = 16;
+        const headerH = 64;
+        let y = pad + headerH + 16;
+        const rgbH = hexToRgb(payload.hex);
+        const lum = (0.299 * rgbH.r + 0.587 * rgbH.g + 0.114 * rgbH.b) / 255;
+        const tc = lum > 0.5 ? '#0f172a' : '#fff';
+        // stats in 2 columns
+        const colW = (width - pad * 2) / 2;
+        const statRows = Math.ceil(payload.stats.length / 2);
+        const statSvg = payload.stats.map((s, i) => {
+            const c = i % 2, r = Math.floor(i / 2);
+            return `<text x="${pad + c * colW}" y="${y + r * 16}" font-size="10" font-family="Arial, monospace" fill="#374151">${s}</text>`;
+        }).join('');
+        y += statRows * 16 + 12;
+        const matchSvg = payload.matches.map((m, i) => {
+            const my = y + i * 26;
+            return `<rect x="${pad}" y="${my}" width="20" height="20" rx="4" fill="${m.swatch}" stroke="#e5e7eb" />
+                <text x="${pad + 28}" y="${my + 9}" font-size="8" font-family="Arial" fill="#9ca3af" font-weight="700">${m.label.toUpperCase()}</text>
+                <text x="${pad + 28}" y="${my + 20}" font-size="11" font-family="Arial" fill="#0f172a" font-weight="700">${m.code}</text>`;
+        }).join('');
+        y += payload.matches.length * 26 + 12;
+        const stripW = width - pad * 2;
+        const sw = stripW / Math.max(payload.strip.length, 1);
+        const stripSvg = payload.strip.map((s, i) => `<rect x="${pad + i * sw}" y="${y}" width="${sw}" height="22" fill="${s.hex}" />`).join('');
+        y += 28;
+        let altSvg = '';
+        if (payload.alternatives) {
+            altSvg = payload.alternatives.map((a, i) => {
+                const ay = y + i * 22;
+                return `<rect x="${pad}" y="${ay}" width="16" height="16" fill="${a.hex}" />
+                    <text x="${pad + 22}" y="${ay + 12}" font-size="9" font-family="Arial" fill="#0f172a">${(a.code || a.name)} · ΔE ${a.deltaE.toFixed(1)}</text>`;
+            }).join('');
+            y += payload.alternatives.length * 22;
+        }
+        const height = y + pad;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+            <rect width="100%" height="100%" fill="#fff" rx="14" />
+            <rect x="${pad}" y="${pad}" width="${width - pad * 2}" height="${headerH}" rx="10" fill="${payload.hex}" />
+            <text x="${pad + 12}" y="${pad + 26}" font-size="14" fill="${tc}" font-weight="800">${payload.name}</text>
+            <text x="${pad + 12}" y="${pad + 48}" font-size="11" fill="${tc}" opacity="0.85" font-family="monospace">${payload.hex}</text>
+            ${statSvg}${matchSvg}${stripSvg}${altSvg}
+        </svg>`;
+        return { svg, width, height };
+    };
+
+    const renderEditorialCard = (payload: CardExportPayload) => {
+        const width = 480;
+        const pad = 0;
+        const headerH = 220;
+        const rgbH = hexToRgb(payload.hex);
+        const lum = (0.299 * rgbH.r + 0.587 * rgbH.g + 0.114 * rgbH.b) / 255;
+        const tc = lum > 0.5 ? '#0f172a' : '#fff';
+        let y = headerH + 32;
+        const innerPad = 32;
+        const statSvg = payload.stats.map((s, i) => `<text x="${innerPad}" y="${y + i * 18}" font-size="11" font-family="monospace" fill="#374151">${s}</text>`).join('');
+        y += payload.stats.length * 18 + 24;
+        const matchSvg = payload.matches.map((m, i) => {
+            const my = y + i * 36;
+            return `<line x1="${innerPad}" y1="${my + 30}" x2="${width - innerPad}" y2="${my + 30}" stroke="#e5e7eb" />
+                <text x="${innerPad}" y="${my + 18}" font-size="10" font-family="Arial" fill="#6b7280" letter-spacing="2">${m.label.toUpperCase()}</text>
+                <text x="${width - innerPad - 80}" y="${my + 18}" font-size="14" font-family="Arial" fill="#0f172a" font-weight="700">${m.code}</text>
+                <rect x="${width - innerPad - 28}" y="${my + 4}" width="20" height="20" fill="${m.swatch}" />`;
+        }).join('');
+        y += payload.matches.length * 36 + 24;
+        const stripW = width - innerPad * 2;
+        const sw = stripW / Math.max(payload.strip.length, 1);
+        const stripSvg = payload.strip.map((s, i) => `<rect x="${innerPad + i * sw}" y="${y}" width="${sw}" height="36" fill="${s.hex}" />`).join('');
+        y += 44;
+        let altSvg = '';
+        if (payload.alternatives) {
+            altSvg = payload.alternatives.map((a, i) => {
+                const ay = y + i * 28;
+                return `<rect x="${innerPad}" y="${ay}" width="20" height="20" fill="${a.hex}" />
+                    <text x="${innerPad + 28}" y="${ay + 14}" font-size="11" fill="#0f172a" font-weight="700">${a.code || a.name}</text>
+                    <text x="${width - innerPad}" y="${ay + 14}" text-anchor="end" font-size="10" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>`;
+            }).join('');
+            y += payload.alternatives.length * 28;
+        }
+        const height = y + 32;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+            <rect width="100%" height="100%" fill="#fafafa" />
+            <rect x="0" y="0" width="${width}" height="${headerH}" fill="${payload.hex}" />
+            <text x="${innerPad}" y="80" font-size="48" font-family="Georgia, serif" font-weight="700" fill="${tc}">${payload.name}</text>
+            <text x="${innerPad}" y="120" font-size="20" font-family="monospace" fill="${tc}" opacity="0.85">${payload.hex.toUpperCase()}</text>
+            <text x="${innerPad}" y="${headerH - 24}" font-size="11" font-family="Arial" fill="${tc}" opacity="0.7" letter-spacing="3">${t.slotLabel.toUpperCase()} ${payload.index + 1}</text>
+            ${statSvg}${matchSvg}${stripSvg}${altSvg}
+        </svg>`;
+        return { svg, width, height };
+    };
+
+    const renderSwatchCard = (payload: CardExportPayload) => {
+        const size = 420;
+        const swatchH = Math.round(size * 0.6);
+        const rgbH = hexToRgb(payload.hex);
+        const lum = (0.299 * rgbH.r + 0.587 * rgbH.g + 0.114 * rgbH.b) / 255;
+        const tc = lum > 0.5 ? '#0f172a' : '#fff';
+        let y = swatchH + 24;
+        const pad = 20;
+        const statSvg = payload.stats.slice(0, 4).map((s, i) => `<text x="${pad}" y="${y + i * 14}" font-size="10" font-family="monospace" fill="#374151">${s}</text>`).join('');
+        y += Math.min(payload.stats.length, 4) * 14 + 12;
+        const sw = (size - pad * 2) / Math.max(payload.matches.length || 1, 1);
+        const matchSvg = payload.matches.map((m, i) => `<rect x="${pad + i * sw}" y="${y}" width="${sw - 4}" height="20" fill="${m.swatch}" />
+            <text x="${pad + i * sw}" y="${y + 32}" font-size="8" font-family="monospace" fill="#6b7280">${m.code.slice(0, 14)}</text>`).join('');
+        y += 44;
+        let altSvg = '';
+        if (payload.alternatives) {
+            const aw = (size - pad * 2) / payload.alternatives.length;
+            altSvg = payload.alternatives.map((a, i) => `<rect x="${pad + i * aw}" y="${y}" width="${aw - 2}" height="24" fill="${a.hex}" />`).join('');
+            y += 28;
+        }
+        const height = y + pad;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${height}" viewBox="0 0 ${size} ${height}">
+            <rect width="100%" height="100%" fill="#fff" />
+            <rect x="0" y="0" width="${size}" height="${swatchH}" fill="${payload.hex}" />
+            <text x="${pad}" y="${swatchH - 40}" font-size="24" font-family="Arial" font-weight="800" fill="${tc}">${payload.name}</text>
+            <text x="${pad}" y="${swatchH - 18}" font-size="13" font-family="monospace" fill="${tc}" opacity="0.85">${payload.hex.toUpperCase()}</text>
+            ${statSvg}${matchSvg}${altSvg}
+        </svg>`;
+        return { svg, width: size, height };
+    };
+
+    const renderMinimalCard = (payload: CardExportPayload) => {
+        const width = 400;
+        const pad = 16;
+        const swatchH = 80;
+        let y = swatchH + 28;
+        const rgbH = hexToRgb(payload.hex);
+        const lum = (0.299 * rgbH.r + 0.587 * rgbH.g + 0.114 * rgbH.b) / 255;
+        const tc = lum > 0.5 ? '#0f172a' : '#fff';
+        const sw = (width - pad * 2) / Math.max(payload.matches.length || 1, 1);
+        const matchSvg = payload.matches.map((m, i) => `<rect x="${pad + i * sw}" y="${y}" width="${sw - 4}" height="36" fill="${m.swatch}" />
+            <text x="${pad + i * sw + 4}" y="${y + 50}" font-size="8" font-family="monospace" fill="#6b7280">${m.code.slice(0, 14)}</text>`).join('');
+        y += 60;
+        let altSvg = '';
+        if (payload.alternatives) {
+            const aw = (width - pad * 2) / payload.alternatives.length;
+            altSvg = payload.alternatives.map((a, i) => `<rect x="${pad + i * aw}" y="${y}" width="${aw - 2}" height="20" fill="${a.hex}" />`).join('');
+            y += 24;
+        }
+        const height = y + pad;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+            <rect width="100%" height="100%" fill="#fff" />
+            <rect x="${pad}" y="${pad}" width="${width - pad * 2}" height="${swatchH}" fill="${payload.hex}" />
+            <text x="${pad + 12}" y="${pad + 36}" font-size="18" font-family="Arial" font-weight="800" fill="${tc}">${payload.name}</text>
+            <text x="${pad + 12}" y="${pad + 60}" font-size="12" font-family="monospace" fill="${tc}" opacity="0.85">${payload.hex.toUpperCase()}</text>
+            ${matchSvg}${altSvg}
+        </svg>`;
+        return { svg, width, height };
+    };
+
+    const renderMonoCard = (payload: CardExportPayload) => {
+        const width = 420;
+        const pad = 24;
+        const headerH = 160;
+        let y = pad + headerH + 24;
+        const statSvg = payload.stats.map((s, i) => `<text x="${pad}" y="${y + i * 22}" font-size="13" font-family="monospace" fill="#d1d5db">${s}</text>`).join('');
+        y += payload.stats.length * 22 + 24;
+        const matchSvg = payload.matches.map((m, i) => {
+            const my = y + i * 60;
+            return `<rect x="${pad}" y="${my}" width="${width - pad * 2}" height="48" rx="10" fill="#1a1a1a" stroke="#333" />
+                <text x="${pad + 16}" y="${my + 18}" font-size="9" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${m.label.toUpperCase()}</text>
+                <text x="${pad + 16}" y="${my + 36}" font-size="14" fill="#fff" font-weight="700">${m.code}</text>
+                <rect x="${width - pad - 48}" y="${my + 6}" width="36" height="36" rx="8" fill="${m.swatch}" stroke="#444" />`;
+        }).join('');
+        y += payload.matches.length * 60 + 16;
+        const stripW = width - pad * 2;
+        const sw = stripW / Math.max(payload.strip.length, 1);
+        const stripSvg = payload.strip.map((s, i) => `<rect x="${pad + i * sw}" y="${y}" width="${sw}" height="36" fill="${s.hex}" stroke="#222" />`).join('');
+        y += 44;
+        let altSvg = '';
+        if (payload.alternatives) {
+            altSvg = payload.alternatives.map((a, i) => {
+                const ay = y + i * 26;
+                return `<rect x="${pad}" y="${ay}" width="20" height="20" fill="${a.hex}" stroke="#333" />
+                    <text x="${pad + 28}" y="${ay + 14}" font-size="10" fill="#fff" font-weight="700">${a.code || a.name}</text>
+                    <text x="${width - pad}" y="${ay + 14}" text-anchor="end" font-size="10" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>`;
+            }).join('');
+            y += payload.alternatives.length * 26;
+        }
+        const height = y + pad;
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+            <rect width="100%" height="100%" fill="#0a0a0a" rx="20" />
+            <rect x="${pad}" y="${pad}" width="${width - pad * 2}" height="${headerH}" rx="16" fill="${payload.hex}" stroke="#333" />
+            <text x="${pad + 16}" y="${pad + 32}" font-size="11" fill="#fff" opacity="0.85" font-weight="700" letter-spacing="2">${t.slotLabel.toUpperCase()} ${payload.index + 1}</text>
+            <text x="${pad + 16}" y="${pad + 76}" font-size="26" fill="#fff" font-weight="800">${payload.name}</text>
+            <text x="${pad + 16}" y="${pad + 104}" font-size="14" fill="#fff" opacity="0.85" font-family="monospace">${payload.hex.toUpperCase()}</text>
+            ${statSvg}${matchSvg}${stripSvg}${altSvg}
+        </svg>`;
+        return { svg, width, height };
+    };
+
+    const generateCardSvg = (payload: CardExportPayload) => {
+        switch (payload.template) {
+            case 'compact': return renderCompactCard(payload);
+            case 'editorial': return renderEditorialCard(payload);
+            case 'swatchcard': return renderSwatchCard(payload);
+            case 'minimal': return renderMinimalCard(payload);
+            case 'mono': return renderMonoCard(payload);
+            default: return renderClassicCard(payload);
+        }
     };
 
     const downloadFromUrl = (url: string, filename: string) => {
