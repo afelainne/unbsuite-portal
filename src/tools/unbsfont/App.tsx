@@ -1720,7 +1720,7 @@ const App: React.FC = () => {
                           onClick={() => setPasteConfirmModal(null)}
                           className={`w-full py-3 rounded-full text-[11px] font-semibold uppercase tracking-[0.2em] border ${isDarkMode ? 'border-white/30 text-white hover:bg-white/10' : 'border-neutral-300 text-black hover:bg-neutral-100'}`}
                       >
-                          Cancelar
+                          Cancel
                       </button>
                   </div>
               </div>
