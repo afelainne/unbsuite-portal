@@ -16,9 +16,7 @@ const TOOLS: Tool[] = [
   { index: "01", name: "UNBSCOLOR", tagline: "Filtro & paleta", copy: "Filtro brutal de paletas. PMS, CMYK, LAB.", status: "FEATURED", path: "/unbscolor", year: "2026" },
   { index: "02", name: "UNBSGRID", tagline: "Anatomia de logo", copy: "Malha geométrica. Razão áurea, espirais, eixos.", status: "STABLE", path: "/unbsgrid", year: "2026" },
   { index: "03", name: "UNBSFORMAT", tagline: "Print assistant", copy: "Bleed, sangria, malha. Pronto pra gráfica.", status: "NEW", path: "/unbsformat", year: "2026" },
-  { index: "04", name: "UNBSMOCKUP", tagline: "Mockup engine", copy: "Mockups que parecem produto, não Behance.", status: "NEW", path: "/unbsmockup", year: "2026" },
-  { index: "05", name: "UNBSTYPE", tagline: "Pares tipográficos", copy: "Pareamentos curados. Sem Roboto com Roboto.", status: "NEW", path: "/unbstype", year: "2026" },
-  { index: "06", name: "UNBSFONT", tagline: "Editor de fontes", copy: "Editor vetorial. Glyphs, kerning, export OTF.", status: "NEW", path: "/unbsfont", year: "2026" },
+  { index: "04", name: "UNBSFONT", tagline: "Editor de fontes", copy: "Editor vetorial. Glyphs, kerning, export OTF.", status: "NEW", path: "/unbsfont", year: "2026" },
 ];
 
 const Index = () => {
