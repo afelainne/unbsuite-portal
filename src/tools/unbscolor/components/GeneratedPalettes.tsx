@@ -228,54 +228,75 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     }, [colors]);
 
     const albersGrid = useMemo(() => {
-        const grid: { outer: string; middle: string; inner: string; weight: number }[] = [];
+        const grid: { outer: string; middle: string; inner: string; weight: number; score: number }[] = [];
         const validColors = colors.filter(c => isValidHex(c.hex));
         if (validColors.length < 2) return grid;
-        
-        // Ensure every color participates as outer at least once
+
+        // Build all combos: outer ≠ middle, and pick inner ≠ outer/middle that maximizes contrast vs middle
         for (let i = 0; i < validColors.length; i++) {
             for (let j = 0; j < validColors.length; j++) {
-                if (i !== j) {
-                    // Pick best inner for contrast with middle
-                    let bestInner = validColors[0].hex;
-                    let bestContrast = 0;
-                    for (const c of validColors) {
-                        const contrast = getContrastRatio(c.hex, validColors[j].hex);
-                        if (contrast > bestContrast) {
-                            bestContrast = contrast;
-                            bestInner = c.hex;
-                        }
+                if (i === j) continue;
+                const outer = validColors[i].hex;
+                const middle = validColors[j].hex;
+                let bestInner = '';
+                let bestInnerContrast = -1;
+                for (const c of validColors) {
+                    if (c.hex === outer || c.hex === middle) continue;
+                    const ratio = getContrastRatio(c.hex, middle);
+                    if (ratio > bestInnerContrast) {
+                        bestInnerContrast = ratio;
+                        bestInner = c.hex;
                     }
-                    const comboWeight = (validColors[i].weight + validColors[j].weight) / 2;
-                    grid.push({ 
-                        outer: validColors[i].hex, 
-                        middle: validColors[j].hex, 
-                        inner: bestInner,
-                        weight: comboWeight
-                    });
                 }
+                // Fallback when palette has only 2 colors
+                if (!bestInner) {
+                    bestInner = outer;
+                    bestInnerContrast = getContrastRatio(outer, middle);
+                }
+                const cMidInner = bestInnerContrast;
+                const cOuterMid = getContrastRatio(outer, middle);
+                const weight = (validColors[i].weight + validColors[j].weight) / 2;
+                const score = cMidInner * 0.6 + cOuterMid * 0.3 + (weight / 100) * 0.1;
+                grid.push({ outer, middle, inner: bestInner, weight, score });
             }
         }
 
-        // When fullContrastMode is active, filter to only combos with WCAG AA contrast (4.5:1)
+        // Filter by contrast mode
         let filtered = fullContrastMode
-            ? grid.filter(combo => getContrastRatio(combo.middle, combo.inner) >= 4.5)
-            : grid;
-
-        // If filtering removed everything, keep best contrast combos
-        if (filtered.length === 0) filtered = [...grid].sort((a, b) => getContrastRatio(b.middle, b.inner) - getContrastRatio(a.middle, a.inner)).slice(0, Math.min(8, grid.length));
-
-        // Sort by weight
-        filtered.sort((a, b) => b.weight - a.weight);
-        
-        // Shuffle based on seed but keep weight tendency
-        const shuffled = [...filtered];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const range = Math.min(3, i);
-            const j = i - Math.floor((Math.sin(albersSeed + i) * 10000) % range);
-            if (j >= 0) [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            ? grid.filter(c => getContrastRatio(c.middle, c.inner) >= 4.5 && getContrastRatio(c.outer, c.middle) >= 3.0)
+            : grid.slice();
+        if (filtered.length === 0) {
+            filtered = grid.slice().sort((a, b) => b.score - a.score).slice(0, Math.min(8, grid.length));
         }
-        return shuffled;
+
+        // Seeded PRNG (mulberry32) for real Fisher–Yates shuffle
+        const mulberry32 = (a: number) => () => {
+            a |= 0; a = (a + 0x6D2B79F5) | 0;
+            let t = a;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const rand = mulberry32(albersSeed * 2654435761 + 1);
+
+        // Weighted random sort: higher score → higher chance of appearing earlier
+        const decorated = filtered.map(c => ({ c, key: rand() / (0.5 + c.score) }));
+        decorated.sort((a, b) => a.key - b.key);
+        const shuffled = decorated.map(d => d.c);
+
+        // Greedy interleave: avoid adjacent items sharing the same middle or inner
+        const result: typeof shuffled = [];
+        const remaining = shuffled.slice();
+        while (remaining.length) {
+            const last = result[result.length - 1];
+            let pickIdx = 0;
+            if (last) {
+                const found = remaining.findIndex(r => r.middle !== last.middle && r.inner !== last.inner);
+                if (found !== -1) pickIdx = found;
+            }
+            result.push(remaining.splice(pickIdx, 1)[0]);
+        }
+        return result;
     }, [colors, albersSeed, fullContrastMode]);
 
     const totalWeight = useMemo(() => colors.reduce((sum, c) => sum + c.weight, 0), [colors]);
