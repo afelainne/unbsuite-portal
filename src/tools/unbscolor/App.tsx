@@ -250,9 +250,11 @@ const App: React.FC = () => {
         stats: string[];
         matches: { label: string; code: string; swatch: string }[];
         strip: { hex: string; name: string; code?: string }[];
+        alternatives?: { hex: string; name: string; code?: string; deltaE: number }[];
+        template: CardTemplate;
     }
 
-    const buildCardExportData = (color: string, index: number): CardExportPayload | null => {
+    const buildCardExportData = (color: string, index: number, includeAlternatives = false, template: CardTemplate = cardTemplate): CardExportPayload | null => {
         if (!isValidHex(color)) return null;
 
         const outOfGamutLabel = t.outOfGamut.toUpperCase();
@@ -310,11 +312,18 @@ const App: React.FC = () => {
             });
         }
 
-        const strip = findReferenceMatches(color, library, 6).map((m) => ({
+        const stripMatches = findReferenceMatches(color, library, 6);
+        const strip = stripMatches.map((m) => ({
             hex: m.reference.hex,
             name: m.reference.name,
             code: normalizeRefCode(m.reference.code)
         }));
+        const alternatives = includeAlternatives ? stripMatches.map((m) => ({
+            hex: m.reference.hex,
+            name: m.reference.name,
+            code: normalizeRefCode(m.reference.code),
+            deltaE: m.deltaE
+        })) : undefined;
 
         return {
             index,
@@ -322,7 +331,9 @@ const App: React.FC = () => {
             name: getClosestColorName(color),
             stats,
             matches: matchesList,
-            strip
+            strip,
+            alternatives,
+            template
         };
     };
 
