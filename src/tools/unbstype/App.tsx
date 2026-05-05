@@ -29,13 +29,25 @@ const UnbsTypeApp: React.FC = () => {
   const handleUploadFont = useCallback(async (file: File) => {
     try {
       const buffer = await file.arrayBuffer();
-      const name = `Upload: ${file.name.replace(/\.(ttf|otf|woff2?)/i, '')}`;
+      const cleanName = file.name
+        .replace(/\.(ttf|otf|woff2?)$/i, '')
+        .replace(/[\\/"']/g, '_')
+        .trim();
       localFontCounter++;
+      const name = `Upload ${localFontCounter}: ${cleanName}`;
       const fontFace = new FontFace(name, buffer);
       await fontFace.load();
       document.fonts.add(fontFace);
-      const entry: FontEntry = { name, category: 'sans', weights: [400, 700], isLocal: true };
-      setCustomFonts(prev => [...prev, entry]);
+      // Detect actual weight reported by the FontFace
+      const parsedWeight = parseInt(String(fontFace.weight), 10);
+      const weight = Number.isFinite(parsedWeight) ? parsedWeight : 400;
+      const entry: FontEntry = {
+        name,
+        category: 'sans',
+        weights: [weight],
+        isLocal: true
+      };
+      setCustomFonts(prev => (prev.some(f => f.name === name) ? prev : [...prev, entry]));
     } catch (err) {
       console.error('Failed to load font:', err);
     }

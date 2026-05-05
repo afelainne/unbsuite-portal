@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface PreviewPanelProps {
   headingFont: string;
@@ -18,7 +18,30 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({ headingFont, bodyFont, cont
   const fg = fgColor || 'inherit';
   const bg = bgColor || 'transparent';
 
-  const wrapStyle: React.CSSProperties = { backgroundColor: bg, color: fg, padding: bg !== 'transparent' ? '2rem' : 0, borderRadius: '0.75rem', transition: 'all 0.3s ease' };
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setReady(false);
+    if (typeof document === 'undefined' || !document.fonts) {
+      setReady(true);
+      return;
+    }
+    Promise.all([
+      document.fonts.load(`16px '${headingFont}'`).catch(() => null),
+      document.fonts.load(`16px '${bodyFont}'`).catch(() => null)
+    ]).then(() => { if (!cancelled) setReady(true); });
+    return () => { cancelled = true; };
+  }, [headingFont, bodyFont]);
+
+  const wrapStyle: React.CSSProperties = {
+    backgroundColor: bg,
+    color: fg,
+    padding: bg !== 'transparent' ? '2rem' : 0,
+    borderRadius: '0.75rem',
+    transition: 'opacity 0.2s ease, all 0.3s ease',
+    opacity: ready ? 1 : 0
+  };
 
   if (context === 'hero') {
     return (

@@ -20,8 +20,10 @@ const SAMPLE_TEXTS = [
   'AV AW AT LT VA WA TA YA',
 ];
 
-// Fix #11: Fixed font family name (no timestamp)
-const FONT_FAMILY_NAME = 'FontPreview_UnbsFont';
+// Preview family name is derived from metadata.familyName so the preview
+// reflects the real family/style binding the user is editing.
+const sanitizeFamily = (name: string) =>
+  (name || 'CustomFont').replace(/[^A-Za-z0-9_-]/g, '_');
 
 const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode, isOpen, onClose }) => {
   const [fontUrl, setFontUrl] = useState<string | null>(null);
@@ -33,6 +35,8 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
 
   // Fix #9: Count kerning pairs for footer info
   const kerningPairsCount = Object.keys(metadata.kerning || {}).length;
+
+  const FONT_FAMILY_NAME = `${sanitizeFamily(metadata.familyName)}_preview`;
 
   // Export and load font
   const loadFont = useCallback(async () => {
@@ -47,9 +51,9 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
       const blob = new Blob([buffer], { type: 'font/ttf' });
       const url = URL.createObjectURL(blob);
       
-      // Fix #10: Clean up old FontFace before adding new one
+      // Clean up any previous preview FontFace (any family with _preview suffix)
       document.fonts.forEach(f => {
-        if (f.family === FONT_FAMILY_NAME) {
+        if (f.family === FONT_FAMILY_NAME || f.family.endsWith('_preview')) {
           document.fonts.delete(f);
         }
       });
@@ -72,27 +76,26 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
     } finally {
       setIsLoading(false);
     }
-  }, [metadata, glyphs, fontUrl]);
+  }, [metadata, glyphs, fontUrl, FONT_FAMILY_NAME]);
 
   // Load font when modal opens
   useEffect(() => {
     if (isOpen) {
       loadFont();
     }
-    
+
     return () => {
-      // Cleanup on unmount
       if (fontUrl) {
         URL.revokeObjectURL(fontUrl);
       }
-      // Clean up FontFace on unmount
       document.fonts.forEach(f => {
-        if (f.family === FONT_FAMILY_NAME) {
+        if (f.family === FONT_FAMILY_NAME || f.family.endsWith('_preview')) {
           document.fonts.delete(f);
         }
       });
     };
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, metadata.familyName, metadata.styleName, glyphs]);
 
   if (!isOpen) return null;
 

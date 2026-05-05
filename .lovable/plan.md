@@ -1,53 +1,79 @@
-# Fix UNBSCOLOR & UNBSFONT chrome regressions
+# Varredura de bugs e correção do vínculo família/estilo de fontes
 
-## Diagnostic summary
+## Bugs / inconsistências identificados
 
-**UNBSCOLOR**
-- `.tool-subheader` uses `sticky top-14` but the global `Header` is `h-12` → 8px misalignment and the subheader visually overlaps the content because the inner `<main>` scroller has no top padding.
-- `.nav-tab` uses `text-xs md:text-sm font-bold` (12-14 px, sans) — outside the new mono Swiss system.
-- Active/hover underline uses `hsl(var(--accent))` = yellow — user wants **black**.
-- Scroll is broken: `Header` is `sticky top-0` inside the flex column, but `<main className="overflow-auto">` is the actual scroller, so `.tool-subheader sticky top-14` is anchored against the *viewport*, not the scroller, so it scrolls away.
+### 1. UNBSFONT — Preview da fonte usa nome fixo (não respeita familyName)
+`src/tools/unbsfont/components/FontPreview.tsx` registra a fonte sempre como `FontPreview_UnbsFont`, ignorando `metadata.familyName`. Resultado: o preview não reflete o nome real da família, e qualquer CSS externo tentando usar `familyName` falha.
 
-**UNBSFONT**
-- `Dashboard.tsx` and `ModeSelector.tsx` use `min-h-screen` while sitting inside `ToolLayout` (`h-dvh` − 48 px header). That forces 100 vh inside an already constrained box → vertical overflow and the content shifts off-center.
-- `Dashboard.tsx` keeps an empty 256 px sidebar (only an invisible file input), pushing all main content visibly to the right.
-- `ModeSelector.tsx` uses generic sans titles (`text-2xl font-black`) — out of sync with the rest of the chrome.
+### 2. UNBSFONT — Preview não recarrega quando metadata/glifos mudam
+O `useEffect` depende só de `isOpen` (`eslint-disable-line` ativo). Editar um glifo, fechar e reabrir mostra fonte velha em cache porque o `FontFace` antigo não é removido por mudança de família.
 
----
+### 3. UNBSFONT — Export "rápido" (CompactEditor) só exporta o estilo ATIVO
+`handleExportFontEditor` usa `glyphs` (estilo atual), nunca itera `styleMap`. Famílias com vários pesos (Regular, Bold, Light) só geram 1 arquivo. Apenas `handleExport` (modo Avançado) faz a iteração correta.
+Correção: `handleExportFontEditor` deve exportar todos os estilos com `glyphs.some(pathData)`, gerando 1 TTF por peso, todos compartilhando `familyName`.
 
-## Changes
+### 4. UNBSFONT — `fullName` / `postScriptName` montados em 2 lugares (drift)
+`fontEditorExporter.ts` repete a montagem nas linhas 524-528 e 676-680. Se uma for atualizada, a outra fica desatualizada. Extrair para helper `applyNameRecords(ttfData, metadata)`.
 
-### 1. `src/index.css` — fix subheader & nav tabs
-- `.tool-subheader`: change `sticky top-14 … py-4 bg-card/95` → `sticky top-0 … py-2 bg-white border-[#232323]/15`. (top-0 because it now sits inside the scrolling `<main>`, just below the global Header.)
-- `.nav-tab`: replace classes with `font-mono text-[10px] uppercase tracking-[0.2em] font-semibold text-[#232323]/55`.
-- Hover/active color → `text-[#232323]` (black). Underline `background: #232323` (black, not accent yellow).
-- Reduce underline thickness to `1px`.
+### 5. UNBSFONT — Falta preferredFamily/preferredSubfamily (name IDs 16/17)
+Para fontes com >2 estilos (ex.: Light, Regular, Medium, Bold, Black), o sistema operacional precisa dos name records 16/17 senão os pesos extras viram "famílias separadas" em apps como Word/Figma. Adicionar `name.preferredFamily` e `name.preferredSubFamily` quando `styleMap` tem mais de 2 entradas.
 
-### 2. `src/components/ToolLayout.tsx` — make scroll predictable
-- For `chrome="page"`: keep `<main className="flex-1 overflow-auto">` but add a wrapping container so `.tool-subheader sticky top-0` works correctly. No structural removal — just ensure the `<header>` sibling is outside the scroller (already is). Remove the `py-6 md:py-10` from `<main>` so the sticky subheader hugs the top; move padding to the inner content wrapper inside each tool when needed.
+### 6. UNBSTYPE — Upload de fonte não detecta categoria nem weights reais
+`handleUploadFont` força `category: 'sans'` e `weights: [400, 700]`. Se a fonte uploaded for serif/mono/display ou tiver só 1 weight, a UI mente. Usar metadata do `FontFace` (`fontFace.weight`) e oferecer dropdown de categoria. Mínimo: ler `fontFace.weight` real.
 
-### 3. `src/tools/unbscolor/App.tsx`
-- Wrap content area in a div instead of relying on `<main>` padding.
-- Drop `max-w-[1600px] mx-auto px-8 pb-20 pt-8` from the outer `<main>` (which lives inside `ToolLayout`'s main): keep the inner content padding only on the content wrapper after the subheader.
-- Settings cog button: remove `h-10 w-10 rounded-md` → use `h-7 w-7` square (matches `ToolButton icon`).
-- Remove duplicate `text-sm` on tab nav already handled by `.nav-tab`.
+### 7. UNBSTYPE — Nome do upload colide se mesmo arquivo for enviado 2×
+`name = "Upload: file.ttf"` — segunda vez sobrescreve a primeira no `document.fonts` mas adiciona entry duplicada em `customFonts`. Usar `localFontCounter` no nome (`Upload ${counter}: name`) e desduplicar antes de inserir.
 
-### 4. `src/tools/unbsfont/components/Dashboard.tsx`
-- Replace `min-h-screen p-8 font-sans flex overflow-hidden` → `h-full w-full p-8 font-sans flex overflow-hidden`.
-- Remove the empty `w-64` sidebar wrapper; keep only the hidden file input as a sibling.
-- Make the main column `flex-1 flex flex-col h-full overflow-y-auto` (no `pl-12`, use natural padding).
-- Standardize the “Projects” title to `font-mono text-[11px] uppercase tracking-[0.2em] font-semibold` + a smaller secondary line.
+### 8. UNBSTYPE — Preview pode tentar usar fonte ainda não carregada
+`PreviewPanel` não aguarda `document.fonts.ready`. Em primeira renderização aparece o fallback genérico. Adicionar `await document.fonts.load(\`16px '${fontName}'\`)` antes de marcar como pronto, ou usar `font-display: swap` com loader visual.
 
-### 5. `src/tools/unbsfont/components/ModeSelector.tsx`
-- Replace `min-h-screen` → `h-full w-full`.
-- Titles: `font-mono text-[11px] uppercase tracking-[0.2em] font-semibold` for "Select Editor Mode"; cards use mono uppercase 10 px labels and 9 px badges.
-- Remove emoji icons; use simple square swatches in `#F0FF00` / `#232323` for the Compact / Advanced indicators.
-- Cards: `border` (1 px) `border-[#232323]/20 hover:border-[#232323] rounded-none`, accent on hover via `hover:bg-[#F7E043]/20`.
+### 9. UNBSTYPE — `fontFamily: "'${name}', sans-serif"` quebra com nomes com aspas
+Improvável, mas nomes como `Source Sans 3` funcionam; nomes com aspas/carac. especiais não. Sanitizar nome no `loadGoogleFont` e usar nome sanitizado consistentemente.
 
-### 6. (Light) `src/tools/unbsfont/App.tsx`
-- Ensure the root wrapper around `Dashboard` / `ModeSelector` is `h-full w-full` (no `min-h-screen`) so it inherits the `ToolLayout` height.
+### 10. CompactEditor — input de SVG sem reset de `value`
+Linha ~677: o handler usa `e.target.value = ''` corretamente, OK. Verificar paridade no botão "Carregar SVG" do painel de glifo selecionado (~969).
 
-## Verification
-- UNBSCOLOR: header no longer overlaps content; tabs are small mono uppercase, black underline on hover/active; page scrolls vertically with subheader staying pinned just under the top header.
-- UNBSFONT: Dashboard and ModeSelector occupy the available space, content is centered, titles match the rest of the toolset.
-- No new dependencies, no DB changes.
+### 11. Console warning persistente — `Function components cannot be given refs`
+Vem de algum filho em `App.tsx` (root) usando `forwardRef` faltando. Localizar e envolver com `React.forwardRef` ou trocar por componente que aceite `ref`.
+
+### 12. Inconsistência de chrome — Header global + ToolHeader em sub-apps
+Alguns sub-apps (UNBSFORMAT, UNBSGRID) renderizam um `ToolHeader` próprio dentro do `ToolLayout`, gerando dois headers. Verificar e remover o segundo onde aplicável.
+
+## Mudanças propostas
+
+### A. `src/tools/unbsfont/components/FontPreview.tsx`
+- Trocar `FONT_FAMILY_NAME` constante por `\`${metadata.familyName || 'CustomFont'}_preview\``.
+- Trocar dependências do `useEffect` para `[isOpen, metadata, glyphs]` e remover o eslint-disable.
+- Limpeza ampla: remover qualquer `FontFace` cuja `family` termine com `_preview` antes de adicionar nova.
+
+### B. `src/tools/unbsfont/App.tsx` — `handleExportFontEditor`
+Reescrever para iterar `styleMap` igual a `handleExport`, montando 1 candidato por estilo e chamando `downloadFontEditorFont(meta, glyphs)` em loop. Mantém `familyName` constante e varia apenas `styleName`. Mostra notice consolidada no fim.
+
+### C. `src/tools/unbsfont/services/fontEditorExporter.ts`
+- Extrair `applyNameRecords(ttfData, metadata, totalStyles)` reutilizado pelas duas funções de export.
+- Quando `totalStyles > 2`, preencher `name.preferredFamily = familyName` e `name.preferredSubFamily = styleName` (name IDs 16/17). Para Bold/Italic standard pairs (≤2), seguir só com IDs 1/2.
+- Helper aceita `totalStyles` opcional (default 1).
+- Caller (`App.tsx`) passa `Object.keys(styleMap).length` ao chamar export.
+
+### D. `src/tools/unbstype/App.tsx` — Upload
+- Após `await fontFace.load()`, ler `fontFace.weight` (string tipo `"400"`) e converter em number; usar como único weight.
+- Sanitizar `name` removendo extensão e caracteres ` "/\`.
+- Antes de `setCustomFonts`, filtrar duplicatas por `name`.
+
+### E. `src/tools/unbstype/components/PreviewPanel.tsx`
+- Adicionar `useEffect([headingFont, bodyFont])` que faz `document.fonts.load(\`16px '${headingFont}'\`)` e `\`16px '${bodyFont}'\`` em paralelo, e seta um `ready` boolean. Renderizar com `opacity-0` enquanto `!ready` para evitar flash do fallback.
+
+### F. `src/components/ToolLayout.tsx` / sub-apps
+- Auditar UNBSFORMAT e UNBSGRID: garantir que não renderizem header próprio quando estão dentro de `ToolLayout`. Onde renderizam, remover.
+
+### G. Console warning de `forwardRef`
+- Buscar nos componentes consumidos pelo `<Routes>` qual está recebendo `ref` (provavelmente `Index` ou um wrapper). Identificar e converter para `React.forwardRef`. Diagnóstico em runtime; sem código a propor antes da inspeção em build mode.
+
+## Verificação
+- Exportar uma família com 3 estilos (Light, Regular, Bold) gera 3 TTFs, todos com mesma `familyName` e diferentes `styleName`. Instalados juntos no SO ou Figma, aparecem agrupados sob 1 família.
+- Preview do UNBSFONT muda fontFamily quando o usuário renomeia a família.
+- Upload de uma fonte serif no UNBSTYPE mostra a categoria correta e o weight real.
+- Nenhum warning de forwardRef no console.
+- Sem duplicação de header em qualquer sub-app.
+
+Sem mudanças de schema/DB, sem novas dependências.

@@ -7,6 +7,42 @@
 import { Font } from 'fonteditor-core';
 import { GlyphData, FontMetadata } from '../types';
 
+// ============================================================================
+// NAME RECORDS (OpenType `name` table) — single source of truth
+// ============================================================================
+
+const RIBBI_STYLES = new Set(['Regular', 'Italic', 'Bold', 'Bold Italic']);
+
+/**
+ * Apply OpenType name table records consistently. When the style is non-RIBBI
+ * (i.e. not Regular / Italic / Bold / Bold Italic), also fills the Preferred
+ * Family (ID 16) and Preferred Subfamily (ID 17) records so apps like Word,
+ * Figma and the OS group all weights under a single family.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const applyNameRecords = (ttfData: any, metadata: FontMetadata) => {
+  const family = metadata.familyName || 'CustomFont';
+  const style = metadata.styleName || 'Regular';
+  const compactFamily = family.replace(/\s+/g, '');
+  const compactStyle = style.replace(/\s+/g, '');
+
+  ttfData.name.fontFamily = family;
+  ttfData.name.fontSubFamily = style;
+  ttfData.name.fullName = `${family} ${style}`;
+  ttfData.name.postScriptName = `${compactFamily}-${compactStyle}`;
+  ttfData.name.version = `Version ${metadata.version || '1.0'}`;
+
+  // For non-standard styles (Light, Medium, Black, Thin, etc.), expose the
+  // preferred family/subfamily so the OS keeps the family grouped.
+  if (!RIBBI_STYLES.has(style)) {
+    ttfData.name.preferredFamily = family;
+    ttfData.name.preferredSubFamily = style;
+  } else {
+    delete ttfData.name.preferredFamily;
+    delete ttfData.name.preferredSubFamily;
+  }
+};
+
 interface Point {
   x: number;
   y: number;
@@ -521,11 +557,7 @@ export const exportFontWithFontEditor = async (
 
   // Update font metadata
   ttfData.head.unitsPerEm = upm;
-  ttfData.name.fontFamily = metadata.familyName || 'CustomFont';
-  ttfData.name.fontSubFamily = metadata.styleName || 'Regular';
-  ttfData.name.fullName = `${metadata.familyName || 'CustomFont'} ${metadata.styleName || 'Regular'}`;
-  ttfData.name.postScriptName = `${(metadata.familyName || 'CustomFont').replace(/\s+/g, '')}-${(metadata.styleName || 'Regular').replace(/\s+/g, '')}`;
-  ttfData.name.version = `Version ${metadata.version || '1.0'}`;
+  applyNameRecords(ttfData, metadata);
   
   // Métricas verticais (entrelinhas)
   ttfData.hhea.ascent = ascender;
@@ -673,11 +705,7 @@ export const exportFontWithKerning = async (
 
   // Update font metadata
   ttfData.head.unitsPerEm = upm;
-  ttfData.name.fontFamily = metadata.familyName || 'CustomFont';
-  ttfData.name.fontSubFamily = metadata.styleName || 'Regular';
-  ttfData.name.fullName = `${metadata.familyName || 'CustomFont'} ${metadata.styleName || 'Regular'}`;
-  ttfData.name.postScriptName = `${(metadata.familyName || 'CustomFont').replace(/\s+/g, '')}-${(metadata.styleName || 'Regular').replace(/\s+/g, '')}`;
-  ttfData.name.version = `Version ${metadata.version || '1.0'}`;
+  applyNameRecords(ttfData, metadata);
   
   ttfData.hhea.ascent = ascender;
   ttfData.hhea.descent = descender;
