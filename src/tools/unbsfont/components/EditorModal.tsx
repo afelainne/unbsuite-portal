@@ -88,10 +88,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
         const [alignmentTarget, setAlignmentTarget] = useState<'glyph' | 'anchor' | 'context'>('glyph');
 
     const [kerningPartner, setKerningPartner] = useState<string>("");
-    const [kerningPreviewZoom, setKerningPreviewZoom] = useState(1);
-    const [kerningPreviewPan, setKerningPreviewPan] = useState({ x: 0, y: 0 });
-    const [isPreviewPanMode, setIsPreviewPanMode] = useState(false);
-    const [isPreviewPanning, setIsPreviewPanning] = useState(false);
+    const [kerningDirection, setKerningDirection] = useState<'LEFT' | 'BOTH' | 'RIGHT'>('BOTH');
     const previewPanStartRef = useRef<{ x: number; y: number; originX: number; originY: number } | null>(null);
 
         const [leftKerningPartner, setLeftKerningPartner] = useState("");
