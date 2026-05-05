@@ -1078,6 +1078,12 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             case 'circles': return 18;
             case 'sunset': return 20;
             case 'bars': return 12;
+            case 'rings': return 18;
+            case 'diamonds': return 16;
+            case 'frames': return 16;
+            case 'split': return 16;
+            case 'targets': return 16;
+            case 'triangles': return 16;
             default: return 18;
         }
     };
