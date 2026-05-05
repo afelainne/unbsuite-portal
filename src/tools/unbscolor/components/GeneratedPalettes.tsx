@@ -1302,13 +1302,17 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.templateLabel}:</span>
                             <select 
                                 value={paletteTemplate} 
-                                onChange={(e) => setPaletteTemplate(e.target.value as 'classic' | 'vertical' | 'grid' | 'cards')}
+                                onChange={(e) => setPaletteTemplate(e.target.value as typeof paletteTemplate)}
                                 className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
                             >
                                 <option value="classic">{t.classic}</option>
                                 <option value="vertical">{t.vertical}</option>
                                 <option value="grid">{t.grid}</option>
                                 <option value="cards">{t.cards}</option>
+                                <option value="stripes">Stripes</option>
+                                <option value="swatches">Swatches</option>
+                                <option value="gradient">Gradient</option>
+                                <option value="mosaic">Mosaic</option>
                             </select>
                         </div>
                         {paletteTemplate === 'classic' && (
@@ -1359,6 +1363,12 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariationCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
                         >
                             {showVariationCodes ? t.showVariationCodesOn : t.showVariationCodesOff}
+                        </button>
+                        <button
+                            onClick={() => setShowVariations((prev) => !prev)}
+                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariations ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
+                        >
+                            {showVariations ? 'Hide variations' : 'Show variations'}
                         </button>
                         <button 
                             onClick={() => setShowCodes((prev) => !prev)}
