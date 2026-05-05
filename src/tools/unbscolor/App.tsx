@@ -410,9 +410,9 @@ const App: React.FC = () => {
             cursor += 8;
             const altLabelY = cursor;
             cursor += 24;
-            const cols = 3;
+            const cols = 2;
             const cellW = (width - padding * 2 - 12 * (cols - 1)) / cols;
-            const cellH = 76;
+            const cellH = 84;
             const cells = payload.alternatives.map((a, i) => {
                 const r = Math.floor(i / cols);
                 const c = i % cols;
@@ -421,9 +421,9 @@ const App: React.FC = () => {
                 return `<g transform="translate(${x}, ${y})">
                     <rect width="${cellW}" height="${cellH}" rx="10" fill="#ffffff" stroke="#e5e7eb" />
                     <rect x="8" y="8" width="44" height="${cellH - 16}" rx="8" fill="${a.hex}" />
-                    <text x="62" y="26" font-size="10" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">${(a.code || a.name).slice(0, 18)}</text>
-                    <text x="62" y="44" font-size="9" font-family="Arial, sans-serif" fill="#9ca3af">${a.name.slice(0, 20)}</text>
-                    <text x="62" y="60" font-size="9" font-family="Arial, sans-serif" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>
+                    <text x="62" y="26" font-size="11" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">${a.code || a.name}</text>
+                    <text x="62" y="46" font-size="10" font-family="Arial, sans-serif" fill="#9ca3af">${a.name}</text>
+                    <text x="62" y="66" font-size="10" font-family="Arial, sans-serif" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>
                 </g>`;
             }).join('');
             const rows = Math.ceil(payload.alternatives.length / cols);
