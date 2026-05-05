@@ -1013,6 +1013,10 @@ const App: React.FC = () => {
                         showAlternatives={showAlternatives}
                         onShowAlternativesChange={setShowAlternatives}
                         onDownloadAll={handleDownloadCards}
+                        renderCardSvg={(color, idx, includeAlternatives) => {
+                            const p = buildCardExportData(color, idx, includeAlternatives);
+                            return p ? generateCardSvg(p).svg : '';
+                        }}
                     />
                 ) : (
                     <>
