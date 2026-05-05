@@ -706,7 +706,7 @@ const App: React.FC = () => {
 
     const handleDownloadCards = async (format: 'svg' | 'png') => {
         const payloads = batchColors
-            .map((color, idx) => buildCardExportData(color, idx))
+            .map((color, idx) => buildCardExportData(color, idx, showAlternatives.has(idx)))
             .filter((card): card is CardExportPayload => Boolean(card));
 
         for (const card of payloads) {
@@ -725,7 +725,7 @@ const App: React.FC = () => {
     };
 
     const handleDownloadCard = async (format: 'svg' | 'png', index: number) => {
-        const card = buildCardExportData(batchColors[index], index);
+        const card = buildCardExportData(batchColors[index], index, showAlternatives.has(index));
         if (!card) return;
         const { svg, width, height } = generateCardSvg(card);
         const fileBase = `slot-${card.index + 1}-${card.name.replace(/\s+/g, '-').toLowerCase()}`;
