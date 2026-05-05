@@ -572,26 +572,26 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
     const quickBuilderCards = [
         {
             id: 'left',
-            heading: `${glyph.char} na esquerda`,
+            heading: `${glyph.char} on the left`,
             caption: `${glyph.char}${leftKerningPartner || '·'}`,
             partner: leftKerningPartner,
             setPartner: setLeftKerningPartner,
             value: leftKerningValue,
             setValue: setLeftKerningValue,
             direction: 'LEFT' as const,
-            description: 'Aplica quando este glifo antecede o parceiro.',
+            description: 'Applies when this glyph precedes the partner.',
             pairKey: leftKerningPartner ? `${glyph.char}${leftKerningPartner}` : null,
         },
         {
             id: 'right',
-            heading: `${glyph.char} na direita`,
+            heading: `${glyph.char} on the right`,
             caption: `${rightKerningPartner || '·'}${glyph.char}`,
             partner: rightKerningPartner,
             setPartner: setRightKerningPartner,
             value: rightKerningValue,
             setValue: setRightKerningValue,
             direction: 'RIGHT' as const,
-            description: 'Aplica quando o parceiro vem primeiro.',
+            description: 'Applies when the partner comes first.',
             pairKey: rightKerningPartner ? `${rightKerningPartner}${glyph.char}` : null,
         }
     ];
@@ -1087,7 +1087,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 <div className="flex gap-1 items-center">
                     <button onClick={handleUndo} disabled={historyIndex <= 0} className={`w-7 h-7 rounded border text-xs ${btnSec} disabled:opacity-40`} title="Undo (Ctrl+Z)">↶</button>
                     <button onClick={handleRedo} disabled={historyIndex >= history.length - 1} className={`w-7 h-7 rounded border text-xs ${btnSec} disabled:opacity-40`} title="Redo (Ctrl+Y)">↷</button>
-                    <button onClick={handleCenterGlyph} className={`text-[10px] px-2 h-7 rounded border ${isDarkMode ? 'bg-emerald-900/50 border-emerald-700 text-emerald-300 hover:bg-emerald-800' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'}`} title="Centraliza o glifo baseado no centro real do vetor">⚖ Centralizar</button>
+                    <button onClick={handleCenterGlyph} className={`text-[10px] px-2 h-7 rounded border ${isDarkMode ? 'bg-emerald-900/50 border-emerald-700 text-emerald-300 hover:bg-emerald-800' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'}`} title="Centers the glyph based on the real vector center">⚖ Center</button>
                 </div>
              </div>
              {/* TABS — 3 principais + menu More */}
@@ -1166,7 +1166,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                 <details className={`rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
                     <summary className={`px-2 py-2 cursor-pointer text-[9px] font-black uppercase tracking-wider opacity-80 flex items-center justify-between gap-2 list-none`}>
                         <span>⚠ Global Font Metrics</span>
-                        <span className={`text-[9px] font-normal normal-case tracking-normal ${textSub}`}>afeta todos os glifos</span>
+                        <span className={`text-[9px] font-normal normal-case tracking-normal ${textSub}`}>affects all glyphs</span>
                     </summary>
                     <div className="p-2 pt-0 space-y-2">
                         {/* Ascender */}
@@ -1344,8 +1344,8 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                             })}
                         </div>
                         <p className={`text-[10px] leading-tight ${textSub}`}>
-                            {alignmentTarget === 'glyph' && 'Encaixa o glifo (topo/centro/base) na guia escolhida.'}
-                            {alignmentTarget === 'anchor' && 'Posiciona o anchor diretamente na guia.'}
+                            {alignmentTarget === 'glyph' && 'Snaps the glyph (top/center/bottom) to the chosen guide.'}
+                            {alignmentTarget === 'anchor' && 'Positions the anchor directly on the guide.'}
                         </p>
                     </div>
                 </details>
@@ -1499,11 +1499,11 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                         <div className="flex items-center justify-between mb-2">
                             <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Saved Pairs</label>
                             <span className={`text-[10px] font-mono ${textSub}`}>
-                                {allSavedPairs.length} par{allSavedPairs.length === 1 ? '' : 'es'}
+                                {allSavedPairs.length} pair{allSavedPairs.length === 1 ? '' : 's'}
                             </span>
                         </div>
                         {allSavedPairs.length === 0 ? (
-                            <p className={`text-[10px] italic ${textSub}`}>Nenhum par salvo com este glifo.</p>
+                            <p className={`text-[10px] italic ${textSub}`}>No saved pairs with this glyph.</p>
                         ) : (
                             <div className="space-y-1 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
                                 {allSavedPairs.map(({ pair, partner, value, direction }) => (
@@ -1526,7 +1526,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                                         />
                                         <button type="button" onClick={() => handleRemoveKerningPair(pair)}
                                             className={`w-7 h-7 rounded-full text-sm font-black border ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-neutral-300 text-neutral-500 hover:bg-neutral-100'}`}
-                                            title="Remover par"
+                                            title="Remove pair"
                                         >×</button>
                                     </div>
                                 ))}
@@ -1601,10 +1601,10 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                             ))}
                         </div>
                         <button onClick={handleBuildDerivativesClick} className={`w-full mt-3 py-1.5 font-bold rounded-lg transition-colors text-[10px] ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>
-                            Aplicar em {selectedDerivatives.size} glifos
+                            Apply to {selectedDerivatives.size} glyphs
                         </button>
                         <p className={`text-[9px] mt-1 text-center ${textSub}`}>
-                            Atualiza cada derivado marcado usando as coordenadas acima.
+                            Updates each checked derivative using the coordinates above.
                         </p>
                     </div>
                 </div>

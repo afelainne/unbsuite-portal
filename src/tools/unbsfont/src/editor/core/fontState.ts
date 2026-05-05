@@ -232,7 +232,7 @@ export const loadPersistedState = (): PersistedEditorState | null => {
   try {
     return JSON.parse(raw) as PersistedEditorState;
   } catch (error) {
-    console.warn('Estado salvo inválido, resetando.', error);
+    console.warn('Invalid saved state, resetting.', error);
     window.localStorage.removeItem(STORAGE_KEY);
     return null;
   }

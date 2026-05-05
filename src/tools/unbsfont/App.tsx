@@ -392,9 +392,9 @@ const App: React.FC = () => {
           }
           return p;
       }));
-      pushNotice('Projeto salvo localmente.', 'success');
+      pushNotice('Project saved locally.', 'success');
       if (!lastProjectFileName) {
-          pushNotice('Use "Download File" para gerar um arquivo .unbsfo quando precisar exportar.', 'info');
+          pushNotice('Use "Download File" to generate a .unbsfo file when you need to export.', 'info');
       }
   }, [activeProjectId, styleMap, currentStyle, glyphs, metadata, lastProjectFileName, pushNotice]);
 
@@ -727,7 +727,7 @@ const App: React.FC = () => {
       const baseName = `${metadata.familyName || 'font'}-${metadata.styleName || currentStyle}`.toLowerCase();
     downloadProjectFile(payload, baseName);
       setLastProjectFileName(baseName);
-      pushNotice('Projeto exportado como arquivo.', 'success');
+      pushNotice('Project exported as file.', 'success');
   };
 
   const handleImportProjectFile = async (file: File) => {
@@ -770,10 +770,10 @@ const App: React.FC = () => {
           const safeBaseName = toSafeDownloadBaseName(derivedBaseName || projectName);
           setLastProjectFileName(safeBaseName);
 
-          pushNotice('Projeto carregado do arquivo.', 'success');
+          pushNotice('Project loaded from file.', 'success');
       } catch (error) {
           console.error('Failed to load project file', error);
-          const message = error instanceof Error ? error.message : 'Falha ao abrir arquivo de project.';
+          const message = error instanceof Error ? error.message : 'Failed to open project file.';
           pushNotice(message, 'error');
       }
   };
@@ -781,10 +781,10 @@ const App: React.FC = () => {
   const handleExportSvgSheet = useCallback(() => {
       try {
           exportGlyphSvgSheet(metadata, glyphs);
-          pushNotice('Tabela SVG exportada com sucesso.', 'success');
+          pushNotice('SVG sheet exported successfully.', 'success');
       } catch (error) {
-          console.error('Falha ao exportar a tabela SVG', error);
-          const message = error instanceof Error ? error.message : 'Falha ao exportar a tabela SVG.';
+          console.error('Failed to export SVG sheet', error);
+          const message = error instanceof Error ? error.message : 'Failed to export SVG sheet.';
           pushNotice(message, 'error');
       }
   }, [metadata, glyphs, pushNotice]);
@@ -793,10 +793,10 @@ const App: React.FC = () => {
       try {
           const emptyGlyphs = generateInitialGlyphs();
           exportGlyphSvgSheet(metadata, emptyGlyphs, { emptyTemplate: true });
-          pushNotice('Tabela SVG vazia exportada.', 'success');
+          pushNotice('Empty SVG sheet exported.', 'success');
       } catch (error) {
-          console.error('Falha ao exportar a tabela SVG vazia', error);
-          const message = error instanceof Error ? error.message : 'Falha ao exportar a tabela SVG vazia.';
+          console.error('Failed to export empty SVG sheet', error);
+          const message = error instanceof Error ? error.message : 'Failed to export empty SVG sheet.';
           pushNotice(message, 'error');
       }
   }, [metadata, pushNotice]);
@@ -815,7 +815,7 @@ const App: React.FC = () => {
 
       if (styles.length <= 1) {
           if (!hasDrawnGlyphs(glyphs)) {
-              pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
+              pushNotice('No glyphs drawn to export.', 'warning');
               return;
           }
           candidates.push({
@@ -862,11 +862,11 @@ const App: React.FC = () => {
                       onProgress: (p) => setExportProgress(p),
                   });
                   completed += 1;
-                  pushNotice(`Weight "${candidate.styleName}" exportado.`, 'success');
+                  pushNotice(`Weight "${candidate.styleName}" exported.`, 'success');
               } catch (error) {
-                  const message = error instanceof FontExportError ? error.message : 'Falha ao exportar fonte.';
+                  const message = error instanceof FontExportError ? error.message : 'Failed to export font.';
                   failures.push(candidate.styleName);
-                  pushNotice(`Falha ao exportar "${candidate.styleName}": ${message}`, 'error');
+                  pushNotice(`Failed to export "${candidate.styleName}": ${message}`, 'error');
               }
           }
       } finally {
@@ -890,7 +890,7 @@ const App: React.FC = () => {
 
       const hasDrawnGlyphs = glyphs.some(g => (g.pathData || '').trim().length > 0);
       if (!hasDrawnGlyphs) {
-          pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
+          pushNotice('No glyphs drawn to export.', 'warning');
           return;
       }
 
@@ -924,8 +924,8 @@ const App: React.FC = () => {
           setExportProgress(1);
           pushNotice('SVG-first export generated (outline + SVG stub layer).', 'success');
       } catch (error) {
-          console.error('Falha no export SVG-first', error);
-          const message = error instanceof Error ? error.message : 'Falha ao exportar fonte SVG-first.';
+          console.error('SVG-first export failed', error);
+          const message = error instanceof Error ? error.message : 'Failed to export SVG-first font.';
           pushNotice(message, 'error');
       } finally {
           setIsExporting(false);
@@ -955,7 +955,7 @@ const App: React.FC = () => {
       });
 
       if (!candidates.length) {
-          pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
+          pushNotice('No glyphs drawn to export.', 'warning');
           return;
       }
 
@@ -974,12 +974,12 @@ const App: React.FC = () => {
                       : await downloadFontEditorFont(candidate.meta, candidate.glyphList);
                   completed += 1;
                   setExportProgress(completed / totalStyles);
-                  pushNotice(`Weight "${candidate.styleName}" exportado: ${result.fileName} (${result.glyphCount} glifos).`, 'success');
+                  pushNotice(`Weight "${candidate.styleName}" exported: ${result.fileName} (${result.glyphCount} glyphs).`, 'success');
               } catch (err) {
-                  console.error('Falha export', candidate.styleName, err);
+                  console.error('Export failed', candidate.styleName, err);
                   failures.push(candidate.styleName);
-                  const message = err instanceof Error ? err.message : 'Falha ao exportar fonte.';
-                  pushNotice(`Falha ao exportar "${candidate.styleName}": ${message}`, 'error');
+                  const message = err instanceof Error ? err.message : 'Failed to export font.';
+                  pushNotice(`Failed to export "${candidate.styleName}": ${message}`, 'error');
               }
           }
       } finally {
@@ -1580,7 +1580,7 @@ const App: React.FC = () => {
                                         type="button"
                                         onClick={handleOpenCustomSlotModal}
                                         className={`relative z-10 w-full h-full flex flex-col items-center justify-center gap-2 text-center font-black uppercase tracking-[0.4em] text-sm ${isDarkMode ? 'text-white hover:text-emerald-300' : 'text-black hover:text-emerald-600'}`}
-                                        aria-label="Adicionar novo slot"
+                                        aria-label="Add new slot"
                                     >
                                         <span className="text-4xl tracking-normal">+</span>
                                         <span>Slot</span>
@@ -1611,37 +1611,37 @@ const App: React.FC = () => {
               >
                   <div className={`flex items-center justify-between px-6 py-4 border-b ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
                       <div>
-                          <p className="text-base font-black uppercase tracking-tight">Adicionar novo slot</p>
-                          <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Defina um caractere e um nome opcional antes de criar.</p>
+                          <p className="text-base font-black uppercase tracking-tight">Add new slot</p>
+                          <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Set a character and an optional name before creating.</p>
                       </div>
                       <button
                           type="button"
                           onClick={handleCloseCustomSlotModal}
                           className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
-                          aria-label="Fechar"
+                          aria-label="Close"
                       >
                           ×
                       </button>
                   </div>
                   <form className="px-6 py-6 flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); handleAddCustomSymbol(); }}>
                       <label className="text-xs font-semibold flex flex-col gap-1">
-                          <span className={isDarkMode ? 'text-slate-300' : 'text-neutral-600'}>Caractere</span>
+                          <span className={isDarkMode ? 'text-slate-300' : 'text-neutral-600'}>Character</span>
                           <input
                               type="text"
                               maxLength={2}
                               value={newSymbolChar}
                               onChange={(e) => { setNewSymbolChar(e.target.value); setNewSymbolError(null); }}
-                              placeholder="ex: ∞"
+                              placeholder="e.g. ∞"
                               className={`rounded-xl px-3 py-2 text-center text-lg font-black outline-none border transition ${isDarkMode ? 'bg-slate-900 border-slate-800 focus:border-white' : 'bg-neutral-50 border-neutral-300 focus:border-black'}`}
                           />
                       </label>
                       <label className="text-xs font-semibold flex flex-col gap-1">
-                          <span className={isDarkMode ? 'text-slate-300' : 'text-neutral-600'}>Nome (opcional)</span>
+                          <span className={isDarkMode ? 'text-slate-300' : 'text-neutral-600'}>Name (optional)</span>
                           <input
                               type="text"
                               value={newSymbolName}
                               onChange={(e) => setNewSymbolName(e.target.value)}
-                              placeholder="ex: infinity"
+                              placeholder="e.g. infinity"
                               className={`rounded-xl px-3 py-2 text-sm outline-none border transition ${isDarkMode ? 'bg-slate-900 border-slate-800 focus:border-white' : 'bg-neutral-50 border-neutral-300 focus:border-black'}`}
                           />
                       </label>
@@ -1652,13 +1652,13 @@ const App: React.FC = () => {
                               onClick={handleCloseCustomSlotModal}
                               className={`px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.2em] border ${isDarkMode ? 'border-white/30 text-white hover:bg-white/10' : 'border-neutral-300 text-black hover:bg-neutral-100'}`}
                           >
-                              Cancelar
+                              Cancel
                           </button>
                           <button
                               type="submit"
                               className={`px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-[0.3em] ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}
                           >
-                              Adicionar
+                              Add
                           </button>
                       </div>
                   </form>
@@ -1678,14 +1678,14 @@ const App: React.FC = () => {
               >
                   <div className={`flex items-center justify-between px-6 py-4 border-b ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
                       <div>
-                          <p className="text-base font-black uppercase tracking-tight">Atualizar Glyph "{pasteConfirmModal.char}"</p>
+                          <p className="text-base font-black uppercase tracking-tight">Update Glyph "{pasteConfirmModal.char}"</p>
                           <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>This slot already has an SVG. How would you like to update?</p>
                       </div>
                       <button
                           type="button"
                           onClick={() => setPasteConfirmModal(null)}
                           className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
-                          aria-label="Fechar"
+                          aria-label="Close"
                       >
                           ×
                       </button>
@@ -1720,7 +1720,7 @@ const App: React.FC = () => {
                           onClick={() => setPasteConfirmModal(null)}
                           className={`w-full py-3 rounded-full text-[11px] font-semibold uppercase tracking-[0.2em] border ${isDarkMode ? 'border-white/30 text-white hover:bg-white/10' : 'border-neutral-300 text-black hover:bg-neutral-100'}`}
                       >
-                          Cancelar
+                          Cancel
                       </button>
                   </div>
               </div>

@@ -206,7 +206,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-neutral-100'}`}
                 >
                   Normalizar tamanhos
-                  <p className={`text-[10px] font-normal ${mutedClass}`}>Equaliza altura visual entre todos os glyphs.</p>
+                  <p className={`text-[10px] font-normal ${mutedClass}`}>Equalizes visual height across all glyphs.</p>
                 </button>
               </div>
             )}
@@ -216,7 +216,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
             type="button"
             onClick={onClose}
             className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
-            aria-label="Fechar"
+              aria-label="Close"
           >
             ×
           </button>
@@ -265,7 +265,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
                 <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
                 <path d="M22 4L12 14.01l-3-3" />
               </svg>
-              <p className="font-bold text-lg">Nenhum problema encontrado!</p>
+              <p className="font-bold text-lg">No issues found!</p>
               <p className={`text-sm ${mutedClass}`}>
                 All glyphs have consistent metrics.
               </p>
@@ -297,12 +297,12 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
                           <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                           <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
-                        Editar
+                        Edit
                       </button>
                       <button
                         onClick={() => handleNormalizeGlyph(char)}
                         className={`w-8 h-8 text-lg font-black rounded-full border ${btnClass} flex items-center justify-center`}
-                        title="Normalizar baseado em outros glyphs"
+                        title="Normalize based on other glyphs"
                       >
                         ⋯
                       </button>
