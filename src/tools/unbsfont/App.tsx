@@ -1373,7 +1373,7 @@ const App: React.FC = () => {
     const headerRowClass = 'flex items-center gap-6 flex-nowrap overflow-x-auto py-2';
     const controlGroupClass = 'flex flex-col items-center gap-1.5 shrink-0';
     const workspaceControls = (
-        <div className={`w-full sticky top-14 z-30 ${isDarkMode ? 'bg-slate-950 text-white' : 'bg-white text-black'}`}>
+        <div className={`w-full sticky top-0 z-40 border-b ${isDarkMode ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-black border-[#232323]/15'}`}>
             <div className="max-w-6xl mx-auto w-full px-4">
                 <div className={`${headerRowClass}`}>
                     <div className={`${controlGroupClass} min-w-[150px]`}>
