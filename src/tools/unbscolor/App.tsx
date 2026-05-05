@@ -1008,6 +1008,11 @@ const App: React.FC = () => {
                         solidUncoatedLibrary={solidUncoatedLibrary}
                         formatRgbDisplay={formatRgbDisplay}
                         getClosestColorName={getClosestColorName}
+                        cardTemplate={cardTemplate}
+                        onCardTemplateChange={setCardTemplate}
+                        showAlternatives={showAlternatives}
+                        onShowAlternativesChange={setShowAlternatives}
+                        onDownloadAll={handleDownloadCards}
                     />
                 ) : (
                     <>
