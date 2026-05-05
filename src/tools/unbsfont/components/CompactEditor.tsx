@@ -97,7 +97,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
     
     // Estados
     const [selectedChar, setSelectedChar] = useState<string | null>(null);
-    const [previewText, setPreviewText] = useState('FONTE abcdef 123');
+    const [previewText, setPreviewText] = useState('FONT abcdef 123');
     const [fontSize, setFontSize] = useState(64);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCategory, setActiveCategory] = useState<GlyphCategory>('all');
@@ -216,10 +216,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         const data = extractSingleGlyphFromSVG(content);
         if (data && data.pathData) {
             onUpdateGlyph(targetChar, data);
-            pushNotice(`Glyph "${targetChar}" atualizado!`, 'success');
+            pushNotice(`Glyph "${targetChar}" updated!`, 'success');
             return true;
         } else {
-            pushNotice('Nenhum path encontrado no SVG.', 'error');
+            pushNotice('No path found in the SVG.', 'error');
             return false;
         }
     }, [onUpdateGlyph, pushNotice]);
@@ -244,7 +244,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         setIsDragging(false);
         
         if (!selectedChar) {
-            pushNotice('Selecione um glifo primeiro.', 'warning');
+            pushNotice('Select a glyph first.', 'warning');
             return;
         }
 
@@ -262,7 +262,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
     // Colar SVG
     const handlePaste = useCallback(async () => {
         if (!selectedChar) {
-            pushNotice('Selecione um glifo primeiro.', 'warning');
+            pushNotice('Select a glyph first.', 'warning');
             return;
         }
 
@@ -278,7 +278,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 processSvgContent(svgContent, selectedChar);
             }
         } catch (err) {
-            pushNotice('Falha ao acessar clipboard.', 'error');
+            pushNotice('Failed to access clipboard.', 'error');
         }
     }, [selectedChar, processSvgContent, pushNotice]);
 
@@ -293,7 +293,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             baselineOffset: 0,
             scale: 1
         });
-        pushNotice(`Glyph "${selectedChar}" limpo.`, 'success');
+        pushNotice(`Glyph "${selectedChar}" cleared.`, 'success');
     }, [selectedChar, onUpdateGlyph, pushNotice]);
 
     // Auto-Configuração da fonte
@@ -301,7 +301,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         // Validar minimo de glyphs com path
         const glyphsWithPath = glyphs.filter(g => g.pathData && g.pathData.trim().length > 0);
         if (glyphsWithPath.length < 5) {
-            pushNotice(`Auto Config precisa de pelo menos 5 glifos com desenho (encontrados: ${glyphsWithPath.length}). Importe SVGs primeiro.`, 'warning');
+            pushNotice(`Auto Config needs at least 5 drawn glyphs (found: ${glyphsWithPath.length}). Import SVGs first.`, 'warning');
             return;
         }
         
@@ -342,7 +342,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             // Mostrar relatório
             const report = result.report;
             pushNotice(
-                `Auto-Config: ${report.glyphsUpdated} glifos atualizados, ${report.kerningPairsGenerated} pairs de kerning gerados`,
+                `Auto-Config: ${report.glyphsUpdated} glyphs updated, ${report.kerningPairsGenerated} kerning pairs generated`,
                 'success'
             );
             
@@ -547,25 +547,25 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             }
         });
         
-        pushNotice(`Advance Width aplicado a ${updatedCount} glifos.`, 'success');
+        pushNotice(`Advance Width applied to ${updatedCount} glyphs.`, 'success');
     }, [glyphs, advanceWidthMode, globalSideMargin, globalFixedWidth, globalWidthScale, onUpdateGlyph, pushNotice]);
 
     // Recalcular width apenas do glifo selecionado
     const handleRecalculateCurrentWidth = useCallback(() => {
         if (!selectedGlyph || !selectedGlyph.pathData) {
-            pushNotice('Selecione um glifo com path.', 'warning');
+            pushNotice('Select a glyph with a path.', 'warning');
             return;
         }
         
         const newWidth = calculateAutoAdvanceWidth(selectedGlyph, globalSideMargin);
         onUpdateGlyph(selectedGlyph.char, { advanceWidth: newWidth });
-        pushNotice(`Width de "${selectedGlyph.char}" atualizado para ${newWidth}.`, 'success');
+        pushNotice(`Width of "${selectedGlyph.char}" updated to ${newWidth}.`, 'success');
     }, [selectedGlyph, globalSideMargin, onUpdateGlyph, pushNotice]);
 
     // Centralizar glifo atual
     const handleCenterCurrentGlyph = useCallback(() => {
         if (!selectedGlyph || !selectedGlyph.pathData) {
-            pushNotice('Selecione um glifo com path.', 'warning');
+            pushNotice('Select a glyph with a path.', 'warning');
             return;
         }
         
@@ -574,13 +574,13 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             advanceWidth: centered.advanceWidth,
             leftSideBearing: centered.leftSideBearing 
         });
-        pushNotice(`Glyph "${selectedGlyph.char}" centralizado.`, 'success');
+        pushNotice(`Glyph "${selectedGlyph.char}" centered.`, 'success');
     }, [selectedGlyph, globalSideMargin, onUpdateGlyph, pushNotice]);
 
     // Centralizar todos os glifos
     const handleCenterAllGlyphs = useCallback(() => {
         const count = centerAllGlyphs(glyphs, globalSideMargin, onUpdateGlyph);
-        pushNotice(`${count} glifos centralizados.`, 'success');
+        pushNotice(`${count} glyphs centered.`, 'success');
     }, [glyphs, globalSideMargin, onUpdateGlyph, pushNotice]);
 
     // Renderizar preview de glifo
@@ -634,7 +634,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         value={metadata.familyName}
                         onChange={(e) => onUpdateMetadata(prev => ({ ...prev, familyName: e.target.value }))}
                         className={`text-xl font-black uppercase tracking-tight bg-transparent border-none outline-none ${textMain}`}
-                        placeholder="Nome da Fonte"
+                        placeholder="Font Name"
                     />
                     <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${isDarkMode ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
                         Compact
@@ -644,7 +644,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     <button
                         onClick={onToggleTheme}
                         className={`p-2 rounded-lg transition-colors ${btnSecondary} border`}
-                        title={isDarkMode ? 'Modo Claro' : 'Modo Escuro'}
+                        title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
                     >
                         {isDarkMode ? (
                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
@@ -661,13 +661,13 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         onClick={onSaveProject}
                         className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${btnSecondary}`}
                     >
-                        Salvar
+                        Save
                     </button>
                     <button
                         onClick={() => importInputRef.current?.click()}
                         className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${btnSecondary}`}
                     >
-                        Importar
+                        Import
                     </button>
                     <input
                         ref={importInputRef}
@@ -685,7 +685,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     <button
                         onClick={() => setShowAutoConfigModal(true)}
                         className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border flex items-center gap-2 ${isDarkMode ? 'border-amber-600 bg-amber-900/30 text-amber-300 hover:bg-amber-900/50' : 'border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100'}`}
-                        title="Configurar fonte automaticamente"
+                        title="Auto-configure font"
                     >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
@@ -696,7 +696,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         onClick={() => onExportFont(kerningPairs.length > 0 ? kerningPairs : undefined)}
                         className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider ${btnPrimary}`}
                     >
-                        Exportar
+                        Export
                     </button>
                     <div className={`w-px h-8 mx-2 ${isDarkMode ? 'bg-slate-700' : 'bg-neutral-300'}`} />
                     <button
@@ -765,14 +765,14 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             ))}
                         </div>
                         {filteredGlyphs.length === 0 && (
-                            <p className={`text-center py-8 text-sm ${textSub}`}>Nenhum glifo.</p>
+                            <p className={`text-center py-8 text-sm ${textSub}`}>No glyphs.</p>
                         )}
                     </div>
 
                     {/* Progresso */}
                     <div className={`p-3 border-t ${borderCol}`}>
                         <div className="flex justify-between text-xs mb-1">
-                            <span className={textSub}>Progresso</span>
+                            <span className={textSub}>Progress</span>
                             <span className="font-bold">{stats.filled}/{stats.total}</span>
                         </div>
                         <div className={`w-full h-2 rounded-full ${sliderTrack}`}>
@@ -972,7 +972,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                         </svg>
-                                        Carregar SVG
+                                        Load SVG
                                     </button>
                                     
                                     <div className="grid grid-cols-3 gap-2">
@@ -980,7 +980,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                             onClick={handlePaste}
                                             className={`py-2 rounded-xl font-bold text-xs uppercase border ${btnSecondary}`}
                                         >
-                                            Colar
+                                            Paste
                                         </button>
                                         <button
                                             onClick={handleClearGlyph}
@@ -1042,8 +1042,8 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
                                 </svg>
-                                <p className="font-bold">Selecione um glifo</p>
-                                <p className="text-sm mt-1">Clique na lista ao lado</p>
+                                <p className="font-bold">Select a glyph</p>
+                                <p className="text-sm mt-1">Click on the list beside</p>
                             </div>
                         )}
                     </div>
@@ -1125,15 +1125,15 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         <option value="normal">Normal</option>
                                         <option value="loose">Loose (solto)</option>
                                     </optgroup>
-                                    <optgroup label="Automatico">
-                                        <option value="auto-smart">Auto Smart (geometria)</option>
-                                        <option value="auto-common">Auto Comum (pairs)</option>
+                                    <optgroup label="Automatic">
+                                        <option value="auto-smart">Auto Smart (geometry)</option>
+                                        <option value="auto-common">Auto Common (pairs)</option>
                                     </optgroup>
-                                    <optgroup label="🌟 Profissional (Real Fonts)">
-                                        <option value="professional">🎯 Profissional (Tabelas Reais)</option>
-                                        <option value="hybrid">⚡ Hybrid (Tabelas + Geometria)</option>
+                                    <optgroup label="🌟 Professional (Real Fonts)">
+                                        <option value="professional">🎯 Professional (Real Tables)</option>
+                                        <option value="hybrid">⚡ Hybrid (Tables + Geometry)</option>
                                     </optgroup>
-                                    <optgroup label="Templates Profissionais">
+                                    <optgroup label="Professional Templates">
                                         {KERNING_TEMPLATES.slice(0, 8).map(t => (
                                             <option key={t.id} value={t.id}>{t.name}</option>
                                         ))}
@@ -1144,7 +1144,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             {/* Intensity */}
                             <div className="mb-4">
                                 <div className="flex justify-between items-center mb-1">
-                                    <label className={`text-xs font-semibold ${textSub}`}>Intensidade</label>
+                                    <label className={`text-xs font-semibold ${textSub}`}>Intensity</label>
                                     <span className="text-xs font-mono">{(kerningIntensity * 100).toFixed(0)}%</span>
                                 </div>
                                 <input
@@ -1161,7 +1161,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             {/* Font Style Selector - Para modos profissionais */}
                             {(kerningPreset === 'professional' || kerningPreset === 'hybrid') && (
                                 <div className="mb-4">
-                                    <label className={`text-xs font-semibold block mb-2 ${textSub}`}>Estilo da Fonte</label>
+                                    <label className={`text-xs font-semibold block mb-2 ${textSub}`}>Font Style</label>
                                     <select
                                         value={fontStyle}
                                         onChange={(e) => {
@@ -1189,13 +1189,13 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         className={`w-full px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
                                     >
                                         <option value="geometric-sans">Geometric Sans (Futura, Avenir)</option>
-                                        <option value="humanist-sans">Humanista Sans (Frutiger, Myriad)</option>
-                                        <option value="neo-grotesque">Neo-Grotesca (Helvetica, Arial)</option>
-                                        <option value="serif-oldstyle">Serifa Old Style (Garamond, Caslon)</option>
-                                        <option value="serif-modern">Serifa Moderna (Bodoni, Didot)</option>
+                                        <option value="humanist-sans">Humanist Sans (Frutiger, Myriad)</option>
+                                        <option value="neo-grotesque">Neo-Grotesque (Helvetica, Arial)</option>
+                                        <option value="serif-oldstyle">Old Style Serif (Garamond, Caslon)</option>
+                                        <option value="serif-modern">Modern Serif (Bodoni, Didot)</option>
                                         <option value="slab">Slab Serif (Rockwell, Clarendon)</option>
-                                        <option value="display">Display (Decorativa)</option>
-                                        <option value="script">Script (Manuscrita)</option>
+                                        <option value="display">Display (Decorative)</option>
+                                        <option value="script">Script (Handwritten)</option>
                                     </select>
                                     <p className={`text-[10px] mt-1 ${textSub}`}>Adjusts kerning for the typographic style</p>
                                 </div>
@@ -1220,11 +1220,11 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     </div>
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                         <div>
-                                            <span className={textSub}>Pares:</span>
+                                            <span className={textSub}>Pairs:</span>
                                             <span className="font-bold ml-1">{kerningPairs.length}</span>
                                         </div>
                                         <div>
-                                            <span className={textSub}>Cobertura:</span>
+                                            <span className={textSub}>Coverage:</span>
                                             <span className="font-bold ml-1">{kerningQuality.coverage.toFixed(0)}%</span>
                                         </div>
                                     </div>
@@ -1301,7 +1301,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             {advanceWidthMode === 'auto' && (
                                 <div className="mb-4">
                                     <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>Margem Lateral</label>
+                                        <label className={`text-xs font-semibold ${textSub}`}>Side Margin</label>
                                         <span className="text-xs font-mono">{globalSideMargin}u</span>
                                     </div>
                                     <input
@@ -1312,14 +1312,14 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         onChange={(e) => setGlobalSideMargin(parseInt(e.target.value))}
                                         className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
                                     />
-                                    <p className={`text-[10px] mt-1 ${textSub}`}>Espaco extra ao redor do glifo</p>
+                                    <p className={`text-[10px] mt-1 ${textSub}`}>Extra space around the glyph</p>
                                 </div>
                             )}
 
                             {advanceWidthMode === 'fixed' && (
                                 <div className="mb-4">
                                     <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>Largura Fixa</label>
+                                        <label className={`text-xs font-semibold ${textSub}`}>Fixed Width</label>
                                         <span className="text-xs font-mono">{globalFixedWidth}u</span>
                                     </div>
                                     <input
@@ -1337,7 +1337,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             {advanceWidthMode === 'scale' && (
                                 <div className="mb-4">
                                     <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>Escala %</label>
+                                        <label className={`text-xs font-semibold ${textSub}`}>Scale %</label>
                                         <span className="text-xs font-mono">{globalWidthScale}%</span>
                                     </div>
                                     <input
@@ -1348,7 +1348,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         onChange={(e) => setGlobalWidthScale(parseInt(e.target.value))}
                                         className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
                                     />
-                                    <p className={`text-[10px] mt-1 ${textSub}`}>Expande/comprime proporcionalmente</p>
+                                    <p className={`text-[10px] mt-1 ${textSub}`}>Expands/compresses proportionally</p>
                                 </div>
                             )}
 
@@ -1357,7 +1357,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 onClick={handleApplyGlobalWidth}
                                 className={`w-full py-2 rounded-lg font-bold text-xs uppercase tracking-wider ${btnPrimary}`}
                             >
-                                Aplicar a Todos
+                                Apply to All
                             </button>
                         </div>
 
@@ -1365,7 +1365,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         <div className={`p-4 rounded-xl border ${cardBg}`}>
                             <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>⚖️ Centering</p>
                             <p className={`text-[10px] mb-3 ${textSub}`}>
-                                Centraliza automaticamente os glifos dentro de suas caixas (advance width).
+                                Automatically centers glyphs within their boxes (advance width).
                             </p>
                             
                             {/* Botões de centralização */}
@@ -1379,24 +1379,24 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                             : 'opacity-50 cursor-not-allowed border-gray-300 text-gray-400'
                                     }`}
                                 >
-                                    Atual
+                                    Current
                                 </button>
                                 <button
                                     onClick={handleCenterAllGlyphs}
                                     className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider ${btnPrimary}`}
                                 >
-                                    Todos
+                                    All
                                 </button>
                             </div>
                         </div>
 
                         {/* Metricas da Fonte */}
                         <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Fonte</p>
+                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Font</p>
                             
                             <div className="space-y-3">
                                 <div>
-                                    <label className={`text-xs font-semibold ${textSub}`}>Familia</label>
+                                    <label className={`text-xs font-semibold ${textSub}`}>Family</label>
                                     <input
                                         type="text"
                                         value={metadata.familyName}
@@ -1405,7 +1405,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     />
                                 </div>
                                 <div>
-                                    <label className={`text-xs font-semibold ${textSub}`}>Estilo</label>
+                                    <label className={`text-xs font-semibold ${textSub}`}>Style</label>
                                     <input
                                         type="text"
                                         value={metadata.styleName}
@@ -1418,7 +1418,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
 
                         {/* Metricas Globais */}
                         <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Metricas Globais</p>
+                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Global Metrics</p>
                             
                             <div className="space-y-3">
                                 <div>
@@ -1469,12 +1469,12 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
 
                         {/* Dicas */}
                         <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800/50' : 'bg-neutral-100'}`}>
-                            <p className={`text-xs font-bold mb-2 ${textSub}`}>Dicas</p>
+                            <p className={`text-xs font-bold mb-2 ${textSub}`}>Tips</p>
                             <ul className={`text-xs space-y-1 ${textSub}`}>
-                                <li>- Arraste SVGs para o glifo</li>
-                                <li>- Cole paths com Ctrl+V</li>
-                                <li>- Use Auto Smart para kerning inteligente</li>
-                                <li>- Modo Avancado para edicao detalhada</li>
+                                <li>- Drag SVGs onto the glyph</li>
+                                <li>- Paste paths with Ctrl+V</li>
+                                <li>- Use Auto Smart for intelligent kerning</li>
+                                <li>- Advanced mode for detailed editing</li>
                             </ul>
                         </div>
                     </div>
@@ -1562,8 +1562,8 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         className={`w-5 h-5 rounded ${accentColor}`}
                                     />
                                     <div>
-                                        <span className="text-sm font-medium">Normalizar Alturas</span>
-                                        <p className={`text-xs ${textSub}`}>Ajusta escala para altura consistente ({autoConfigOptions.targetHeight}px)</p>
+                                        <span className="text-sm font-medium">Normalize Heights</span>
+                                        <p className={`text-xs ${textSub}`}>Adjusts scale for consistent height ({autoConfigOptions.targetHeight}px)</p>
                                     </div>
                                 </label>
 
@@ -1576,7 +1576,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                     />
                                     <div>
                                         <span className="text-sm font-medium">Automatic Spacing</span>
-                                        <p className={`text-xs ${textSub}`}>Calcula advance width, LSB e RSB baseado na geometria</p>
+                                        <p className={`text-xs ${textSub}`}>Calculates advance width, LSB and RSB based on geometry</p>
                                     </div>
                                 </label>
 
@@ -1601,8 +1601,8 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                         className={`w-5 h-5 rounded ${accentColor}`}
                                     />
                                     <div>
-                                        <span className="text-sm font-medium">Otimizar Metrics Globais</span>
-                                        <p className={`text-xs ${textSub}`}>Ajusta ascender/descender baseado nos glyphs</p>
+                                        <span className="text-sm font-medium">Optimize Global Metrics</span>
+                                        <p className={`text-xs ${textSub}`}>Adjusts ascender/descender based on glyphs</p>
                                     </div>
                                 </label>
                             </div>
@@ -1615,7 +1615,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 <div className="mt-3 space-y-3">
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
-                                            <label className={`text-xs font-semibold ${textSub}`}>Intensidade do Kerning</label>
+                                            <label className={`text-xs font-semibold ${textSub}`}>Kerning Intensity</label>
                                             <span className="text-xs font-mono">{(autoConfigOptions.kerningIntensity * 100).toFixed(0)}%</span>
                                         </div>
                                         <input
@@ -1631,7 +1631,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
 
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
-                                            <label className={`text-xs font-semibold ${textSub}`}>Altura Alvo</label>
+                                            <label className={`text-xs font-semibold ${textSub}`}>Target Height</label>
                                             <span className="text-xs font-mono">{autoConfigOptions.targetHeight}</span>
                                         </div>
                                         <input
@@ -1647,7 +1647,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
 
                                     <div>
                                         <div className="flex justify-between items-center mb-1">
-                                            <label className={`text-xs font-semibold ${textSub}`}>Margem Lateral</label>
+                                            <label className={`text-xs font-semibold ${textSub}`}>Side Margin</label>
                                             <span className="text-xs font-mono">{autoConfigOptions.sideMargin}</span>
                                         </div>
                                         <input
@@ -1670,7 +1670,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 onClick={() => setShowAutoConfigModal(false)}
                                 className={`px-4 py-2 rounded-lg text-sm font-bold border ${btnSecondary}`}
                             >
-                                Cancelar
+                                Cancel
                             </button>
                             <button
                                 onClick={handleAutoConfig}
@@ -1687,14 +1687,14 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                         </svg>
-                                        Processando...
+                                        Processing...
                                     </span>
                                 ) : (
                                     <span className="flex items-center gap-2">
                                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
                                             <path d="M20 6L9 17l-5-5" />
                                         </svg>
-                                        Aplicar Auto Config
+                                        Apply Auto Config
                                     </span>
                                 )}
                             </button>
