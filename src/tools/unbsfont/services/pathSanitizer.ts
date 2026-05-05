@@ -4,7 +4,7 @@
  * que o resultado visual é equivalente ao original.
  */
 
-import opentype from "opentype.js";
+import * as opentype from "opentype.js";
 
 export interface Point {
   x: number;

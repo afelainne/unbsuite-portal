@@ -1,4 +1,4 @@
-import opentype from "opentype.js";
+import * as opentype from "opentype.js";
 import { FontMetadata, GlyphData } from "../types";
 import { sanitizeGlyphPaths, applySanitizedPaths } from "./pathSanitizer";
 

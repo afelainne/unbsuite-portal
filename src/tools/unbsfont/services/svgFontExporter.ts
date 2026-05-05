@@ -1,4 +1,4 @@
-import opentype from "opentype.js";
+import * as opentype from "opentype.js";
 import { SvgGlyphData, FontMetadata } from "../types";
 import { parseSVGPathToOpenTypePath, sanitizeOpenTypeCommands } from "./fontService";
 import { sanitizeGlyphPaths, applySanitizedPaths } from "./pathSanitizer";
