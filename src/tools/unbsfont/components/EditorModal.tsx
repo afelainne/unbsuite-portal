@@ -493,6 +493,51 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
     const kerningPreviewLayout = kerningPreview?.layout ?? null;
   const kerningPreviewGapY = kerningPreviewLayout ? Math.max(80, kerningPreviewLayout.baselineY - 280) : 0;
 
+  // Unified pair visualizer — one sequence based on direction toggle.
+  const pairSequence = useMemo(() => {
+      if (!kerningPartner) return '';
+      if (kerningDirection === 'LEFT') return `${kerningPartner}${glyph.char}`;
+      if (kerningDirection === 'RIGHT') return `${glyph.char}${kerningPartner}`;
+      return `${kerningPartner}${glyph.char}${kerningPartner}`;
+  }, [kerningPartner, kerningDirection, glyph.char]);
+
+  const pairLayout = useMemo(() => {
+      if (!pairSequence || !glyphMap.has(kerningPartner)) return null;
+      return computeGlyphSequenceLayout({
+          sequence: pairSequence,
+          glyphMap,
+          kerning: metadata.kerning,
+          trackingProfile: previewTrackingProfile,
+          fontSizePt: PREVIEW_FONT_SIZE_PT,
+          baselineY: 900,
+          viewHeight: 1800,
+          padding: 350,
+      });
+  }, [pairSequence, kerningPartner, glyphMap, metadata.kerning, previewTrackingProfile]);
+
+  const pairGapY = pairLayout ? Math.max(80, pairLayout.baselineY - 280) : 0;
+
+  // Active pair key being edited (depends on direction).
+  const activePairKey = useMemo(() => {
+      if (!kerningPartner) return null;
+      // For BOTH, prefer right-side pair (glyph + partner) for editing.
+      if (kerningDirection === 'LEFT') return `${kerningPartner}${glyph.char}`;
+      return `${glyph.char}${kerningPartner}`;
+  }, [kerningPartner, kerningDirection, glyph.char]);
+
+  const activePairValue = activePairKey ? (metadata.kerning?.[activePairKey] ?? 0) : 0;
+
+  // Unified saved pairs list with direction badges.
+  const allSavedPairs = useMemo(() => {
+      const out = [
+          ...kerningPairsBySide.asLeft.map(p => ({ ...p, direction: 'right' as const })),
+          ...kerningPairsBySide.asRight.map(p => ({ ...p, direction: 'left' as const })),
+      ];
+      return out.sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  }, [kerningPairsBySide]);
+
+  const QUICK_PARTNERS = ['A', 'V', 'O', 'T', 'H', 'N', 'o', 'e', 'a'];
+
         const computedRightSideBearing = useMemo(() => {
                 if (!activeGlyphBounds) {
                         return Math.round(data.advanceWidth - data.leftSideBearing);
