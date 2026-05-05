@@ -27,7 +27,7 @@ const formatStemList = (values: number[]) => values.join(', ');
 export const initEditor = () => {
   const canvas = document.getElementById('glyphCanvas') as HTMLCanvasElement | null;
   if (!canvas) {
-    throw new Error('Canvas principal não encontrado.');
+    throw new Error('Main canvas not found.');
   }
 
   const persisted = loadPersistedState();
@@ -78,7 +78,7 @@ export const initEditor = () => {
     !horizontalStemsInput ||
     !zonesList
   ) {
-    throw new Error('Elementos de UI essenciais não encontrados.');
+    throw new Error('Essential UI elements not found.');
   }
 
   let tool: ToolController;
@@ -190,7 +190,7 @@ export const initEditor = () => {
       if (!pointId) return;
       glyphModel.removeAnchor(pointId);
       tool.clearSelection();
-      selectionReadout.textContent = 'Nenhum ponto selecionado';
+      selectionReadout.textContent = 'No point selected';
     });
   }
 
@@ -237,9 +237,9 @@ export const initEditor = () => {
     saveProjectBtn.addEventListener('click', () => {
       savePersistedState({ font: fontStateStore.getState(), glyph: glyphModel.getState() });
       if (saveStatus) {
-        saveStatus.textContent = 'Projeto salvo';
+        saveStatus.textContent = 'Project saved';
         window.setTimeout(() => {
-          if (saveStatus.textContent === 'Projeto salvo') {
+          if (saveStatus.textContent === 'Project saved') {
             saveStatus.textContent = '';
           }
         }, 2200);
@@ -249,13 +249,13 @@ export const initEditor = () => {
 
   const handleSelectionChange = (selection: SelectionState) => {
     if (!selection.pointId) {
-      selectionReadout.textContent = 'Nenhum ponto selecionado';
+      selectionReadout.textContent = 'No point selected';
       updateInspectorFields();
       return;
     }
     const point = glyphModel.getAnchor(selection.pointId);
     if (!point) return;
-    selectionReadout.textContent = `Ponto ${selection.pointId.slice(-4)} · x ${Math.round(point.x)} · y ${Math.round(point.y)}`;
+    selectionReadout.textContent = `Point ${selection.pointId.slice(-4)} · x ${Math.round(point.x)} · y ${Math.round(point.y)}`;
     updateInspectorFields();
   };
 
@@ -382,14 +382,14 @@ export const initEditor = () => {
       const fieldset = document.createElement('div');
       fieldset.className = 'zone-card__fields';
 
-      const positionField = createZoneField('Posição', zone.position.toFixed(1), zone.type === 'custom');
-      const sizeField = createZoneField('Altura', zone.size.toFixed(1), true);
+      const positionField = createZoneField('Position', zone.position.toFixed(1), zone.type === 'custom');
+      const sizeField = createZoneField('Height', zone.size.toFixed(1), true);
       const labelField = createZoneField('Label', zone.label, zone.type === 'custom', 'text');
 
       if (zone.type === 'custom') {
         const removeBtn = document.createElement('button');
         removeBtn.className = 'ghost-btn';
-        removeBtn.textContent = 'Remover';
+        removeBtn.textContent = 'Remove';
         removeBtn.addEventListener('click', () => fontStateStore.removeAlignmentZone(zone.id));
         card.append(removeBtn);
       }
