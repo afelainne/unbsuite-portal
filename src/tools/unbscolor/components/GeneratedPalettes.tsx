@@ -1302,6 +1302,12 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             case 'circles': return generateAlbersCirclesSvg();
             case 'sunset': return generateAlbersSunsetSvg();
             case 'bars': return generateAlbersBarsSvg();
+            case 'rings': return generateAlbersRingsSvg();
+            case 'diamonds': return generateAlbersDiamondsSvg();
+            case 'frames': return generateAlbersFramesSvg();
+            case 'split': return generateAlbersSplitSvg();
+            case 'targets': return generateAlbersTargetsSvg();
+            case 'triangles': return generateAlbersTrianglesSvg();
             default: return generateAlbersSquaresSvg();
         }
     };
