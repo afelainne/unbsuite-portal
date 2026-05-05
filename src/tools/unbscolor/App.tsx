@@ -864,28 +864,28 @@ const App: React.FC = () => {
                                                         {settings.showHsl && <p>HSL: {rgbToHsl(matches[0].reference.rgb).h}, {rgbToHsl(matches[0].reference.rgb).s}, {rgbToHsl(matches[0].reference.rgb).l}</p>}
                                                         {settings.showHsb && <p>HSB: {rgbToHsv(matches[0].reference.rgb).h}, {rgbToHsv(matches[0].reference.rgb).s}, {rgbToHsv(matches[0].reference.rgb).v}</p>}
 
-                                                        {settings.showPmsC && (
-                                                            <div className="mt-4 pt-3 border-t border-border/40">
-                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeC}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
-                                                            </div>
-                                                        )}
-                                                        {settings.showPmsU && (
-                                                            <div className={`${!settings.showPmsC ? 'mt-4 pt-3 border-t border-border/40' : 'mt-2'}`}>
-                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeU}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
-                                                            </div>
-                                                        )}
                                                         {settings.showPmsSolidC && (
-                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                            <div className="mt-4 pt-3 border-t border-border/40">
                                                                 <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refSolidC}</span>
                                                                 <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsSolidC()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                         {settings.showPmsSolidU && (
-                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                            <div className={`${!settings.showPmsSolidC ? 'mt-4 pt-3 border-t border-border/40' : 'mt-2'}`}>
                                                                 <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refSolidU}</span>
                                                                 <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsSolidU()?.reference.code) || t.outOfGamut}</span>
+                                                            </div>
+                                                        )}
+                                                        {settings.showPmsC && (
+                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeC}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
+                                                            </div>
+                                                        )}
+                                                        {settings.showPmsU && (
+                                                            <div className="mt-2 pt-3 border-t border-border/40">
+                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeU}</span>
+                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
                                                             </div>
                                                         )}
                                                     </div>
