@@ -272,7 +272,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
         removePair(selectedPair);
         setCurrentKernValue(0);
         pushNotice(
-            exists ? `O par ${selectedPair} foi resetado.` : `Nenhum ajuste ativo encontrado para ${selectedPair}.`,
+            exists ? `Pair ${selectedPair} was reset.` : `No active adjustment found for ${selectedPair}.`,
             'info'
         );
     };
@@ -453,8 +453,8 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                      </div>
                                      {g.inheritsFrom && (
                                          <div className={`flex items-center justify-between text-[10px] font-bold uppercase px-2 py-1 rounded ${isDarkMode ? 'bg-amber-500/10 text-amber-200 border border-amber-500/40' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
-                                             <span>Herda de {g.inheritsFrom}</span>
-                                             <button onClick={() => handleRemoveShare(g.char)} className={`text-[9px] underline ${isDarkMode ? 'text-amber-200' : 'text-amber-600'}`}>Remover</button>
+                                             <span>Inherits from {g.inheritsFrom}</span>
+                                             <button onClick={() => handleRemoveShare(g.char)} className={`text-[9px] underline ${isDarkMode ? 'text-amber-200' : 'text-amber-600'}`}>Remove</button>
                                          </div>
                                      )}
                                      <div className={`flex gap-2 p-1.5 rounded border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
@@ -796,12 +796,12 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                     </div>
                                     <p className={`text-[9px] ${textSub}`}>
                                         {kerningMode === 'smart' && 'SVG geometric analysis (detected shapes)'}
-                                        {kerningMode === 'professional' && 'Tabelas de fontes reais (Helvetica, Futura, etc.)'}
-                                        {kerningMode === 'hybrid' && 'Combina tabelas profissionais + geometria'}
+                                        {kerningMode === 'professional' && 'Real font tables (Helvetica, Futura, etc.)'}
+                                        {kerningMode === 'hybrid' && 'Combines professional tables + geometry'}
                                     </p>
                                 </div>
 
-                                {/* Estilo da Fonte - para modos profissional/híbrido */}
+                                {/* Font Style - for professional/hybrid modes */}
                                 {(kerningMode === 'professional' || kerningMode === 'hybrid') && (
                                     <div className="space-y-1">
                                         <label className={`text-[10px] font-bold uppercase ${textSub}`}>Typographic Style</label>
@@ -811,21 +811,21 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                             className={`w-full rounded px-2 py-2 text-sm font-bold outline-none ${inputBg}`}
                                         >
                                             <option value="geometric-sans">Geometric Sans (Futura, Avenir)</option>
-                                            <option value="humanist-sans">Humanista Sans (Frutiger, Myriad)</option>
-                                            <option value="neo-grotesque">Neo-Grotesca (Helvetica, Arial)</option>
-                                            <option value="serif-oldstyle">Serifa Old Style (Garamond)</option>
-                                            <option value="serif-modern">Serifa Moderna (Bodoni, Didot)</option>
+                                            <option value="humanist-sans">Humanist Sans (Frutiger, Myriad)</option>
+                                            <option value="neo-grotesque">Neo-Grotesque (Helvetica, Arial)</option>
+                                            <option value="serif-oldstyle">Old Style Serif (Garamond)</option>
+                                            <option value="serif-modern">Modern Serif (Bodoni, Didot)</option>
                                             <option value="slab">Slab Serif (Rockwell)</option>
-                                            <option value="display">Display (Decorativa)</option>
-                                            <option value="script">Script (Manuscrita)</option>
+                                            <option value="display">Display (Decorative)</option>
+                                            <option value="script">Script (Handwritten)</option>
                                         </select>
                                     </div>
                                 )}
 
-                                {/* Tipo de fonte para modo Smart */}
+                                {/* Font type for Smart mode */}
                                 {kerningMode === 'smart' && (
                                     <div className="space-y-1">
-                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Tipo de fonte</label>
+                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Font type</label>
                                         <select
                                             value={kerningProfile || 'sans'}
                                             onChange={(e) => handleKerningProfileChange(e.target.value as FontMetadata['kerningProfile'])}
