@@ -13,12 +13,12 @@ interface ToolLayoutProps {
 
 const ToolLayout = ({ title, children, chrome = "page" }: ToolLayoutProps) => {
   return (
-    <div className="min-h-dvh bg-background text-foreground flex flex-col">
+    <div className="h-dvh bg-white text-[#232323] flex flex-col">
       <Header showBack title={title} />
       {chrome === "app" ? (
-        <main className="flex-1 flex flex-col min-h-0">{children}</main>
+        <main className="flex-1 flex min-h-0 overflow-hidden">{children}</main>
       ) : (
-        <main className="container-fluid py-6 md:py-10 flex-1">{children}</main>
+        <main className="container-fluid py-6 md:py-10 flex-1 overflow-auto">{children}</main>
       )}
     </div>
   );

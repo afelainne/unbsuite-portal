@@ -6,6 +6,7 @@ import { GridStylePicker } from './components/GridStylePicker';
 import { FormatPreset, PrintSettings, GridStylePreset } from './types';
 import { FORMAT_PRESETS } from './constants';
 import { Download, LayoutGrid } from 'lucide-react';
+import { ToolButton, ToolSlider, LABEL_TEXT } from '@/tools/_shared/ui';
 
 const App: React.FC = () => {
   const [selectedFormat, setSelectedFormat] = useState<FormatPreset>(FORMAT_PRESETS.find(f => f.id === 'a4') || FORMAT_PRESETS[0]);
@@ -61,7 +62,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-1 min-h-0 w-full bg-background text-foreground">
+    <div className="flex flex-1 min-h-0 w-full bg-white text-[#232323]">
       <Sidebar 
         selectedId={selectedFormat.id} 
         onSelect={setSelectedFormat} 
@@ -69,101 +70,58 @@ const App: React.FC = () => {
 
       <main className="flex-1 flex flex-col">
         {/* Top Control Bar */}
-        <header className="sticky top-14 z-30 border-b border-border bg-card/95 backdrop-blur flex items-center px-6 md:px-8 py-4 justify-between shrink-0 gap-6 flex-wrap">
-          <div className="flex gap-12 items-center">
-            <div className="flex flex-col gap-1">
-              <span className="eyebrow">Columns</span>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-lg font-bold w-6">{settings.columns}</span>
-                <input 
-                    type="range" min="1" max="24" 
-                    value={settings.columns} 
-                    onChange={(e) => setSettings({...settings, columns: parseInt(e.target.value)})}
-                    className="w-24 accent-foreground"
+        <header className="border-b border-[#232323]/15 bg-white flex items-center px-4 h-12 justify-between shrink-0 gap-4 flex-wrap">
+          <div className="flex gap-5 items-center">
+            {([
+              { key: 'columns', label: 'COL', min: 1, max: 24, suffix: '' },
+              { key: 'rows', label: 'ROW', min: 1, max: 12, suffix: '' },
+              { key: 'gutter', label: 'GUT', min: 0, max: 20, suffix: 'mm' },
+              { key: 'safeZone', label: 'SAFE', min: 2, max: 20, suffix: 'mm' },
+            ] as const).map(c => (
+              <div key={c.key} className="flex items-center gap-2">
+                <span className={LABEL_TEXT}>{c.label}</span>
+                <span className="font-mono text-[11px] tabular-nums w-9 text-right text-[#232323]">
+                  {(settings as any)[c.key]}{c.suffix}
+                </span>
+                <ToolSlider
+                  min={c.min}
+                  max={c.max}
+                  value={(settings as any)[c.key]}
+                  onChange={(e) => setSettings({ ...settings, [c.key]: parseInt(e.target.value) })}
+                  className="w-20"
                 />
               </div>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <span className="eyebrow">Rows</span>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-lg font-bold w-6">{settings.rows}</span>
-                <input 
-                    type="range" min="1" max="12" 
-                    value={settings.rows} 
-                    onChange={(e) => setSettings({...settings, rows: parseInt(e.target.value)})}
-                    className="w-24 accent-foreground"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <span className="eyebrow">Gutter</span>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-lg font-bold w-12">{settings.gutter}mm</span>
-                <input 
-                    type="range" min="0" max="20" 
-                    value={settings.gutter} 
-                    onChange={(e) => setSettings({...settings, gutter: parseInt(e.target.value)})}
-                    className="w-24 accent-foreground"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <span className="eyebrow">Safe Margin</span>
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-lg font-bold w-12">{settings.safeZone}mm</span>
-                <input 
-                    type="range" min="2" max="20" 
-                    value={settings.safeZone} 
-                    onChange={(e) => setSettings({...settings, safeZone: parseInt(e.target.value)})}
-                    className="w-24 accent-foreground"
-                />
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="flex gap-3 items-center">
-             <div className="relative" ref={gridPickerRef}>
-               <button
-                 onClick={() => setShowGridPicker(!showGridPicker)}
-                 className={`flex items-center gap-2 px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.18em] font-bold rounded-full transition-all ${
-                   showGridPicker ? 'bg-foreground text-background' : 'bg-secondary text-muted-foreground hover:bg-secondary/80'
-                 }`}
-               >
-                 <LayoutGrid size={12} />
-                 GRID STYLES
-               </button>
-               {showGridPicker && (
-                 <div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-[var(--shadow-floating)] z-50">
-                   <GridStylePicker onApply={applyGridStyle} currentSettings={settings} />
-                 </div>
-               )}
-             </div>
+          <div className="flex gap-2 items-center">
+            <div className="relative" ref={gridPickerRef}>
+              <ToolButton
+                variant="ghost"
+                active={showGridPicker}
+                onClick={() => setShowGridPicker(!showGridPicker)}
+              >
+                <LayoutGrid size={12} />
+                GRID
+              </ToolButton>
+              {showGridPicker && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-[#232323] z-50">
+                  <GridStylePicker onApply={applyGridStyle} currentSettings={settings} />
+                </div>
+              )}
+            </div>
 
-             <div className="flex bg-secondary p-1 rounded-full font-mono text-[10px] uppercase tracking-[0.18em] font-bold">
-                <button 
-                  onClick={() => setShowOverlay(!showOverlay)}
-                  className={`px-3 py-1 rounded-full transition-all ${showOverlay ? 'bg-foreground text-background' : 'text-muted-foreground'}`}
-                >
-                  GRID
-                </button>
-                <button 
-                  onClick={() => setShowSafety(!showSafety)}
-                  className={`px-3 py-1 rounded-full transition-all ${showSafety ? 'bg-foreground text-background' : 'text-muted-foreground'}`}
-                >
-                  SAFETY
-                </button>
-             </div>
+            <ToolButton variant="ghost" active={showOverlay} onClick={() => setShowOverlay(!showOverlay)}>
+              GRID
+            </ToolButton>
+            <ToolButton variant="ghost" active={showSafety} onClick={() => setShowSafety(!showSafety)}>
+              SAFETY
+            </ToolButton>
 
-             <button 
-                onClick={downloadSVG}
-                className="btn-primary !px-4 !py-2 !text-[11px] font-mono uppercase tracking-[0.18em]"
-             >
-                <Download size={14} />
-                EXPORT SVG
-             </button>
+            <ToolButton variant="primary" onClick={downloadSVG}>
+              <Download size={12} />
+              EXPORT SVG
+            </ToolButton>
           </div>
         </header>
 
@@ -178,14 +136,14 @@ const App: React.FC = () => {
         </div>
 
         {/* Footer info bar */}
-        <footer className="h-8 border-t border-border bg-card flex items-center px-4 justify-between text-[9px] font-mono text-muted-foreground uppercase tracking-[0.18em]">
+        <footer className="h-8 border-t border-[#232323]/15 bg-white flex items-center px-4 justify-between text-[9px] font-mono text-[#232323]/60 uppercase tracking-[0.2em]">
           <div className="flex gap-4">
             <span>UNITS: MM</span>
             <span>SCALE: 1:1</span>
             <span>COLOR: CMYK SIM</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent pulse-dot"></div>
+            <div className="w-1.5 h-1.5 bg-[#F0FF00] border border-[#232323]"></div>
             <span>LIVE EDITOR CONNECTED</span>
           </div>
         </footer>

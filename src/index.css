@@ -422,3 +422,41 @@
   0%   { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+
+/* ====== Shared tool slider (UNBSCOLOR/GRID/FORMAT/FONT) ====== */
+.tool-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 16px;
+}
+.tool-slider::-webkit-slider-runnable-track {
+  height: 2px;
+  background: #232323;
+  border: none;
+}
+.tool-slider::-moz-range-track {
+  height: 2px;
+  background: #232323;
+  border: none;
+}
+.tool-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #F0FF00;
+  border: 1px solid #232323;
+  border-radius: 0;
+  margin-top: -7px;
+  cursor: pointer;
+}
+.tool-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #F0FF00;
+  border: 1px solid #232323;
+  border-radius: 0;
+  cursor: pointer;
+}
+.tool-slider:disabled { opacity: 0.4; cursor: not-allowed; }

@@ -29,45 +29,50 @@ export const Sidebar: React.FC<SidebarProps> = ({ selectedId, onSelect }) => {
   }));
 
   return (
-    <div className="w-64 border-r border-border h-full overflow-y-auto bg-card flex flex-col p-4 font-mono text-[10px] tracking-[0.18em] uppercase">
-      <div className="flex-1 overflow-y-auto space-y-1">
-        {grouped.map(({ category, items }) => {
-          const isOpen = openCategories.has(category);
-          return (
-            <div key={category}>
-              <button
-                onClick={() => toggle(category)}
-                className="w-full flex items-center justify-between py-2 px-1 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-border"></span>
-                  {category}
-                </span>
-                {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-              </button>
-
-              {isOpen && (
-                <ul className="space-y-0.5 mb-2">
-                  {items.map(item => (
+    <aside className="w-[280px] flex-shrink-0 border-r border-[#232323]/15 h-full overflow-y-auto bg-white">
+      {grouped.map(({ category, items }) => {
+        const isOpen = openCategories.has(category);
+        return (
+          <div key={category} className="border-b border-[#232323]/10">
+            <button
+              onClick={() => toggle(category)}
+              className="w-full flex items-center justify-between px-3 h-9 hover:bg-[#F7E043]/20"
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.2em] font-bold text-[#232323]">
+                {category}
+              </span>
+              {isOpen ? (
+                <ChevronDown className="h-3 w-3 text-[#232323]/60" />
+              ) : (
+                <ChevronRight className="h-3 w-3 text-[#232323]/60" />
+              )}
+            </button>
+            {isOpen && (
+              <ul className="pb-2">
+                {items.map(item => {
+                  const active = selectedId === item.id;
+                  return (
                     <li
                       key={item.id}
                       onClick={() => onSelect(item)}
-                      className={`flex justify-between p-2 cursor-pointer transition-colors rounded-md ${
-                        selectedId === item.id ? 'bg-foreground text-background' : 'hover:bg-secondary'
+                      className={`flex justify-between items-center px-3 h-7 cursor-pointer font-mono text-[10px] uppercase tracking-[0.18em] ${
+                        active
+                          ? 'bg-[#232323] text-[#F0FF00]'
+                          : 'text-[#232323] hover:bg-[#F7E043]/30'
                       }`}
                     >
                       <span className="truncate">{item.name}</span>
-                      <span className="opacity-50 text-[8px] shrink-0 ml-2">
+                      <span className="opacity-60 text-[9px] shrink-0 ml-2 tabular-nums">
                         {Math.round(item.width)}×{Math.round(item.height)}
                       </span>
                     </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        );
+      })}
+    </aside>
   );
 };
