@@ -22,7 +22,7 @@ const ExportLab: React.FC<ExportLabProps> = ({ glyphs, metadata, isDarkMode }) =
     setLastResult(null);
     try {
       const result = await downloadFontEditorFont(metadata, glyphs);
-      setLastResult(`✓ Exportado: ${result.fileName} (${result.glyphCount} glifos)`);
+      setLastResult(`✓ Exported: ${result.fileName} (${result.glyphCount} glyphs)`);
     } catch (err) {
       console.error('Export failed:', err);
       setLastResult(`✗ Error: ${err instanceof Error ? err.message : 'Export failed'}`);
@@ -34,10 +34,10 @@ const ExportLab: React.FC<ExportLabProps> = ({ glyphs, metadata, isDarkMode }) =
   return (
     <div className={`border-t ${isDarkMode ? 'border-slate-800 bg-slate-950/60' : 'border-neutral-200 bg-neutral-50'} px-4 py-6`}> 
       <div className={`rounded-xl border p-4 ${panelClass}`}>
-        <h3 className="text-xs font-black uppercase tracking-wide mb-3">Export Lab - Motor Alternativo</h3>
+        <h3 className="text-xs font-black uppercase tracking-wide mb-3">Export Lab - Alternative Engine</h3>
         <p className={`text-sm mb-4 ${subtle}`}>
           Export using fonteditor-core as alternative engine to opentype.js. 
-          Pode resolver problemas de serrilhamento em paths complexos.
+          May resolve aliasing issues in complex paths.
         </p>
 
         <button
