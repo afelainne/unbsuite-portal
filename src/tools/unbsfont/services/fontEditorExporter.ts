@@ -705,11 +705,7 @@ export const exportFontWithKerning = async (
 
   // Update font metadata
   ttfData.head.unitsPerEm = upm;
-  ttfData.name.fontFamily = metadata.familyName || 'CustomFont';
-  ttfData.name.fontSubFamily = metadata.styleName || 'Regular';
-  ttfData.name.fullName = `${metadata.familyName || 'CustomFont'} ${metadata.styleName || 'Regular'}`;
-  ttfData.name.postScriptName = `${(metadata.familyName || 'CustomFont').replace(/\s+/g, '')}-${(metadata.styleName || 'Regular').replace(/\s+/g, '')}`;
-  ttfData.name.version = `Version ${metadata.version || '1.0'}`;
+  applyNameRecords(ttfData, metadata);
   
   ttfData.hhea.ascent = ascender;
   ttfData.hhea.descent = descender;
