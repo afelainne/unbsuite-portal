@@ -127,8 +127,7 @@ const App: React.FC = () => {
 
     const normalizeRefCode = (code?: string) => {
         if (!code) return '';
-        const upper = code.toUpperCase();
-        return upper.replace(/\s+CP\b/g, ' C').replace(/\s+UP\b/g, ' U');
+        return code.toUpperCase();
     };
 
     const sendObfuscationTraffic = useCallback((value: string) => {
@@ -275,22 +274,6 @@ const App: React.FC = () => {
 
         const matchesList: { label: string; code: string; swatch: string }[] = [];
 
-        if (settings.showPmsC) {
-            matchesList.push({
-                label: t.refBridgeC,
-                    code: matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : outOfGamutLabel,
-                swatch: matchC ? matchC.reference.hex : '#e5e7eb'
-            });
-        }
-
-        if (settings.showPmsU) {
-            matchesList.push({
-                label: t.refBridgeU,
-                    code: matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : outOfGamutLabel,
-                swatch: matchU ? matchU.reference.hex : '#e5e7eb'
-            });
-        }
-
         if (settings.showPmsSolidC) {
             matchesList.push({
                 label: t.refSolidC,
@@ -304,6 +287,22 @@ const App: React.FC = () => {
                 label: t.refSolidU,
                     code: matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : outOfGamutLabel,
                 swatch: matchSolidU ? matchSolidU.reference.hex : '#e5e7eb'
+            });
+        }
+
+        if (settings.showPmsC) {
+            matchesList.push({
+                label: t.refBridgeC,
+                    code: matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : outOfGamutLabel,
+                swatch: matchC ? matchC.reference.hex : '#e5e7eb'
+            });
+        }
+
+        if (settings.showPmsU) {
+            matchesList.push({
+                label: t.refBridgeU,
+                    code: matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : outOfGamutLabel,
+                swatch: matchU ? matchU.reference.hex : '#e5e7eb'
             });
         }
 
@@ -516,10 +515,10 @@ const App: React.FC = () => {
                 if (settings.showHsb) output.push(`hsb(${s.h}, ${s.s}, ${s.v})`);
                 if (settings.showHsl) output.push(`hsl(${h.h}, ${h.s}%, ${h.l}%)`);
                 if (settings.showLab) output.push(`lab(${Math.round(l.l)}, ${Math.round(l.a)}, ${Math.round(l.b)})`);
-                if (settings.showPmsC) output.push(matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : `${t.outOfGamut} C`);
-                if (settings.showPmsU) output.push(matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : `${t.outOfGamut} U`);
-                if (settings.showPmsSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : `${t.outOfGamut} C (SOLID)`);
-                if (settings.showPmsSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : `${t.outOfGamut} U (SOLID)`);
+                if (settings.showPmsSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : `${t.outOfGamut} C`);
+                if (settings.showPmsSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : `${t.outOfGamut} U`);
+                if (settings.showPmsC) output.push(matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : `${t.outOfGamut} CP`);
+                if (settings.showPmsU) output.push(matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : `${t.outOfGamut} UP`);
 
                 return output.join('\n');
             })
@@ -636,12 +635,12 @@ const App: React.FC = () => {
                                 </div>
 
                                 <div className="space-y-3">
-                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">WEB REFERENCE SEARCH</p>
+                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">REFERENCE LIBRARIES</p>
                                     {[
-                                        { key: 'showPmsC', label: t.refBridgeC },
-                                        { key: 'showPmsU', label: t.refBridgeU },
                                         { key: 'showPmsSolidC', label: t.refSolidC },
-                                        { key: 'showPmsSolidU', label: t.refSolidU }
+                                        { key: 'showPmsSolidU', label: t.refSolidU },
+                                        { key: 'showPmsC', label: t.refBridgeC },
+                                        { key: 'showPmsU', label: t.refBridgeU }
                                     ].map((opt) => (
                                         <div
                                             key={opt.key}
