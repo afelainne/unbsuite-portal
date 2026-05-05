@@ -132,7 +132,7 @@ const processExportQueue = async () => {
       const normalized =
         error instanceof FontExportError
           ? error
-          : new FontExportError('UNKNOWN', 'Falha ao exportar fonte.', error);
+          : new FontExportError('UNKNOWN', 'Failed to export font.', error);
       job.reject(normalized);
     }
   }
@@ -219,7 +219,7 @@ const runExport = async (metadata: FontMetadata, glyphs: GlyphExportData[], onPr
 
     const drawnGlyphs = fontGlyphs.length - 1;
     if (drawnGlyphs <= 0) {
-      throw new FontExportError('EMPTY_FONT', 'Não há glifos desenhados para este weight.');
+      throw new FontExportError('EMPTY_FONT', 'No glyphs drawn for this weight.');
     }
 
     const styleLabel = metadata.styleName || 'Regular';
@@ -338,7 +338,7 @@ const runExport = async (metadata: FontMetadata, glyphs: GlyphExportData[], onPr
       throw error;
     }
     console.error('Failed to export font', error);
-    throw new FontExportError('UNKNOWN', 'Falha ao exportar fonte.', error);
+    throw new FontExportError('UNKNOWN', 'Failed to export font.', error);
   }
 };
 
