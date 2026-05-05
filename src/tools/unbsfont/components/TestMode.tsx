@@ -19,6 +19,21 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
   const [fontSize, setFontSize] = useState(64);
   const [showTrackingRules, setShowTrackingRules] = useState(false);
   const [showTypographySettings, setShowTypographySettings] = useState(false);
+  const outputRef = React.useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = React.useState<number>(0);
+
+  React.useEffect(() => {
+    const el = outputRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    setContainerWidth(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
   
   const upm = metadata.unitsPerEm || 1000;
   const tracking = metadata.tracking ?? 0;
@@ -87,6 +102,48 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
   const accentSpace = upm * 0.25;
   const viewBoxY = -accentSpace;
   const viewBoxHeight = ascender + descender + accentSpace;
+
+  // Responsive: compute effective font size so the longest line fits the container width.
+  const computeLineWidth = React.useCallback((line: string, fs: number): number => {
+    const scale = fs / upm;
+    const isLineAllCaps = isAllCapsWord(line);
+    let total = 0;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === ' ') {
+        total += wordSpacingUnits * scale;
+        continue;
+      }
+      const g = getGlyph(ch);
+      const baseW = g?.advanceWidth ? g.advanceWidth * scale : fs * 0.5;
+      let spacing = 0;
+      if (i > 0) {
+        const prev = line[i - 1];
+        const prevG = getGlyph(prev);
+        if (prevG && g && prev !== ' ') {
+          spacing = (getKerningValue(prev, ch) + getTrackingBetweenGlyphs(prevG, g, activeProfile, fs, isLineAllCaps)) * scale;
+        } else if (prevG && g && prev === ' ') {
+          spacing = getTrackingBetweenGlyphs(prevG, g, activeProfile, fs, isLineAllCaps) * scale;
+        }
+      }
+      total += baseW + spacing;
+    }
+    return total;
+  }, [glyphs, metadata.kerning, activeProfile, upm, wordSpacingUnits]);
+
+  const effectiveFontSize = React.useMemo(() => {
+    if (!containerWidth) return fontSize;
+    const padding = 64; // matches p-8
+    const available = Math.max(120, containerWidth - padding);
+    const lines = text.split('\n');
+    let maxLineW = 0;
+    for (const line of lines) {
+      maxLineW = Math.max(maxLineW, computeLineWidth(line, fontSize));
+    }
+    if (maxLineW <= available) return fontSize;
+    const scaled = Math.floor(fontSize * (available / maxLineW));
+    return Math.max(12, scaled);
+  }, [containerWidth, fontSize, text, computeLineWidth]);
 
   return (
     <div className={`flex flex-col h-full w-full ${bgMain} ${textMain}`}>
@@ -273,25 +330,26 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
       </div>
 
       {/* Output Render */}
-      <div className={`flex-1 overflow-auto p-8 relative overflow-x-hidden ${bgMain} flex flex-col`}>
+      <div ref={outputRef} className={`flex-1 overflow-auto p-8 relative overflow-x-hidden ${bgMain} flex flex-col`}>
         <div className="w-full flex flex-col items-center justify-center min-h-full">
             <div className="w-full text-center flex flex-col">
             {text.split('\n').map((line, lineIdx) => {
                 const isLineAllCaps = isAllCapsWord(line);
                 // Fix #8: lineSpacing uses only lineGap, no separate lineHeight multiplier
-                const lineSpacing = (lineGap / upm) * fontSize;
-                const scale = fontSize / upm;
-                const lineBodyHeight = fontSize * (ascender + descender) / upm;
+                const fs = effectiveFontSize;
+                const lineSpacing = (lineGap / upm) * fs;
+                const scale = fs / upm;
+                const lineBodyHeight = fs * (ascender + descender) / upm;
                 
                 return (
                 <div 
                     key={lineIdx} 
-                    className="flex flex-wrap items-end justify-center w-full"
+                    className="flex items-end justify-center w-full whitespace-nowrap"
                     style={{ 
                         height: lineBodyHeight,
                         overflow: 'visible',
                         marginTop: lineIdx > 0 ? `${lineSpacing}px` : 0,
-                        fontSize,
+                        fontSize: fs,
                     }}
                 >
                     {line.split('').map((char, charIdx) => {
@@ -304,11 +362,11 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                     }
                     
                     if (!g || !g.pathData) {
-                        const placeholderW = fontSize * 0.5;
+                        const placeholderW = fs * 0.5;
                         return (
                             <span
                                 key={charIdx}
-                                style={{ width: placeholderW, height: fontSize, fontSize: fontSize * 0.35 }}
+                                style={{ width: placeholderW, height: fs, fontSize: fs * 0.35 }}
                                 className={`inline-flex items-center justify-center mx-[1px] align-baseline border-2 border-dashed rounded-sm ${isDarkMode ? 'border-slate-600 text-slate-500' : 'border-neutral-300 text-neutral-400'}`}
                                 title={`Missing glyph: "${char}" (U+${char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')})`}
                                 onContextMenu={(event) => handleGlyphContextMenu(event, char)}
@@ -331,18 +389,18 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                             // Kerning pair
                             const kernVal = getKerningValue(prevChar, char) * scale;
                             // Contextual tracking from trackingProfile
-                            const trackVal = getTrackingBetweenGlyphs(prevG, g, activeProfile, fontSize, isLineAllCaps) * scale;
+                            const trackVal = getTrackingBetweenGlyphs(prevG, g, activeProfile, fs, isLineAllCaps) * scale;
                             spacingAdjust = kernVal + trackVal;
                         } else if (prevG && prevChar === ' ') {
                             // Fix #6: apply tracking contextual after whitespace too
-                            const trackVal = getTrackingBetweenGlyphs(prevG, g, activeProfile, fontSize, isLineAllCaps) * scale;
+                            const trackVal = getTrackingBetweenGlyphs(prevG, g, activeProfile, fs, isLineAllCaps) * scale;
                             spacingAdjust = trackVal;
                         }
                     }
                     
                     // Fix #3: width = baseWidth only (tracking is in marginLeft via spacingAdjust)
                     const width = baseWidth;
-                    const spanHeight = fontSize * (viewBoxHeight / upm);
+                    const spanHeight = fs * (viewBoxHeight / upm);
 
                     return (
                         <span 
@@ -360,7 +418,7 @@ const TestMode: React.FC<TestModeProps> = ({ glyphs, metadata, onUpdateMetadata,
                                 <svg 
                                     viewBox={`0 ${viewBoxY} ${upm} ${viewBoxHeight}`}
                                     className={`absolute inset-0 fill-current overflow-visible ${textMain}`}
-                                    style={{ width: fontSize, height: spanHeight }}
+                                    style={{ width: fs, height: spanHeight }}
                                     preserveAspectRatio="xMidYMax meet"
                                 >
                                     <g transform={`translate(${g.leftSideBearing}, ${g.baselineOffset}) scale(${g.scale})`}>
