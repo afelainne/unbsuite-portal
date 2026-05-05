@@ -944,6 +944,107 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     };
 
     // Função que retorna o SVG baseado no template selecionado
+    // Template 9: Split Screen (hero + grid)
+    const generateSplitScreenSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        if (colors.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" />`;
+        const sorted = [...colors].sort((a, b) => b.weight - a.weight);
+        const main = sorted[0];
+        const rest = sorted.slice(1);
+        const heroH = height * 0.55;
+        const tcMain = getContrastColor(main.hex);
+        const codesMain = showCodes ? formatColorCodes(main.hex).slice(0, 6) : [];
+        const codeMainLines = codesMain.map((cd, i) => `<text x="60" y="${heroH - 60 - (codesMain.length - 1 - i) * 22}" font-size="14" font-family="'JetBrains Mono', monospace" fill="${tcMain}" opacity="0.85">${cd}</text>`).join('');
+        const hero = `<rect x="0" y="0" width="${width}" height="${heroH}" fill="${main.hex}" />` +
+            `<text x="60" y="120" font-size="84" font-family="'Inter', sans-serif" font-weight="700" fill="${tcMain}">${main.name}</text>` +
+            codeMainLines;
+        const cellW = width / Math.max(rest.length, 1);
+        const cellH = height - heroH;
+        const tiles = rest.map((c, i) => {
+            const x = i * cellW;
+            const tc = getContrastColor(c.hex);
+            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 3) : [];
+            const codeLines = codes.map((cd, ci) => `<text x="${x + 24}" y="${heroH + cellH - 24 - (codes.length - 1 - ci) * 16}" font-size="11" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.8">${cd}</text>`).join('');
+            return `<rect x="${x}" y="${heroH}" width="${cellW}" height="${cellH}" fill="${c.hex}" /><text x="${x + 24}" y="${heroH + 50}" font-size="26" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${c.name}</text>${codeLines}`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style>${hero}${tiles}</svg>`;
+    };
+
+    // Template 10: Columns (vertical bars with names rotated)
+    const generateColumnsSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        const pad = 24;
+        const gap = 12;
+        const totalW = width - pad * 2 - gap * (colors.length - 1);
+        const totalWeight = colors.reduce((s, c) => s + c.weight, 0) || 1;
+        let xOff = pad;
+        const cols = colors.map((c) => {
+            const colW = (c.weight / totalWeight) * totalW;
+            const tc = getContrastColor(c.hex);
+            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 5) : [];
+            const codeLines = codes.map((cd, i) => `<text x="${xOff + colW / 2}" y="${height - 60 - (codes.length - 1 - i) * 18}" text-anchor="middle" font-size="11" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.85">${cd}</text>`).join('');
+            const block = `<rect x="${xOff}" y="${pad}" width="${colW}" height="${height - pad * 2}" rx="12" fill="${c.hex}" />` +
+                `<text x="${xOff + colW / 2}" y="${height / 2}" font-size="${Math.min(56, Math.max(18, colW * 0.18))}" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}" text-anchor="middle" transform="rotate(-90, ${xOff + colW / 2}, ${height / 2})">${c.name}</text>` +
+                codeLines;
+            xOff += colW + gap;
+            return block;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#111111" />${cols}</svg>`;
+    };
+
+    // Template 11: Dots (large circles weighted)
+    const generateDotsSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        const pad = 60;
+        const cols = Math.ceil(Math.sqrt(colors.length * (width / height)));
+        const rows = Math.ceil(colors.length / cols);
+        const cellW = (width - pad * 2) / cols;
+        const cellH = (height - pad * 2) / rows;
+        const maxW = colors.reduce((m, c) => Math.max(m, c.weight), 1);
+        const items = colors.map((c, i) => {
+            const r = Math.floor(i / cols);
+            const col = i % cols;
+            const cx = pad + col * cellW + cellW / 2;
+            const cy = pad + r * cellH + cellH / 2;
+            const radius = Math.min(cellW, cellH) * 0.42 * (0.5 + 0.5 * (c.weight / maxW));
+            const tc = getContrastColor(c.hex);
+            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 2) : [];
+            const codeLines = codes.map((cd, ci) => `<text x="${cx}" y="${cy + radius + 22 + ci * 16}" text-anchor="middle" font-size="11" font-family="'JetBrains Mono', monospace" fill="#FFFFFF" opacity="0.85">${cd}</text>`).join('');
+            return `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${c.hex}" /><text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="20" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${c.name}</text>${codeLines}`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#0A0A0A" />${items}</svg>`;
+    };
+
+    // Template 12: Editorial (hero + index list)
+    const generateEditorialSvg = (): string => {
+        const width = 1920;
+        const height = 1080;
+        if (colors.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" />`;
+        const sorted = [...colors].sort((a, b) => b.weight - a.weight);
+        const main = sorted[0];
+        const heroW = width * 0.65;
+        const tc = getContrastColor(main.hex);
+        const codes = showCodes ? formatColorCodes(main.hex).slice(0, 8) : [];
+        const codeLines = codes.map((cd, i) => `<text x="80" y="${height - 80 - (codes.length - 1 - i) * 26}" font-size="16" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.9">${cd}</text>`).join('');
+        const hero = `<rect x="0" y="0" width="${heroW}" height="${height}" fill="${main.hex}" />` +
+            `<text x="80" y="160" font-size="120" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${main.name}</text>` +
+            `<text x="80" y="220" font-size="22" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.7">${main.hex}</text>` +
+            codeLines;
+        const sideX = heroW + 60;
+        const lineH = (height - 120) / Math.max(sorted.length, 1);
+        const list = sorted.map((c, i) => {
+            const y = 80 + i * lineH;
+            return `<rect x="${sideX}" y="${y + 10}" width="40" height="40" fill="${c.hex}" />` +
+                `<text x="${sideX + 56}" y="${y + 36}" font-size="20" font-family="'Inter', sans-serif" font-weight="700" fill="#111111">${c.name}</text>` +
+                `<text x="${sideX + 56}" y="${y + 56}" font-size="12" font-family="'JetBrains Mono', monospace" fill="#666666">${c.hex} · ${c.weight.toFixed(0)}%</text>`;
+        }).join('');
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#FAFAFA" />${hero}${list}</svg>`;
+    };
+
+    // Função que retorna o SVG baseado no template selecionado
     const getCurrentPaletteSvg = (): string => {
         switch (paletteTemplate) {
             case 'vertical': return generateVerticalSvg();
