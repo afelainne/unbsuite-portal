@@ -250,17 +250,17 @@ const App: React.FC = () => {
 
   const noticeStyles = useMemo<Record<NoticeVariant, { label: string; container: string; dot: string }>>(() => ({
       success: {
-          label: 'Sucesso',
+          label: 'Success',
           container: isDarkMode ? 'bg-emerald-500/10 border-emerald-300 text-emerald-50' : 'bg-emerald-50 border-emerald-500 text-emerald-900',
           dot: 'bg-emerald-400'
       },
       warning: {
-          label: 'Aviso',
+          label: 'Warning',
           container: isDarkMode ? 'bg-amber-500/10 border-amber-300 text-amber-50' : 'bg-amber-50 border-amber-500 text-amber-900',
           dot: 'bg-amber-400'
       },
       error: {
-          label: 'Erro',
+          label: 'Error',
           container: isDarkMode ? 'bg-rose-500/10 border-rose-300 text-rose-50' : 'bg-rose-50 border-rose-500 text-rose-900',
           dot: 'bg-rose-400'
       },
@@ -511,7 +511,7 @@ const App: React.FC = () => {
           setMetadata(prev => ({ ...prev, styleName: nextActiveStyle }));
       }
 
-      pushNotice(`Weight "${styleName}" removido.`, 'info');
+      pushNotice(`Weight "${styleName}" removed.`, 'info');
   }, [styleMap, currentStyle, pushNotice, activeProjectId, setProjects, setGlyphs, setMetadata]);
 
   const getCasePairChar = (char: string): string | null => {

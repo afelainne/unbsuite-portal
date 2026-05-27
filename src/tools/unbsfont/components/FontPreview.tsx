@@ -133,7 +133,7 @@ const FontPreview: React.FC<FontPreviewProps> = ({ glyphs, metadata, isDarkMode,
                   : 'bg-blue-500 hover:bg-blue-600 text-white disabled:bg-neutral-300'
               }`}
             >
-              {isLoading ? '⏳ Carregando...' : '↻ Atualizar'}
+              {isLoading ? '⏳ Loading...' : '↻ Refresh'}
             </button>
             <button
               onClick={onClose}
