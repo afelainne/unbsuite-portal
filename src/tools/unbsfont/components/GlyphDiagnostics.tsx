@@ -226,7 +226,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
         <div className={`flex items-center gap-1 px-6 py-2 border-b ${borderClass}`}>
           {(['all', 'error', 'warning', 'info'] as const).map(f => {
             const count = f === 'all' ? diagnostics.diagnostics.length : f === 'error' ? diagnostics.errors : f === 'warning' ? diagnostics.warnings : diagnostics.infos;
-            const label = f === 'all' ? 'Todos' : f === 'error' ? 'Erros' : f === 'warning' ? 'Avisos' : 'Info';
+            const label = f === 'all' ? 'All' : f === 'error' ? 'Errors' : f === 'warning' ? 'Warnings' : 'Info';
             const active = filter === f;
             return (
               <button

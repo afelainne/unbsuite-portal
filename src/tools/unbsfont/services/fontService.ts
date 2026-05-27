@@ -167,7 +167,7 @@ const snapshotGlyphs = (glyphs: GlyphData[]): GlyphExportData[] =>
 
 const runExport = async (metadata: FontMetadata, glyphs: GlyphExportData[], onProgress?: (value: number) => void): Promise<FontExportResult> => {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
-    throw new FontExportError('ENV_UNAVAILABLE', 'Exportação disponível apenas no navegador.');
+    throw new FontExportError('ENV_UNAVAILABLE', 'Export is only available in the browser.');
   }
 
   try {
