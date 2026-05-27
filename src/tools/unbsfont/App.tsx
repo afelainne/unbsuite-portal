@@ -376,7 +376,7 @@ const App: React.FC = () => {
 
   const handleSaveProject = useCallback(() => {
       if (!activeProjectId) {
-          handleCreateProject(); 
+          pushNotice('No active project. Create or open a project first.', 'warning');
           return;
       }
       const syncedStyleMap = { ...styleMap, [currentStyle]: glyphs };
