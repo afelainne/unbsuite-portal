@@ -155,20 +155,19 @@ const Index = () => {
       <main className="flex-1">
         {/* Hero: headline in two weights, a button pair, and the product itself. */}
         <section className="container-centered pt-14 pb-10 md:pt-20 md:pb-14 text-center">
-          <p className="label">Ferramentas para designers de marca</p>
+          <p className="label">Ferramentas para designers</p>
           <h1 className="text-display mt-5 mx-auto max-w-[16ch] uppercase text-balance">
-            Precisão para quem <span className="font-bold">desenha marcas</span>
+            Precisão em <span className="font-bold">cada detalhe</span>
           </h1>
           <p className="text-body text-muted-foreground mt-6 mx-auto max-w-[52ch] text-pretty">
-            Quatro ferramentas que medem, corrigem e exportam o seu trabalho. Tudo roda no navegador:
-            nenhum arquivo sai da sua máquina, e não existe cadastro.
+            Cor, logo, grade e fonte: quatro ferramentas que medem, corrigem e exportam o seu trabalho.
+            Tudo roda no navegador, nenhum arquivo sai da sua máquina e não existe cadastro.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-2.5 mt-8">
-            <Link to="/unbsgrid" className="ctl ctl-tinted ctl-lg">
-              Analisar um logo
+            <a href="#ferramentas" className="ctl ctl-tinted ctl-lg">
+              Ver as ferramentas
               <ArrowRight className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            </Link>
-            <a href="#ferramentas" className="ctl ctl-outline ctl-lg">Ver as quatro ferramentas</a>
+            </a>
           </div>
 
           <div className="mt-12 md:mt-16 mx-auto max-w-[900px] rounded-xl bg-canvas p-3 sm:p-5">
