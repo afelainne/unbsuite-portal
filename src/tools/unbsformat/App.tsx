@@ -13,6 +13,7 @@ import { closeGrid, columnCountOf, computeGrid, GridConfig, MethodId } from './l
 import { applyMethod, methodInfo } from './lib/methods';
 import { buildPdf } from './lib/pdf';
 import { DEFAULT_LAYERS, Layers } from './lib/scene';
+import { recommendFor, recommendationLabel, type Recommendation } from './lib/recommend';
 import { loadState, saveState } from './lib/storage';
 import type { Unit } from './lib/units';
 
@@ -55,15 +56,23 @@ const App: React.FC = () => {
 
   const patch = useCallback((p: Partial<GridConfig>) => setConfig(c => ({ ...c, ...p })), []);
 
+  /** Troca o formato e aplica a grade mais usada para ele; o método continua trocável à mão. */
+  const applyFormat = (preset: FormatPreset, landscape?: boolean): Recommendation => {
+    const rec = recommendFor(preset);
+    setConfig(c => applyMethod(rec.method, configForPreset(preset, c, landscape), { columns: rec.columns, rows: rec.rows }));
+    return rec;
+  };
+
   const selectPreset = (preset: FormatPreset) => {
-    setConfig(c => configForPreset(preset, c));
+    const rec = applyFormat(preset);
     setUnit(preset.unit === 'px' ? 'px' : u => (u === 'px' ? 'mm' : u));
+    toast.success(`${preset.name}: grade ${recommendationLabel(rec)}`, { description: 'A mais usada para este formato. Troque em Grade, se quiser.' });
   };
 
   const selectCustom = (width: number, height: number, u: 'mm' | 'px') => {
-    setConfig(c => configForPreset(customPreset(width, height, u), c, width > height));
+    const rec = applyFormat(customPreset(width, height, u), width > height);
     setUnit(u === 'px' ? 'px' : prev => (prev === 'px' ? 'mm' : prev));
-    toast.success('Formato personalizado aplicado');
+    toast.success(`Formato personalizado: grade ${recommendationLabel(rec)}`);
   };
 
   const rotate = () => {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { GridConfig, GridResult, Margins, MethodId } from '../lib/grid';
 import { columnCountOf } from '../lib/grid';
 import { gerstnerDivisions, METHOD_GROUP_LABEL, methodInfo, METHODS, MethodGroup } from '../lib/methods';
+import { followsRecommendation, recommendForConfig, recommendationLabel } from '../lib/recommend';
 import { fmt, fromUnit, toUnit, Unit, UNIT_DIGITS } from '../lib/units';
 import { NumberField, Stepper, Switch } from './controls';
 
@@ -39,6 +40,8 @@ export const GridPanel: React.FC<Props> = ({ config, result, unit, onChange, onM
   const d = UNIT_DIGITS[du];
   const tu: Unit = config.docUnit === 'px' ? 'px' : 'pt';
   const info = methodInfo(config.method);
+  const rec = recommendForConfig(config);
+  const following = followsRecommendation(config, rec, columnCountOf(config));
   const sided = config.facing || config.fold !== 'none';
   const cols = columnCountOf(config);
   const [ratiosDraft, setRatiosDraft] = useState(config.columnRatios ? config.columnRatios.join(':') : '');
@@ -123,14 +126,29 @@ export const GridPanel: React.FC<Props> = ({ config, result, unit, onChange, onM
     <div className="flex flex-col gap-5">
       {/* Método */}
       <section className="material-card flex flex-col gap-3">
-        <h2 className="label">Método</h2>
+        <div className="card-head">
+          <h2 className="label">Método</h2>
+          {following && <span className="chip chip-outline">Recomendado</span>}
+        </div>
         <select className="field" value={config.method} aria-label="Método de construção" onChange={e => onMethod(e.target.value as MethodId)}>
           {groups.map(({ g, items }) => (
             <optgroup key={g} label={METHOD_GROUP_LABEL[g]}>
-              {items.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {items.map(m => <option key={m.id} value={m.id}>{m.id === rec.method ? `${m.name} (recomendado)` : m.name}</option>)}
             </optgroup>
           ))}
         </select>
+        {!following && (
+          <div className="flex flex-col gap-2 rounded-md bg-secondary px-3 py-2.5">
+            <p className="text-subhead">
+              <span className="text-muted-foreground">Recomendado para {config.formatName}: </span>
+              {recommendationLabel(rec)}
+            </p>
+            <button type="button" className="ctl ctl-outline ctl-sm self-start" onClick={() => onMethod(rec.method, { columns: rec.columns, rows: rec.rows })}>
+              Usar a recomendada
+            </button>
+          </div>
+        )}
+        {following && <p className="text-footnote text-muted-foreground">{rec.reason}</p>}
         <p className="text-subhead text-muted-foreground">{info.summary}</p>
         {info.source && <p className="text-footnote text-muted-foreground">Fonte: {info.source}</p>}
 
