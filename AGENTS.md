@@ -11,7 +11,7 @@ Instruções para agentes de código neste repositório. É a fonte da verdade; 
 | `/` | Portal | Índice das ferramentas, com busca |
 | `/unbscolor` | UNBSCOLOR | Conversão de cor, referência de impressão mais próxima, paletas, contraste, escala tonal |
 | `/unbsgrid` | UNBSGRID | Análise de logo em SVG: 50 construções geométricas, métricas, diagnóstico, folha de marca |
-| `/unbsformat` | UNBSFORMAT | Formatos de impressão, sangria, margem de segurança, grade |
+| `/unbsformat` | UNBSFORMAT | Grades editoriais: colunas e linhas sobre a linha de base, cânones clássicos, formatos, PDF com sangria |
 | `/unbsfont` | UNBSFONT | Editor de fontes: glifos, espaçamento, kerning, export OTF |
 
 ## Como rodar

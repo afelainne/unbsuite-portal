@@ -1,178 +1,319 @@
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { Layers as LayersIcon, Maximize, Minus, Plus, Check } from 'lucide-react';
+import type { GridConfig, GridResult, Module } from '../lib/grid';
+import { referencePage } from '../lib/grid';
+import { buildScene, GUIDE_COLORS, LAYER_LABEL, LAYER_ORDER, LayerId, Layers } from '../lib/scene';
+import { fmt, MM_PER_PX, toUnit, Unit, UNIT_DIGITS, UNITS } from '../lib/units';
+import { Segmented } from './controls';
 
-import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { ZoomIn, ZoomOut, Maximize, RotateCcw, Move } from 'lucide-react';
-import { FormatPreset, PrintSettings } from '../types';
-import { MM_TO_PX } from '../constants';
-
-interface TemplatePreviewProps {
-  preset: FormatPreset;
-  settings: PrintSettings;
-  image?: string | null;
-  showOverlay: boolean;
-  showSafety: boolean;
+interface Props {
+  config: GridConfig;
+  result: GridResult;
+  layers: Layers;
+  unit: Unit;
+  onLayers: (l: Layers) => void;
+  onUnit: (u: Unit) => void;
+  onFacing: (facing: boolean) => void;
 }
 
-const TOOLBAR_THEME = {
-  bg: 'hsl(var(--card))',
-  text: 'hsl(var(--foreground))',
-  muted: 'hsl(var(--muted-foreground))',
-  border: 'hsl(var(--border))',
-};
+/** 100% = tamanho físico na tela a 96 px/in. */
+const PX_PER_MM = 1 / MM_PER_PX;
+const PAD = 24;
 
-export const TemplatePreview: React.FC<TemplatePreviewProps> = ({ 
-  preset, settings, image, showOverlay, showSafety
-}) => {
-  const widthPx = preset.width * MM_TO_PX;
-  const heightPx = preset.height * MM_TO_PX;
-  const bleedPx = settings.bleed * MM_TO_PX;
-  const safePx = settings.safeZone * MM_TO_PX;
-  const gutterPx = settings.gutter * MM_TO_PX;
+type Zoom = { mode: 'fit' } | { mode: 'fixed'; factor: number };
 
-  const vbW = widthPx + (bleedPx * 2);
-  const vbH = heightPx + (bleedPx * 2);
-
-  const contentW = widthPx - (safePx * 2);
-  const contentH = heightPx - (safePx * 2);
-  const colW = (contentW - (gutterPx * (settings.columns - 1))) / settings.columns;
-  const rowH = settings.rows > 1 ? (contentH - (gutterPx * (settings.rows - 1))) / settings.rows : contentH;
-
+export const TemplatePreview: React.FC<Props> = ({ config, result, layers, unit, onLayers, onUnit, onFacing }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [zoom, setZoom] = useState(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
+  const layersRef = useRef<HTMLDivElement>(null);
+  const clipId = useId().replace(/:/g, '');
+  const [box, setBox] = useState({ w: 600, h: 500 });
+  const [zoom, setZoom] = useState<Zoom>({ mode: 'fit' });
+  const [hover, setHover] = useState<{ page: number; module: Module } | null>(null);
+  const [layersOpen, setLayersOpen] = useState(false);
 
-  const calcFitZoom = useCallback(() => {
-    const c = containerRef.current;
-    if (!c) return 1;
-    const pad = 48;
-    return Math.min((c.clientWidth - pad) / vbW, (c.clientHeight - pad) / vbH, 1) * 0.9;
-  }, [vbW, vbH]);
+  const bb = result.bleedBox;
 
-  const fitToScreen = useCallback(() => {
-    setZoom(calcFitZoom());
-    setPanOffset({ x: 0, y: 0 });
-  }, [calcFitZoom]);
-
-  // Auto-fit on mount and format change
-  useEffect(() => { fitToScreen(); }, [preset.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Refit on container resize
+  // Mede a área disponível.
   useEffect(() => {
-    const c = containerRef.current;
-    if (!c) return;
-    const ro = new ResizeObserver(() => {
-      setZoom(calcFitZoom());
-      setPanOffset({ x: 0, y: 0 });
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      const r = entries[0].contentRect;
+      setBox({ w: r.width, h: r.height });
     });
-    ro.observe(c);
+    ro.observe(el);
     return () => ro.disconnect();
-  }, [calcFitZoom]);
-
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    setZoom(z => Math.max(0.1, Math.min(5, z + (e.deltaY > 0 ? -0.1 : 0.1))));
   }, []);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button === 1 || (e.button === 0 && e.altKey)) {
-      setIsPanning(true);
-      setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-    }
-  }, [panOffset]);
+  const fitScale = Math.max(0.02, Math.min((box.w - PAD * 2) / bb.w, (box.h - PAD * 2) / bb.h));
+  const scale = zoom.mode === 'fit' ? fitScale : PX_PER_MM * zoom.factor; // px de tela por mm
+  const percent = Math.round((scale / PX_PER_MM) * 100);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const c = containerRef.current;
-    if (c) {
-      const rect = c.getBoundingClientRect();
-      setCursorPos({ x: Math.round(e.clientX - rect.left), y: Math.round(e.clientY - rect.top) });
-    }
-    if (isPanning) {
-      setPanOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
-    }
-  }, [isPanning, panStart]);
+  const setFactor = useCallback((f: (current: number) => number) => {
+    setZoom(z => {
+      const cur = z.mode === 'fit' ? fitScale / PX_PER_MM : z.factor;
+      return { mode: 'fixed', factor: Math.min(16, Math.max(0.02, f(cur))) };
+    });
+  }, [fitScale]);
 
-  const handleMouseUp = useCallback(() => setIsPanning(false), []);
+  // Ctrl/Cmd + roda: zoom. Sem modificador, a roda rola a área normalmente.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      setFactor(c => c * (e.deltaY > 0 ? 0.9 : 1.1));
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [setFactor]);
 
-  const BtnIcon: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
-    <button onClick={onClick} className="h-6 w-6 flex items-center justify-center rounded hover:bg-foreground/5 transition-colors"
-      style={{ color: TOOLBAR_THEME.text }}>
-      {children}
-    </button>
-  );
+  // Atalhos: 0 ajusta, 1 = 100%, + e − (fora de campos de texto).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === '0') setZoom({ mode: 'fit' });
+      else if (e.key === '1') setZoom({ mode: 'fixed', factor: 1 });
+      else if (e.key === '+' || e.key === '=') setFactor(c => c * 1.25);
+      else if (e.key === '-' || e.key === '_') setFactor(c => c / 1.25);
+      else return;
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [setFactor]);
+
+  // Fecha o menu de camadas ao clicar fora ou com Esc.
+  useEffect(() => {
+    if (!layersOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (layersRef.current && !layersRef.current.contains(e.target as Node)) setLayersOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLayersOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [layersOpen]);
+
+  const scene = useMemo(() => buildScene(config, result, layers), [config, result, layers]);
+
+  // Tudo o que é traço ou texto é medido em px de tela e convertido para mm aqui,
+  // para a espessura e o rótulo não mudarem com o zoom.
+  const px = (v: number) => v / scale;
+  const strokePx = (weight = 0.5) => Math.max(0.75, Math.min(1.5, weight * 1.5));
+  const d = UNIT_DIGITS[unit];
+  const u = (mm: number) => fmt(toUnit(mm, unit), d);
+
+  const ref = referencePage(result);
+  const labelSize = px(10.5);
+
+  const cotas: React.ReactNode[] = [];
+  if (layers.cotas && ref.textBlock.w > 0 && ref.textBlock.h > 0) {
+    const tb = ref.textBlock;
+    const fits = (text: string, spaceMm: number) => text.length * 6 < spaceMm * scale && spaceMm * scale > 14;
+    const label = (key: string, x: number, y: number, text: string, space: number, color: string, anchor: 'middle' | 'start' = 'middle') => {
+      if (!fits(text, space)) return;
+      cotas.push(
+        <text key={key} x={x} y={y} fontSize={labelSize} fill={color} textAnchor={anchor} dominantBaseline="middle" style={{ fontVariantNumeric: 'tabular-nums' }}>
+          {text}
+        </text>,
+      );
+    };
+    const m = ref.margins;
+    const mid = tb.x + tb.w / 2;
+    if (m.top * scale > 14) label('ct', mid, m.top / 2, u(m.top), tb.w, GUIDE_COLORS.margin);
+    if (m.bottom * scale > 14) label('cb', mid, config.height - m.bottom / 2, u(m.bottom), tb.w, GUIDE_COLORS.margin);
+    label('cl', ref.trim.x + m.left / 2, tb.y + tb.h / 2, u(m.left), m.left, GUIDE_COLORS.margin);
+    label('cr', ref.trim.x + ref.trim.w - m.right / 2, tb.y + tb.h / 2, u(m.right), m.right, GUIDE_COLORS.margin);
+    const first = ref.modules[0];
+    if (first) {
+      const text = `${u(first.w)} × ${u(first.h)}`;
+      if (first.h * scale > 22) label('mod', first.x + px(6), first.y + px(12), text, first.w, GUIDE_COLORS.column, 'start');
+    } else if (ref.columns[0]) {
+      label('col', ref.columns[0].x + ref.columns[0].w / 2, tb.y + px(12), u(ref.columns[0].w), ref.columns[0].w, GUIDE_COLORS.column);
+    }
+  }
+
+  const toggleLayer = (id: LayerId) => onLayers({ ...layers, [id]: !layers[id] });
+
+  const hoverText = hover
+    ? `Coluna ${hover.module.col + 1}, linha ${hover.module.row + 1}${result.pages.length > 1 ? `, ${config.fold !== 'none' ? 'painel' : 'página'} ${hover.page + 1}` : ''}`
+    : null;
 
   return (
-    <div className="flex-1 flex flex-col bg-canvas relative">
-      {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-2 py-1 border-b"
-        style={{ backgroundColor: TOOLBAR_THEME.bg, borderColor: TOOLBAR_THEME.border }}>
-        <BtnIcon onClick={() => setZoom(z => Math.min(5, z + 0.25))}><ZoomIn className="h-3 w-3" /></BtnIcon>
-        <BtnIcon onClick={() => setZoom(z => Math.max(0.1, z - 0.25))}><ZoomOut className="h-3 w-3" /></BtnIcon>
-        <BtnIcon onClick={fitToScreen}><Maximize className="h-3 w-3" /></BtnIcon>
-        <BtnIcon onClick={() => { setZoom(1); setPanOffset({ x: 0, y: 0 }); }}><RotateCcw className="h-3 w-3" /></BtnIcon>
-        <div className="h-3 w-px mx-0.5" style={{ backgroundColor: TOOLBAR_THEME.border }} />
-        <div className="flex items-center gap-0.5 text-[9px]" style={{ color: TOOLBAR_THEME.muted }}>
-          <Move className="h-2.5 w-2.5" /><span>Alt+Drag</span>
+    <section className="material-card p-0 flex flex-col min-h-0 h-full overflow-hidden" aria-label="Prévia da grade">
+      {/* Barra da prévia */}
+      <div className="flex items-center gap-2 px-3 py-2 hairline-b flex-wrap">
+        <div className="relative" ref={layersRef}>
+          <button
+            type="button"
+            className="ctl ctl-outline ctl-sm"
+            aria-haspopup="true"
+            aria-expanded={layersOpen}
+            onClick={() => setLayersOpen(o => !o)}
+          >
+            <LayersIcon className="h-3.5 w-3.5" aria-hidden="true" />
+            Camadas
+          </button>
+          {layersOpen && (
+            <div className="absolute left-0 top-full mt-1.5 z-30 material-popover p-1.5 w-56 flex flex-col" role="menu" aria-label="Camadas visíveis">
+              {LAYER_ORDER.map(id => (
+                <button
+                  key={id}
+                  type="button"
+                  role="menuitemcheckbox"
+                  aria-checked={layers[id]}
+                  onClick={() => toggleLayer(id)}
+                  className="row justify-between"
+                >
+                  <span>{LAYER_LABEL[id]}</span>
+                  {layers[id] && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="ml-auto flex items-center gap-2 text-[9px]" style={{ color: TOOLBAR_THEME.muted }}>
-          <span>{preset.name}</span>
-          {cursorPos && <span>X:{cursorPos.x} Y:{cursorPos.y}</span>}
-          <span className="font-mono">{Math.round(zoom * 100)}%</span>
+
+        <Segmented
+          size="sm"
+          label="Visualização"
+          value={config.facing ? 'espelho' : 'pagina'}
+          onChange={v => onFacing(v === 'espelho')}
+          options={[
+            { value: 'pagina', label: 'Página' },
+            { value: 'espelho', label: 'Espelho', disabled: config.fold !== 'none', title: config.fold !== 'none' ? 'Folheto com dobra já mostra a folha aberta' : 'Páginas espelhadas' },
+          ]}
+        />
+
+        <Segmented size="sm" label="Unidade" value={unit} onChange={onUnit} options={UNITS.map(x => ({ value: x, label: x }))} />
+
+        <div className="ml-auto flex items-center gap-1">
+          <button type="button" className="ctl ctl-plain ctl-icon ctl-sm" aria-label="Menos zoom" title="Menos zoom (−)" onClick={() => setFactor(c => c / 1.25)}>
+            <Minus aria-hidden="true" />
+          </button>
+          <span className="text-value text-footnote w-12 text-center" aria-live="off" title="100% = tamanho real a 96 px por polegada">{percent}%</span>
+          <button type="button" className="ctl ctl-plain ctl-icon ctl-sm" aria-label="Mais zoom" title="Mais zoom (+)" onClick={() => setFactor(c => c * 1.25)}>
+            <Plus aria-hidden="true" />
+          </button>
+          <button type="button" className="ctl ctl-sm ctl-plain" aria-pressed={zoom.mode === 'fit'} onClick={() => setZoom({ mode: 'fit' })} title="Ajustar à área (0)">
+            <Maximize aria-hidden="true" />
+            <span className="hidden sm:inline">Ajustar</span>
+          </button>
+          <button type="button" className="ctl ctl-sm ctl-plain" aria-pressed={zoom.mode === 'fixed' && zoom.factor === 1} onClick={() => setZoom({ mode: 'fixed', factor: 1 })} title="Tamanho real (1)">
+            100%
+          </button>
         </div>
       </div>
 
-      {/* Canvas */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-hidden flex items-center justify-center"
-        style={{ cursor: isPanning ? 'grabbing' : 'default' }}
-        onWheel={handleWheel}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <div style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px)` }}>
+      {/* Área da prévia */}
+      <div ref={containerRef} className="relative flex-1 min-h-[240px] overflow-auto bg-canvas">
+        <div className="min-w-full min-h-full w-max h-max flex items-center justify-center" style={{ padding: PAD }}>
           <svg
-            id="formatlab-canvas"
-            width={vbW * zoom} 
-            height={vbH * zoom} 
-            viewBox={`0 0 ${vbW} ${vbH}`}
-            className="bg-white shadow-2xl transition-shadow duration-300"
-            xmlns="http://www.w3.org/2000/svg"
+            width={bb.w * scale}
+            height={bb.h * scale}
+            viewBox={`${bb.x} ${bb.y} ${bb.w} ${bb.h}`}
+            role="img"
+            aria-label={`Prévia de ${config.formatName}, ${ref.columns.length} colunas por ${ref.rows.length} linhas`}
+            onPointerLeave={() => setHover(null)}
+            className="block"
+            style={{ fontFamily: 'inherit' }}
           >
-            {image && (
-              <image href={image} x={bleedPx} y={bleedPx} width={widthPx} height={heightPx} preserveAspectRatio="xMidYMid slice" />
-            )}
-            <rect x="0" y="0" width={vbW} height={vbH} fill="none" stroke="#ff00ff" strokeWidth="1" strokeDasharray="4 4" />
-            <rect x={bleedPx} y={bleedPx} width={widthPx} height={heightPx} fill="none" stroke="#000" strokeWidth="1" />
-            {showSafety && (
-              <rect x={bleedPx + safePx} y={bleedPx + safePx} width={widthPx - (safePx * 2)} height={heightPx - (safePx * 2)} fill="none" stroke="#ff4444" strokeWidth="1" />
-            )}
-            {showOverlay && Array.from({ length: settings.columns }).map((_, ci) => (
-              Array.from({ length: Math.max(1, settings.rows) }).map((_, ri) => (
-                <rect key={`cell-${ci}-${ri}`}
-                  x={bleedPx + safePx + (ci * (colW + gutterPx))}
-                  y={bleedPx + safePx + (ri * (rowH + gutterPx))}
-                  width={colW}
-                  height={rowH}
-                  fill="rgba(0, 150, 255, 0.05)" stroke="rgba(0, 150, 255, 0.2)" strokeWidth="0.5" />
-              ))
-            ))}
-            <g stroke="#000" strokeWidth="0.5">
-              <line x1="0" y1={bleedPx} x2={bleedPx/2} y2={bleedPx} />
-              <line x1={bleedPx} y1="0" x2={bleedPx} y2={bleedPx/2} />
-              <line x1={vbW} y1={bleedPx} x2={vbW - bleedPx/2} y2={bleedPx} />
-              <line x1={vbW - bleedPx} y1="0" x2={vbW - bleedPx} y2={bleedPx/2} />
-              <line x1="0" y1={vbH - bleedPx} x2={bleedPx/2} y2={vbH - bleedPx} />
-              <line x1={bleedPx} y1={vbH} x2={bleedPx} y2={vbH - bleedPx/2} />
-              <line x1={vbW} y1={vbH - bleedPx} x2={vbW - bleedPx/2} y2={vbH - bleedPx} />
-              <line x1={vbW - bleedPx} y1={vbH} x2={vbW - bleedPx} y2={vbH - bleedPx/2} />
+            <defs>
+              <clipPath id={clipId}>
+                <rect x={bb.x} y={bb.y} width={bb.w} height={bb.h} />
+              </clipPath>
+            </defs>
+            <g clipPath={`url(#${clipId})`}>
+              {/* papel: sangria levemente tingida, formato em branco */}
+              <rect x={bb.x} y={bb.y} width={bb.w} height={bb.h} fill={result.bleed > 0 ? '#FBEAEA' : '#FFFFFF'} />
+              <rect x={0} y={0} width={result.width} height={result.height} fill="#FFFFFF" />
+
+              {scene.map((it, i) =>
+                it.type === 'rect' ? (
+                  <rect
+                    key={i}
+                    x={it.x}
+                    y={it.y}
+                    width={Math.max(0, it.w)}
+                    height={Math.max(0, it.h)}
+                    fill={it.fill ?? 'none'}
+                    fillOpacity={it.fill ? it.fillOpacity : undefined}
+                    stroke={it.stroke}
+                    strokeWidth={it.stroke ? strokePx(it.weight) : undefined}
+                    strokeDasharray={it.dash ? it.dash.map(v => px(v * 1.5)).join(' ') : undefined}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ) : (
+                  <line
+                    key={i}
+                    x1={it.x1}
+                    y1={it.y1}
+                    x2={it.x2}
+                    y2={it.y2}
+                    stroke={it.stroke}
+                    strokeOpacity={it.opacity}
+                    strokeWidth={strokePx(it.weight)}
+                    strokeDasharray={it.dash ? it.dash.map(v => px(v * 1.5)).join(' ') : undefined}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ),
+              )}
+
+              {cotas}
+
+              {/* Alvos de medição: cada módulo responde ao cursor */}
+              {result.pages.map(p =>
+                p.modules.map(m => {
+                  const active = hover && hover.page === p.index && hover.module.row === m.row && hover.module.col === m.col;
+                  return (
+                    <rect
+                      key={`h-${p.index}-${m.row}-${m.col}`}
+                      x={m.x}
+                      y={m.y}
+                      width={m.w}
+                      height={m.h}
+                      fill={active ? GUIDE_COLORS.column : 'transparent'}
+                      fillOpacity={active ? 0.18 : 0}
+                      stroke={active ? GUIDE_COLORS.column : 'none'}
+                      strokeWidth={active ? 2 : 0}
+                      vectorEffect="non-scaling-stroke"
+                      onPointerEnter={() => setHover({ page: p.index, module: m })}
+                      onClick={() => setHover({ page: p.index, module: m })}
+                    />
+                  );
+                }),
+              )}
             </g>
           </svg>
         </div>
       </div>
-    </div>
+
+      {/* Leitura */}
+      <div className="flex items-center gap-x-4 gap-y-1 px-4 py-2.5 hairline-t min-h-11 flex-wrap text-subhead" aria-live="polite">
+        {hover ? (
+          <>
+            <span className="font-medium">{hoverText}</span>
+            <span className="text-value">{u(hover.module.w)} × {u(hover.module.h)} {unit}</span>
+            {unit !== 'pt' && (
+              <span className="text-value text-muted-foreground">{fmt(toUnit(hover.module.w, 'pt'), 2)} × {fmt(toUnit(hover.module.h, 'pt'), 2)} pt</span>
+            )}
+            <span className="text-value text-muted-foreground">
+              x {u(hover.module.x - result.pages[hover.page].trim.x)} · y {u(hover.module.y)} {unit}
+            </span>
+          </>
+        ) : (
+          <span className="text-muted-foreground">
+            Toque ou passe o cursor sobre um módulo para medir.
+            <span className="hidden md:inline"> Ctrl + roda do mouse aproxima; 0 ajusta, 1 mostra em tamanho real.</span>
+          </span>
+        )}
+      </div>
+    </section>
   );
 };
