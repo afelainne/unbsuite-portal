@@ -29,3 +29,6 @@ desktop.ini
 # Export cru do design system: o material triado vive em design-system/
 design-system-export/
 design-system-export.zip
+
+# Dados de referência de uso pessoal (bibliotecas licenciadas). Nunca versionar.
+personal/
