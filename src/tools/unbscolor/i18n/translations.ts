@@ -398,6 +398,7 @@ export interface Translations {
   externalColorLabel: string;
   internalColorLabel: string;
   comboManualColor: string;
+  albersProportional: string;
   comboCloseEditor: string;
   resetCombo: string;
   availableCombinations: string;
@@ -1141,6 +1142,7 @@ export const translations: Record<Language, Translations> = {
     externalColorLabel: 'Background',
     internalColorLabel: 'Centre',
     comboManualColor: 'Other colour (code)',
+    albersProportional: 'Area by percentage',
     comboCloseEditor: 'Close',
     resetCombo: 'Reset',
     availableCombinations: 'available combinations',
@@ -1876,6 +1878,7 @@ export const translations: Record<Language, Translations> = {
     externalColorLabel: 'Fundo',
     internalColorLabel: 'Centro',
     comboManualColor: 'Outra cor (código)',
+    albersProportional: 'Área pela porcentagem',
     comboCloseEditor: 'Fechar',
     resetCombo: 'Resetar',
     availableCombinations: 'combinações disponíveis',
@@ -2611,6 +2614,7 @@ export const translations: Record<Language, Translations> = {
     externalColorLabel: 'Fondo',
     internalColorLabel: 'Centro',
     comboManualColor: 'Otro color (código)',
+    albersProportional: 'Área por porcentaje',
     comboCloseEditor: 'Cerrar',
     resetCombo: 'Restablecer',
     availableCombinations: 'combinaciones disponibles',

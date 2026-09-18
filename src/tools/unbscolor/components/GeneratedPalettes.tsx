@@ -41,7 +41,7 @@ import {
     screenCanvas,
     EXPORT_CANVAS
 } from './GeneratedPaletteSheets';
-import { ALBERS_TEMPLATES, AlbersTemplate, comboLayers, maxCardsFor, renderAlbers } from './GeneratedPaletteAlbers';
+import { ALBERS_TEMPLATES, AlbersTemplate, comboLayers, maxCardsFor, proportionalScales, renderAlbers } from './GeneratedPaletteAlbers';
 import { PaletteProportionBar } from './PaletteProportionBar';
 import { useElementWidth } from './PaletteElementWidth';
 import { PaletteColorRow } from './PaletteColorRow';
@@ -244,6 +244,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const [albersBackground, setAlbersBackground] = useState<AlbersBackground>('black');
     const [albersShowHex, setAlbersShowHex] = useState(true);
     const [albersShowPercent, setAlbersShowPercent] = useState(true);
+    /** Área de cada camada pela porcentagem da cor na paleta. */
+    const [albersProportional, setAlbersProportional] = useState(true);
     const [draggedComboIndex, setDraggedComboIndex] = useState<number | null>(null);
     const [comboOrder, setComboOrder] = useState<number[]>([]);
     const [editingComboIndex, setEditingComboIndex] = useState<number | null>(null);
@@ -342,6 +344,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         const grid: { outer: string; middle: string; inner: string; weight: number; score: number }[] = [];
         const validColors = colors.filter(c => isValidHex(c.hex));
         if (validColors.length < 2) return grid;
+        const maxWeight = Math.max(...validColors.map(c => c.weight));
+        const studyBackground = ALBERS_BACKGROUNDS[albersBackground];
 
         // Build all combos: outer ≠ middle, and pick inner ≠ outer/middle that maximizes contrast vs middle
         for (let i = 0; i < validColors.length; i++) {
@@ -366,8 +370,18 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                 }
                 const cMidInner = bestInnerContrast;
                 const cOuterMid = getContrastRatio(outer, middle);
-                const weight = (validColors[i].weight + validColors[j].weight) / 2;
-                const score = cMidInner * 0.6 + cOuterMid * 0.3 + (weight / 100) * 0.1;
+                const wOuter = validColors[i].weight;
+                const wMiddle = validColors[j].weight;
+                const wInner = validColors.find(c => c.hex === bestInner)?.weight ?? 0;
+                const weight = (wOuter + wMiddle) / 2;
+                // Hierarquia da paleta: a cor principal por fora, a secundária no meio, o destaque no centro.
+                const hierarchy = ((wOuter >= wMiddle ? 1 : 0) + (wMiddle >= wInner ? 1 : 0)) / 2;
+                const dominance = maxWeight > 0 ? wOuter / maxWeight : 0;
+                // Contraste em 0..1 (a razão vai de 1 a 21).
+                const contrast = ((cMidInner - 1) / 20) * 0.6 + ((cOuterMid - 1) / 20) * 0.4;
+                // A camada de fora igual ao fundo do estudo some: vai para o fim.
+                const blendsIn = getContrastRatio(outer, studyBackground) < 1.25 ? 0.25 : 1;
+                const score = (hierarchy * 0.35 + dominance * 0.3 + contrast * 0.35) * blendsIn;
                 grid.push({ outer, middle, inner: bestInner, weight, score });
             }
         }
@@ -390,10 +404,19 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         };
         const rand = mulberry32(albersSeed * 2654435761 + 1);
 
-        // Weighted random sort: higher score → higher chance of appearing earlier
-        const decorated = filtered.map(c => ({ c, key: rand() / (0.5 + c.score) }));
-        decorated.sort((a, b) => a.key - b.key);
-        const shuffled = decorated.map(d => d.c);
+        // Sem embaralhar, a ordem é a da nota: hierarquia da paleta primeiro.
+        // Ao embaralhar, a melhor continua abrindo o estudo e o resto sai em sorteio
+        // pesado pela nota (Efraimidis–Spirakis: chave = u^(1/peso), maior primeiro).
+        const ranked = filtered.slice().sort((a, b) => b.score - a.score);
+        const [head, ...tail] = ranked;
+        const decorated = albersSeed === 0
+            ? tail.map(c => ({ c, key: c.score }))
+            : tail.map(c => ({ c, key: Math.pow(rand(), 1 / Math.exp(c.score * 5)) }));
+        decorated.sort((a, b) => b.key - a.key);
+        const shuffled = head ? [head, ...decorated.map(d => d.c)] : [];
+
+        // Na ordem pela nota, a hierarquia manda; só o embaralhado evita vizinhos repetidos.
+        if (albersSeed === 0) return shuffled;
 
         // Greedy interleave: avoid adjacent items sharing the same middle or inner
         const result: typeof shuffled = [];
@@ -408,7 +431,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             result.push(remaining.splice(pickIdx, 1)[0]);
         }
         return result;
-    }, [colors, albersSeed, fullContrastMode]);
+    }, [colors, albersSeed, fullContrastMode, albersBackground]);
 
     /** Palette weight by hex (first occurrence), for labels on combinations. */
     const weightByHex = useMemo(() => {
@@ -713,6 +736,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             showHex: albersShowHex,
             showPercent: albersShowPercent,
             weightOf,
+            proportional: albersProportional,
             forExport
         });
 
@@ -1040,6 +1064,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                             <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
                                 <LegendToggle label={t.gpShowHex} on={albersShowHex} onClick={() => setAlbersShowHex(!albersShowHex)} />
                                 <LegendToggle label={t.gpShowPercent} on={albersShowPercent} onClick={() => setAlbersShowPercent(!albersShowPercent)} />
+                                <LegendToggle label={t.albersProportional} on={albersProportional} onClick={() => setAlbersProportional(!albersProportional)} />
                             </div>
                         </Control>
                         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -1081,6 +1106,10 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                 <div className={`grid gap-x-3 gap-y-5 ${visibleComboCount <= 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-6' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8'}`}>
                     {orderedCombos.slice(0, visibleComboCount).map((combo, idx) => {
                         const layers = comboLayers(combo, 3);
+                        // Lados do meio e do centro: pela porcentagem, ou as proporções fixas de antes.
+                        const [, midScale, innerScale] = albersProportional ? proportionalScales(layers, weightOf) : [1, 0.6, 0.3];
+                        const midPct = `${Math.round(midScale * 1000) / 10}%`;
+                        const innerPct = `${Math.round((innerScale / midScale) * 1000) / 10}%`;
                         const ratio = getContrastRatio(combo.middle, combo.inner);
                         return (
                             <div
@@ -1107,8 +1136,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                     >
                                         {comboLocks[idx] ? <Lock className="h-3.5 w-3.5" aria-hidden="true" /> : <Unlock className="h-3.5 w-3.5" aria-hidden="true" />}
                                     </button>
-                                    <div className="absolute left-1/2 top-[52%] h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-sm" style={{ backgroundColor: combo.middle }}>
-                                        <div className="absolute left-1/2 top-[52%] h-[50%] w-[50%] -translate-x-1/2 -translate-y-1/2 rounded-xs" style={{ backgroundColor: combo.inner }} />
+                                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-sm" style={{ backgroundColor: combo.middle, width: midPct, height: midPct }}>
+                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-xs" style={{ backgroundColor: combo.inner, width: innerPct, height: innerPct }} />
                                     </div>
                                     {customCombos[idx] && (
                                         <div className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-sm bg-card/85 text-foreground" aria-hidden="true"><Pencil className="h-3 w-3" /></div>

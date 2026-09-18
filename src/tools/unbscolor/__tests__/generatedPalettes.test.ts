@@ -16,7 +16,7 @@ import {
     toWeightMap
 } from '../components/GeneratedPaletteLogic';
 import { EXPORT_CANVAS, PRIMARY_SHEET_VIEWS, EXTRA_SHEET_TEMPLATES, SheetOptions, fitText, renderSheet, screenCanvas } from '../components/GeneratedPaletteSheets';
-import { comboWeightsLabel, renderAlbers, ALBERS_TEMPLATES } from '../components/GeneratedPaletteAlbers';
+import { comboWeightsLabel, proportionalScales, renderAlbers, ALBERS_TEMPLATES } from '../components/GeneratedPaletteAlbers';
 
 const c = (hex: string, weight: number, locked = false): PaletteColor => ({ hex, name: hex, weight, locked });
 const sum = (list: PaletteColor[]) => list.reduce((s, x) => s + x.weight, 0);
@@ -200,5 +200,43 @@ describe('interaction squares', () => {
             });
             expect(svg, tpl).toContain('40 · 20%');
         }
+    });
+    it('gives each nested layer an area proportional to its palette weight', () => {
+        const w: Record<string, number> = { '#000000': 60, '#FFFFFF': 30, '#FF0000': 10 };
+        const [s0, s1, s2] = proportionalScales(['#000000', '#FFFFFF', '#FF0000'], (h) => w[h]);
+        const areas = [s0 * s0 - s1 * s1, s1 * s1 - s2 * s2, s2 * s2];
+        const total = areas[0] + areas[1] + areas[2];
+        expect(areas[0] / total).toBeCloseTo(0.6, 6);
+        expect(areas[1] / total).toBeCloseTo(0.3, 6);
+        expect(areas[2] / total).toBeCloseTo(0.1, 6);
+    });
+
+    it('equal weights give equal areas, and every ring stays visible', () => {
+        const [s0, s1, s2] = proportionalScales(['#111111', '#222222', '#333333'], () => 10);
+        expect(s0 * s0 - s1 * s1).toBeCloseTo(s1 * s1 - s2 * s2, 6);
+        expect(s1 * s1 - s2 * s2).toBeCloseTo(s2 * s2, 6);
+        // A dominant outer with tiny inner layers: the centre is lifted, rings keep a band.
+        const tiny = proportionalScales(['#111111', '#222222', '#333333'], (h) => (h === '#111111' ? 98 : 1));
+        expect(tiny[2]).toBeGreaterThanOrEqual(0.2 - 1e-9);
+        expect(tiny[1]).toBeLessThanOrEqual(tiny[0] * 0.9 + 1e-9);
+        expect(tiny[2]).toBeLessThanOrEqual(tiny[1] * 0.9 + 1e-9);
+    });
+
+    it('a colour outside the palette counts as the mean of the others', () => {
+        const w: Record<string, number> = { '#000000': 40, '#FFFFFF': 20 };
+        const [s0, s1, s2] = proportionalScales(['#000000', '#FFFFFF', '#123456'], (h) => w[h]);
+        const areas = [s0 * s0 - s1 * s1, s1 * s1 - s2 * s2, s2 * s2];
+        expect(areas[0] / areas[2]).toBeCloseTo(40 / 30, 6);
+    });
+
+    it('proportional squares draw the middle and centre smaller for lighter weights', () => {
+        const w: Record<string, number> = { '#000000': 70, '#FFFFFF': 20, '#FF0000': 10 };
+        const opts = { ...EXPORT_CANVAS, background: '#E5E5E5', layerCount: 3 as const, showHex: false, showPercent: false, weightOf: (h: string) => w[h], forExport: false };
+        const sizes = (svg: string) => Array.from(svg.matchAll(/<rect x="[^"]+" y="[^"]+" width="([0-9.]+)"/g)).map((m) => Number(m[1]));
+        const fixed = sizes(renderAlbers('squares', [{ outer: '#000000', middle: '#FFFFFF', inner: '#FF0000' }], opts));
+        const prop = sizes(renderAlbers('squares', [{ outer: '#000000', middle: '#FFFFFF', inner: '#FF0000' }], { ...opts, proportional: true }));
+        expect(prop[0]).toBeCloseTo(fixed[0], 1);
+        expect(prop[1] / prop[0]).toBeCloseTo(Math.sqrt(0.3), 2);
+        expect(prop[2] / prop[0]).toBeCloseTo(Math.sqrt(0.1), 2);
     });
 });
