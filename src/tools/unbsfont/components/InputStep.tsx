@@ -1,14 +1,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ClipboardPaste, Combine, Lock, LockOpen, Plus, Split, Trash2, Upload, X } from 'lucide-react';
+import { ClipboardPaste, Combine, FileDown, Lock, LockOpen, Plus, Split, Trash2, Upload, X } from 'lucide-react';
 import type { FontStyle, Glyph, Project } from '../lib/types';
 import {
-  detectBaselines, measureGuides, mergeWithNext, pastedGlyph, readSheet, setRowBaseline, sheetGroups, sheetToGlyphs,
+  detectBaselines, measureGuides, mergeWithNext, pastedGlyph, setRowBaseline, sheetGroups, sheetToGlyphs,
   sourceCapHeight, splitGroup, type Sheet, type SheetGuides,
 } from '../lib/sheet';
 import { DEFAULT_SEQUENCE, PRESETS, sequenceChars } from '../lib/charset';
 import { toPathData } from '../lib/geometry';
 import { advanceOf } from '../lib/outline';
-import { Card, Field, IconButton, Metric, Sheet as Dialog, Switch } from './ui';
+import { makeSpec, type Paper } from '../lib/cartela';
+import { isPdfFile, readPdfUpload, readSvgUpload, type Upload as UploadResult, type UploadContext } from '../lib/upload';
+import { Card, Field, IconButton, Metric, Sheet as Dialog, Spinner, Switch } from './ui';
+import { CartelaDownload, CartelaReview } from './Cartela';
 import { GlyphStage, GlyphThumb } from './GlyphArt';
 import { NumberInput } from './Sidebar';
 import { cx } from './cx';
@@ -43,6 +46,9 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
   const [newChar, setNewChar] = useState('');
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [cartela, setCartela] = useState<Extract<UploadResult, { kind: 'cartela' }> | null>(null);
+  const [reading, setReading] = useState(false);
   const sheetFile = useRef<HTMLInputElement>(null);
   const glyphFile = useRef<HTMLInputElement>(null);
 
@@ -62,21 +68,49 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
 
   /* ------------------------------------------------ entrada de SVG */
 
+  // A cartela sem descritor é refeita com a ordem de caracteres e as métricas de agora.
+  const uploadContext = useCallback((): UploadContext => ({
+    fallback: (paper: Paper) => makeSpec({ chars, metrics: m, paper }),
+    keep: style.glyphs,
+  }), [chars, m, style.glyphs]);
+
+  /** Decide o caminho: cartela (vai para a revisão) ou folha livre (ordem de leitura). */
+  const takeUpload = useCallback((u: UploadResult) => {
+    if (u.kind === 'cartela') {
+      setCartela(u);
+      setSelectedChar(null);
+      return;
+    }
+    const s = u.sheet;
+    const count = sheetGroups(s).length;
+    if (!count) { notify(`Nenhuma forma preenchida no ${u.format.toUpperCase()}.`, 'error'); return; }
+    setSheet(s);
+    setBaselineEdits({});
+    setSelectedGroup(null);
+    setSelectedChar(null);
+    const warn = s.strokeOnly ? ` ${s.strokeOnly} formas só com traço foram ignoradas: converta traços em contornos.` : '';
+    notify(`Folha livre: ${count} glifos encontrados, lidos em ordem de leitura.${warn}`, s.strokeOnly ? 'info' : 'ok');
+  }, [notify]);
+
   const loadSheet = useCallback((text: string) => {
     try {
-      const s = readSheet(text);
-      const count = sheetGroups(s).length;
-      if (!count) { notify('Nenhuma forma preenchida no SVG.', 'error'); return; }
-      setSheet(s);
-      setBaselineEdits({});
-      setSelectedGroup(null);
-      setSelectedChar(null);
-      const warn = s.strokeOnly ? ` ${s.strokeOnly} formas só com traço foram ignoradas: converta traços em contornos.` : '';
-      notify(`${count} glifos encontrados na folha.${warn}`, s.strokeOnly ? 'info' : 'ok');
+      takeUpload(readSvgUpload(text, uploadContext()));
     } catch (e) {
       notify(e instanceof Error ? e.message : 'Não foi possível ler o SVG.', 'error');
     }
-  }, [notify]);
+  }, [notify, takeUpload, uploadContext]);
+
+  const loadPdf = useCallback(async (file: File) => {
+    setReading(true);
+    try {
+      takeUpload(await readPdfUpload(await file.arrayBuffer(), uploadContext()));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      notify(/vetorial|forma|grande/.test(msg) ? msg : 'Não foi possível ler o PDF. Ele pode estar protegido ou corrompido.', 'error');
+    } finally {
+      setReading(false);
+    }
+  }, [notify, takeUpload, uploadContext]);
 
   const pasteIntoGlyph = useCallback((char: string, text: string) => {
     try {
@@ -117,6 +151,7 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
 
   const readFile = (file: File | undefined, into: 'sheet' | 'glyph') => {
     if (!file) return;
+    if (into === 'sheet' && isPdfFile(file)) { void loadPdf(file); return; }
     file.text().then(text => {
       if (into === 'sheet') loadSheet(text);
       else if (selectedChar) pasteIntoGlyph(selectedChar, text);
@@ -166,14 +201,17 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
 
   return (
     <div className="flex flex-col gap-5">
-      <input ref={sheetFile} type="file" accept=".svg,image/svg+xml" className="hidden" onChange={e => { readFile(e.target.files?.[0], 'sheet'); e.target.value = ''; }} />
+      <input ref={sheetFile} type="file" accept=".svg,image/svg+xml,.pdf,application/pdf" className="hidden" onChange={e => { readFile(e.target.files?.[0], 'sheet'); e.target.value = ''; }} />
       <input ref={glyphFile} type="file" accept=".svg,image/svg+xml" className="hidden" onChange={e => { readFile(e.target.files?.[0], 'glyph'); e.target.value = ''; }} />
 
       <Card
-        label="Folha SVG"
+        label="Folha ou cartela"
         actions={
           <>
-            <IconButton label="Enviar folha SVG" onClick={() => sheetFile.current?.click()}><Upload aria-hidden="true" /></IconButton>
+            <IconButton label="Baixar cartela" onClick={() => setDownloadOpen(true)}><FileDown aria-hidden="true" /></IconButton>
+            <IconButton label="Enviar folha ou cartela (SVG ou PDF)" disabled={reading} aria-busy={reading} onClick={() => sheetFile.current?.click()}>
+              {reading ? <Spinner /> : <Upload aria-hidden="true" />}
+            </IconButton>
             <IconButton label="Colar folha SVG" onClick={() => { setSelectedChar(null); readClipboard(); }}><ClipboardPaste aria-hidden="true" /></IconButton>
             {sheet && <IconButton label="Descartar folha" onClick={() => setSheet(null)}><X aria-hidden="true" /></IconButton>}
           </>
@@ -182,16 +220,29 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
         onDrop={e => { e.preventDefault(); readFile(e.dataTransfer.files?.[0], 'sheet'); }}
       >
         {!detected ? (
-          <button
-            type="button"
-            onClick={() => sheetFile.current?.click()}
-            className="surface-inset flex flex-col items-center justify-center gap-2 text-center px-6 py-10 hover:bg-fill-2 transition-colors duration-fast ease-out"
-          >
-            <span className="text-[16px] text-foreground">Um SVG com todos os caracteres desenhados</span>
-            <span className="text-[14px] text-muted-foreground max-w-[46ch]">
-              Solte o arquivo aqui, clique para escolher ou cole com Ctrl+V. Os glifos são lidos em ordem de leitura, linha por linha, e o desenho entra na fonte sem nenhuma alteração.
-            </span>
-          </button>
+          <>
+            <button
+              type="button"
+              onClick={() => sheetFile.current?.click()}
+              disabled={reading}
+              aria-busy={reading}
+              className="surface-inset flex flex-col items-center justify-center gap-2 text-center px-6 py-10 hover:bg-fill-2 transition-colors duration-fast ease-out"
+            >
+              <span className="text-[16px] text-foreground">{reading ? 'Lendo o PDF…' : 'A cartela preenchida ou uma folha com os caracteres'}</span>
+              <span className="text-[14px] text-muted-foreground max-w-[50ch]">
+                SVG ou PDF vetorial. Solte o arquivo aqui, clique para escolher ou cole um SVG com Ctrl+V. Na cartela, cada forma vai para o caractere da sua célula; numa folha livre, os glifos são lidos em ordem de leitura. O desenho entra na fonte sem nenhuma alteração.
+              </span>
+            </button>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+              <p className="text-[14px] text-muted-foreground max-w-[56ch]">
+                Sem folha pronta? Baixe a cartela com os {new Set(chars).size} caracteres da ordem, desenhe cada glifo na sua célula e suba de volta.
+              </p>
+              <button type="button" className="ctl ctl-outline shrink-0 self-start sm:self-auto" onClick={() => setDownloadOpen(true)}>
+                <FileDown className="w-4 h-4" aria-hidden="true" />
+                Baixar cartela
+              </button>
+            </div>
+          </>
         ) : (
           <>
             <SheetView sheet={detected} chars={chars} selected={selectedGroup} onSelect={id => setSelectedGroup(id === selectedGroup ? null : id)} />
@@ -341,6 +392,26 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
       >
         <textarea className="field field-mono text-[12px] w-full" rows={10} value={pasteText} onChange={e => setPasteText(e.target.value)} placeholder="<svg …>…</svg>" aria-label="SVG" />
       </Dialog>
+
+      <CartelaDownload
+        open={downloadOpen}
+        onClose={() => setDownloadOpen(false)}
+        project={project}
+        style={style}
+        sequence={sequence}
+        onSequence={setSequence}
+        notify={notify}
+      />
+      <CartelaReview
+        upload={cartela}
+        onClose={() => setCartela(null)}
+        style={style}
+        m={m}
+        onApply={(glyphs, srcCap) => {
+          onAddGlyphs(glyphs, srcCap);
+          notify(`${glyphs.length} glifos da cartela em ${style.name}, com espaço e kerning automáticos.`, 'ok');
+        }}
+      />
     </div>
   );
 };

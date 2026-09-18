@@ -12,6 +12,15 @@ import { mapCmds, splitContours, type Pt } from './geometry';
 export interface SvgShape {
   contours: Cmd[][];
   fillRule: 'nonzero' | 'evenodd';
+  /** Cor de preenchimento como veio (minúsculas), para reconhecer as peças da cartela. */
+  fill?: string;
+  /** `id` do próprio elemento ou do ancestral mais próximo que tenha um. */
+  tag?: string;
+}
+
+export interface SvgReadOptions {
+  /** Pula o elemento (e o que houver dentro). Recebe o estilo já herdado. */
+  skip?: (el: Element, style: { fill?: string; stroke?: string; tag?: string }) => boolean;
 }
 
 export interface SvgReadResult {
@@ -382,7 +391,7 @@ function isPainted(style: StyleMap): boolean {
 /* ------------------------------------------------------------ leitura */
 
 /** Lê todas as formas preenchidas de um SVG, já no espaço do documento. */
-export function readSvgShapes(text: string): SvgReadResult {
+export function readSvgShapes(text: string, options: SvgReadOptions = {}): SvgReadResult {
   const doc = parseSvgDocument(text);
   const classes = readClassStyles(doc);
   const shapes: SvgShape[] = [];
@@ -401,6 +410,9 @@ export function readSvgShapes(text: string): SvgReadResult {
     if (own.display === 'none' || own.visibility === 'hidden' || (own.opacity !== undefined && parseFloat(own.opacity) === 0)) return;
     const style: StyleMap = { ...inherited };
     for (const k of ['fill', 'fill-rule', 'fill-opacity', 'stroke']) if (own[k] !== undefined) style[k] = own[k];
+    const id = el.getAttribute('id');
+    if (id) style['@tag'] = id;
+    if (options.skip?.(el, { fill: style.fill, stroke: style.stroke, tag: style['@tag'] })) return;
     let m = multiply(matrix, parseTransform(el.getAttribute('transform')));
 
     if (tag === 'use') {
@@ -426,7 +438,7 @@ export function readSvgShapes(text: string): SvgReadResult {
     }
     const contours = splitContours(applyMatrix(cmds, m));
     if (!contours.length) return;
-    shapes.push({ contours, fillRule: style['fill-rule'] === 'evenodd' ? 'evenodd' : 'nonzero' });
+    shapes.push({ contours, fillRule: style['fill-rule'] === 'evenodd' ? 'evenodd' : 'nonzero', fill: style.fill ?? '#000', tag: style['@tag'] });
   };
 
   visit(doc.documentElement, IDENTITY, {}, 0);

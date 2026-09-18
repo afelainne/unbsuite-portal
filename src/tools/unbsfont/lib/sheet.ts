@@ -213,6 +213,11 @@ export function groupComponents(input: Component[]): SheetRow[] {
 
 export function readSheet(svgText: string): Sheet {
   const { shapes, strokeOnly } = readSvgShapes(svgText);
+  return sheetFromShapes(shapes, strokeOnly);
+}
+
+/** A mesma leitura a partir de formas já extraídas (de um SVG ou das páginas de um PDF). */
+export function sheetFromShapes(shapes: SvgShape[], strokeOnly = 0): Sheet {
   const rows = groupComponents(shapesToComponents(shapes));
   let box: Box = { x0: 0, y0: 0, x1: 1, y1: 1 };
   const all = rows.flatMap(r => r.groups);
