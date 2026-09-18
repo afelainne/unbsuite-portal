@@ -977,11 +977,6 @@ const App: React.FC = () => {
                         <h1 className="text-[30px] md:text-[40px] font-normal leading-[1.1] tracking-[-0.015em] text-foreground">
                             {sectionTitle}
                         </h1>
-                        <nav aria-label="Breadcrumb" className="flex items-center gap-2.5 text-[14px] text-muted-foreground">
-                            <span>UNBSCOLOR</span>
-                            <span className="text-separator-strong" aria-hidden="true">/</span>
-                            <span className="text-foreground/70">{sectionTitle}</span>
-                        </nav>
                     </div>
 
                     <div className="flex items-center gap-2.5 flex-wrap">

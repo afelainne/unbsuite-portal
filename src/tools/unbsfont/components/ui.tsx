@@ -232,7 +232,7 @@ export const SectionHeading: React.FC<{ title: React.ReactNode; hint?: React.Rea
 
 interface TitleRowProps {
   title: React.ReactNode;
-  /** Último passo do breadcrumb, depois de "UNBSFONT". */
+  /** Contexto da tela (não é mais exibido; o título já diz onde se está). */
   crumb?: React.ReactNode;
   actions?: React.ReactNode;
   /** Abas em texto sob o título. */
@@ -240,23 +240,14 @@ interface TitleRowProps {
   className?: string;
 }
 
-/** Fila de título: 40px Regular, breadcrumb ao lado, botões quadrados à direita. */
-export const TitleRow: React.FC<TitleRowProps> = ({ title, crumb, actions, tabs, className }) => (
+/** Fila de título: 40px Regular e botões quadrados à direita. */
+export const TitleRow: React.FC<TitleRowProps> = ({ title, actions, tabs, className }) => (
   <div className={cx('w-full', className)}>
     <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
       <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 min-w-0">
         <h1 className="text-[30px] md:text-[40px] font-normal leading-[1.1] tracking-[-0.015em] text-foreground truncate max-w-full">
           {title}
         </h1>
-        <nav aria-label="Breadcrumb" className="flex items-center gap-2.5 text-[14px] text-muted-foreground min-w-0">
-          <span>UNBSFONT</span>
-          {crumb && (
-            <>
-              <span className="text-separator-strong" aria-hidden="true">/</span>
-              <span className="text-foreground/70 truncate">{crumb}</span>
-            </>
-          )}
-        </nav>
       </div>
       {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
     </div>

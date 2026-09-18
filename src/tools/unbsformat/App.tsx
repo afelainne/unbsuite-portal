@@ -142,7 +142,6 @@ const App: React.FC = () => {
     reader.readAsText(file);
   };
 
-  const info = methodInfo(config.method);
 
   return (
     <div className="flex-1 min-h-0 w-full overflow-y-auto lg:overflow-hidden flex flex-col bg-background text-foreground">
@@ -150,15 +149,6 @@ const App: React.FC = () => {
       <div className="flex items-center justify-between gap-x-6 gap-y-3 flex-wrap px-4 sm:px-6 lg:px-10 pt-2 pb-5 shrink-0">
         <div className="flex items-baseline gap-x-5 gap-y-1 flex-wrap min-w-0">
           <h1 className="text-[28px] sm:text-[40px] leading-[1.1] tracking-[-0.015em] font-normal">Formato e grade</h1>
-          <nav aria-label="Caminho" className="text-subhead text-muted-foreground min-w-0">
-            <ol className="flex items-center gap-1.5 flex-wrap">
-              <li>UNBSFORMAT</li>
-              <li aria-hidden="true">/</li>
-              <li className="truncate max-w-[180px]" title={config.formatName}>{config.formatName}</li>
-              <li aria-hidden="true">/</li>
-              <li className="text-foreground" aria-current="page">{config.method === 'livre' ? `${columnCountOf(config)} × ${config.rows}` : info.name}</li>
-            </ol>
-          </nav>
         </div>
         <div className="flex items-center gap-2">
           <input

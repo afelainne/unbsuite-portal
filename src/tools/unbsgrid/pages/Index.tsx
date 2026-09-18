@@ -907,13 +907,6 @@ const Index = () => {
 
   const compareOnCanvas = compareCanvas && compareView !== null;
 
-  const fileSummary = parsedSVG ? (
-    <>
-      {plural(parsedSVG.components.length, t.app.componentOne, t.app.componentOther)}
-      {parsedSVG.segments.length > 0 && ` · ${fill(t.app.pointsSuffix, { n: parsedSVG.segments.length })}`}
-      {originalLongestSide ? ` · ${Math.round(originalLongestSide)} px` : ""}
-    </>
-  ) : null;
 
   const inputPanel = (
     <SvgInputPanel
@@ -1572,13 +1565,6 @@ const Index = () => {
           >
             {fileName ?? "UNBSGRID"}
           </h1>
-          <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2.5 text-subhead text-muted-foreground">
-            <span className="shrink-0">UNBSGRID</span>
-            <span className="text-separator-strong" aria-hidden="true">/</span>
-            <span className="truncate text-foreground/70 tabular-nums">
-              {parsedSVG ? fileSummary : t.app.noSvgLoaded}
-            </span>
-          </nav>
         </div>
 
         <div className="flex w-full md:w-auto flex-wrap items-center justify-between gap-x-6 gap-y-3">
