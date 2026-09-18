@@ -26,10 +26,6 @@ export interface Translations {
   hsbHsv: string;
   cieLabHighPrec: string;
   cmykProcess: string;
-  refBridgeC: string;
-  refBridgeU: string;
-  refSolidC: string;
-  refSolidU: string;
   mixedFormatSyntax: string;
   changesAppliedRealtime: string;
   
@@ -348,20 +344,9 @@ export interface Translations {
   slotLabel: string;
   colorCardAria: string;
   baseBadge: string;
-  // Library Manager
-  selectLibrary: string;
-  standardLibrary: string;
-  uploadedLibraries: string;
-  uploadAcb: string;
+  // Status
   loading: string;
-  noValidColors: string;
-  parseFailed: string;
-  cannotExportStandard: string;
   warning: string;
-  allBlackWarning: string;
-  copyJsonCode: string;
-  deleteLibrary: string;
-  verifyColorsNote: string;
 
   // GeneratedPalettes UI
   addColorPlaceholder: string;
@@ -508,7 +493,6 @@ export interface Translations {
 
   // Shell & navigation
   sections: string;
-  referenceLibraries: string;
   referencePlaceholder: string;
 
   // Shared actions & short labels
@@ -519,7 +503,6 @@ export interface Translations {
   totalLabel: string;
   refShort: string;
   downloadAll: string;
-  customSuffix: string;
 
   // SVG import
   pasteSvgCode: string;
@@ -719,6 +702,42 @@ export interface Translations {
   nameModCooler: string;
   nameModVivid: string;
   nameModMuted: string;
+
+  // Reference libraries
+  librariesTitle: string;
+  librariesHint: string;
+  librariesOpen: string;
+  librariesImported: string;
+  librariesNoneImported: string;
+  libraryImport: string;
+  libraryImportHint: string;
+  libraryImporting: string;
+  libraryImported: string;
+  libraryReplaced: string;
+  libraryRemoved: string;
+  libraryNotPersisted: string;
+  libraryMemoryOnly: string;
+  libraryExport: string;
+  libraryRemove: string;
+  libraryUseInSearch: string;
+  libraryColorsUnit: string;
+  libraryBooksUnit: string;
+  libraryLicence: string;
+  librariesNoneActive: string;
+  manageLibraries: string;
+  showReferenceCodes: string;
+  libErrTooLarge: string;
+  libErrUnsupported: string;
+  libErrBadJson: string;
+  libErrBadFormat: string;
+  libErrBadVersion: string;
+  libErrNoBooks: string;
+  libErrBadBook: string;
+  libErrBadColor: string;
+  libErrNoColors: string;
+  libErrTooManyColors: string;
+  libErrBadAcb: string;
+  libErrBadAse: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -748,10 +767,6 @@ export const translations: Record<Language, Translations> = {
     hsbHsv: 'HSB / HSV',
     cieLabHighPrec: 'CIE Lab (high prec)',
     cmykProcess: 'CMYK (process)',
-    refBridgeC: 'Process CP (coated)',
-    refBridgeU: 'Process UP (uncoated)',
-    refSolidC: 'Solid C (coated)',
-    refSolidU: 'Solid U (uncoated)',
     mixedFormatSyntax: 'Mixed format syntax',
     changesAppliedRealtime: 'Changes are applied in real-time to active sessions.',
     
@@ -1068,20 +1083,9 @@ export const translations: Record<Language, Translations> = {
     slotLabel: 'Slot',
     colorCardAria: 'color card',
     baseBadge: 'Base',
-    // Library Manager
-    selectLibrary: 'Select library',
-    standardLibrary: 'System A (standard)',
-    uploadedLibraries: 'My uploaded libraries',
-    uploadAcb: 'Upload .ACB',
+    // Status
     loading: 'Loading...',
-    noValidColors: 'No valid colors found in file.',
-    parseFailed: 'Failed to parse .acb file',
-    cannotExportStandard: 'Cannot export standard library code.',
     warning: 'Warning:',
-    allBlackWarning: 'All colors parsed as black (#000000). The file format might be incompatible. Please remove this library and try again.',
-    copyJsonCode: 'Copy JSON code',
-    deleteLibrary: 'Delete library',
-    verifyColorsNote: 'Please verify colors are correct (not all black) before exporting.',
 
     // GeneratedPalettes UI
     addColorPlaceholder: 'Add color (e.g., #FF5500)',
@@ -1223,7 +1227,6 @@ export const translations: Record<Language, Translations> = {
 
     // Shell & navigation
     sections: 'Sections',
-    referenceLibraries: 'Reference libraries',
     referencePlaceholder: 'Reference',
 
     // Shared actions & short labels
@@ -1234,7 +1237,6 @@ export const translations: Record<Language, Translations> = {
     totalLabel: 'Total',
     refShort: 'Ref',
     downloadAll: 'All',
-    customSuffix: 'custom',
 
     // SVG import
     pasteSvgCode: 'Paste SVG code',
@@ -1371,7 +1373,7 @@ export const translations: Record<Language, Translations> = {
     deltaVisible: 'Visible difference',
     deltaDifferent: 'Another color',
     rankedAlternatives: 'Ranked alternatives',
-    alternativesHint: 'One row per reference, with each finish and its distance.',
+    alternativesHint: 'One row per reference, closest first, with its distance to your colour.',
     noReferenceFound: 'No reference within reach with these finishes.',
     variantsLabel: 'Finishes',
     spotInkTip: 'A special ink gets closer here than four-color process.',
@@ -1434,6 +1436,42 @@ export const translations: Record<Language, Translations> = {
     nameModCooler: 'cool',
     nameModVivid: 'vivid',
     nameModMuted: 'muted',
+
+    // Reference libraries
+    librariesTitle: 'Libraries',
+    librariesHint: 'The references the search compares against. Imported files stay on this device.',
+    librariesOpen: 'Open palettes',
+    librariesImported: 'Imported',
+    librariesNoneImported: 'No library imported yet.',
+    libraryImport: 'Import library',
+    libraryImportHint: 'Accepts .acb, .ase and UNBS JSON. The file is read in your browser and never uploaded.',
+    libraryImporting: 'Reading file…',
+    libraryImported: 'Library imported',
+    libraryReplaced: 'Library updated',
+    libraryRemoved: 'Library removed',
+    libraryNotPersisted: 'This browser would not store it: it lasts until you reload the page.',
+    libraryMemoryOnly: 'Storage is off in this browser: imported libraries last until you reload.',
+    libraryExport: 'Export library',
+    libraryRemove: 'Remove library',
+    libraryUseInSearch: 'Use in search',
+    libraryColorsUnit: 'colors',
+    libraryBooksUnit: 'books',
+    libraryLicence: 'Licence',
+    librariesNoneActive: 'No library is on. Turn one on in Settings, under Libraries.',
+    manageLibraries: 'Manage libraries',
+    showReferenceCodes: 'Reference codes on cards and palettes',
+    libErrTooLarge: 'The file is larger than 50 MB.',
+    libErrUnsupported: 'Unsupported file. Use .acb, .ase or UNBS JSON.',
+    libErrBadJson: 'The file is not valid JSON.',
+    libErrBadFormat: 'This JSON is not a UNBS reference library (format "unbs-reference-library").',
+    libErrBadVersion: 'This library version is not supported.',
+    libErrNoBooks: 'The library has no books.',
+    libErrBadBook: 'A book in the file is malformed',
+    libErrBadColor: 'A color has no code or no valid value',
+    libErrNoColors: 'No colors found in the file.',
+    libErrTooManyColors: 'Too many colors: the limit is 20,000 per book and 100,000 per library.',
+    libErrBadAcb: 'Could not read this .acb file.',
+    libErrBadAse: 'Could not read this .ase file.'
   },
   
   pt: {
@@ -1462,10 +1500,6 @@ export const translations: Record<Language, Translations> = {
     hsbHsv: 'HSB / HSV',
     cieLabHighPrec: 'CIE Lab (alta prec)',
     cmykProcess: 'CMYK (processo)',
-    refBridgeC: 'Escala CP (revestido)',
-    refBridgeU: 'Escala UP (não revestido)',
-    refSolidC: 'Sólida C (revestido)',
-    refSolidU: 'Sólida U (não revestido)',
     mixedFormatSyntax: 'Sintaxe de formato misto',
     changesAppliedRealtime: 'As alterações são aplicadas em tempo real nas sessões ativas.',
     
@@ -1782,20 +1816,9 @@ export const translations: Record<Language, Translations> = {
     slotLabel: 'Slot',
     colorCardAria: 'cartão de cor',
     baseBadge: 'Base',
-    // Library Manager
-    selectLibrary: 'Selecionar biblioteca',
-    standardLibrary: 'Sistema A (padrão)',
-    uploadedLibraries: 'Minhas bibliotecas enviadas',
-    uploadAcb: 'Enviar .ACB',
+    // Status
     loading: 'Carregando...',
-    noValidColors: 'Nenhuma cor válida encontrada no arquivo.',
-    parseFailed: 'Falha ao analisar o arquivo .acb',
-    cannotExportStandard: 'Não é possível exportar a biblioteca padrão.',
     warning: 'Aviso:',
-    allBlackWarning: 'Todas as cores foram lidas como preto (#000000). O arquivo pode ser incompatível. Remova esta biblioteca e tente novamente.',
-    copyJsonCode: 'Copiar código JSON',
-    deleteLibrary: 'Excluir biblioteca',
-    verifyColorsNote: 'Verifique se as cores estão corretas (não todas pretas) antes de exportar.',
 
     // GeneratedPalettes UI
     addColorPlaceholder: 'Adicionar cor (ex: #FF5500)',
@@ -1937,7 +1960,6 @@ export const translations: Record<Language, Translations> = {
 
     // Shell & navigation
     sections: 'Seções',
-    referenceLibraries: 'Bibliotecas de referência',
     referencePlaceholder: 'Referência',
 
     // Shared actions & short labels
@@ -1948,7 +1970,6 @@ export const translations: Record<Language, Translations> = {
     totalLabel: 'Total',
     refShort: 'Ref',
     downloadAll: 'Todos',
-    customSuffix: 'personalizada',
 
     // SVG import
     pasteSvgCode: 'Colar código SVG',
@@ -2085,7 +2106,7 @@ export const translations: Record<Language, Translations> = {
     deltaVisible: 'Diferença visível',
     deltaDifferent: 'Outra cor',
     rankedAlternatives: 'Alternativas por proximidade',
-    alternativesHint: 'Uma linha por referência, com cada acabamento e sua distância.',
+    alternativesHint: 'Uma linha por referência, da mais próxima para a mais distante.',
     noReferenceFound: 'Nenhuma referência ao alcance com esses acabamentos.',
     variantsLabel: 'Acabamentos',
     spotInkTip: 'Aqui uma tinta especial chega mais perto que a escala.',
@@ -2148,6 +2169,42 @@ export const translations: Record<Language, Translations> = {
     nameModCooler: 'frio',
     nameModVivid: 'vivo',
     nameModMuted: 'suave',
+
+    // Reference libraries
+    librariesTitle: 'Bibliotecas',
+    librariesHint: 'As referências com que a busca compara. Arquivos importados ficam neste aparelho.',
+    librariesOpen: 'Paletas abertas',
+    librariesImported: 'Importadas',
+    librariesNoneImported: 'Nenhuma biblioteca importada ainda.',
+    libraryImport: 'Importar biblioteca',
+    libraryImportHint: 'Aceita .acb, .ase e UNBS JSON. O arquivo é lido no seu navegador e nunca é enviado.',
+    libraryImporting: 'Lendo arquivo…',
+    libraryImported: 'Biblioteca importada',
+    libraryReplaced: 'Biblioteca atualizada',
+    libraryRemoved: 'Biblioteca removida',
+    libraryNotPersisted: 'Este navegador não permitiu guardar: ela dura até você recarregar a página.',
+    libraryMemoryOnly: 'O armazenamento está desligado neste navegador: bibliotecas importadas duram até recarregar.',
+    libraryExport: 'Exportar biblioteca',
+    libraryRemove: 'Remover biblioteca',
+    libraryUseInSearch: 'Usar na busca',
+    libraryColorsUnit: 'cores',
+    libraryBooksUnit: 'livros',
+    libraryLicence: 'Licença',
+    librariesNoneActive: 'Nenhuma biblioteca ligada. Ligue uma em Ajustes, em Bibliotecas.',
+    manageLibraries: 'Gerenciar bibliotecas',
+    showReferenceCodes: 'Códigos de referência em cartões e paletas',
+    libErrTooLarge: 'O arquivo passa de 50 MB.',
+    libErrUnsupported: 'Arquivo não suportado. Use .acb, .ase ou UNBS JSON.',
+    libErrBadJson: 'O arquivo não é um JSON válido.',
+    libErrBadFormat: 'Este JSON não é uma biblioteca de referências UNBS (formato "unbs-reference-library").',
+    libErrBadVersion: 'Esta versão de biblioteca não é suportada.',
+    libErrNoBooks: 'A biblioteca não tem livros.',
+    libErrBadBook: 'Um livro do arquivo está malformado',
+    libErrBadColor: 'Uma cor está sem código ou sem valor válido',
+    libErrNoColors: 'Nenhuma cor encontrada no arquivo.',
+    libErrTooManyColors: 'Cores demais: o limite é 20.000 por livro e 100.000 por biblioteca.',
+    libErrBadAcb: 'Não foi possível ler este arquivo .acb.',
+    libErrBadAse: 'Não foi possível ler este arquivo .ase.'
   },
   
   es: {
@@ -2176,10 +2233,6 @@ export const translations: Record<Language, Translations> = {
     hsbHsv: 'HSB / HSV',
     cieLabHighPrec: 'CIE Lab (alta prec)',
     cmykProcess: 'CMYK (proceso)',
-    refBridgeC: 'Cuatricromía CP (estucado)',
-    refBridgeU: 'Cuatricromía UP (no estucado)',
-    refSolidC: 'Sólida C (estucado)',
-    refSolidU: 'Sólida U (no estucado)',
     mixedFormatSyntax: 'Sintaxis de formato mixto',
     changesAppliedRealtime: 'Los cambios se aplican en tiempo real a las sesiones activas.',
     
@@ -2496,20 +2549,9 @@ export const translations: Record<Language, Translations> = {
     slotLabel: 'Slot',
     colorCardAria: 'tarjeta de color',
     baseBadge: 'Base',
-    // Library Manager
-    selectLibrary: 'Seleccionar biblioteca',
-    standardLibrary: 'Sistema A (estándar)',
-    uploadedLibraries: 'Mis bibliotecas cargadas',
-    uploadAcb: 'Cargar .ACB',
+    // Status
     loading: 'Cargando...',
-    noValidColors: 'No se encontraron colores válidos en el archivo.',
-    parseFailed: 'Error al analizar el archivo .acb',
-    cannotExportStandard: 'No se puede exportar la biblioteca estándar.',
     warning: 'Advertencia:',
-    allBlackWarning: 'Todos los colores se leyeron como negro (#000000). El archivo puede ser incompatible. Elimina esta biblioteca e inténtalo de nuevo.',
-    copyJsonCode: 'Copiar código JSON',
-    deleteLibrary: 'Eliminar biblioteca',
-    verifyColorsNote: 'Comprueba que los colores sean correctos (no todos negros) antes de exportar.',
 
     // GeneratedPalettes UI
     addColorPlaceholder: 'Añade un color (ej: #FF5500)',
@@ -2651,7 +2693,6 @@ export const translations: Record<Language, Translations> = {
 
     // Shell & navigation
     sections: 'Secciones',
-    referenceLibraries: 'Bibliotecas de referencia',
     referencePlaceholder: 'Referencia',
 
     // Shared actions & short labels
@@ -2662,7 +2703,6 @@ export const translations: Record<Language, Translations> = {
     totalLabel: 'Total',
     refShort: 'Ref',
     downloadAll: 'Todas',
-    customSuffix: 'personalizada',
 
     // SVG import
     pasteSvgCode: 'Pegar código SVG',
@@ -2799,7 +2839,7 @@ export const translations: Record<Language, Translations> = {
     deltaVisible: 'Diferencia visible',
     deltaDifferent: 'Otro color',
     rankedAlternatives: 'Alternativas por cercanía',
-    alternativesHint: 'Una fila por referencia, con cada acabado y su distancia.',
+    alternativesHint: 'Una fila por referencia, de la más cercana a la más lejana.',
     noReferenceFound: 'Ninguna referencia al alcance con estos acabados.',
     variantsLabel: 'Acabados',
     spotInkTip: 'Aquí una tinta especial llega más cerca que la cuatricromía.',
@@ -2862,6 +2902,42 @@ export const translations: Record<Language, Translations> = {
     nameModCooler: 'frío',
     nameModVivid: 'vivo',
     nameModMuted: 'apagado',
+
+    // Reference libraries
+    librariesTitle: 'Bibliotecas',
+    librariesHint: 'Las referencias con las que compara la búsqueda. Los archivos importados se quedan en este dispositivo.',
+    librariesOpen: 'Paletas abiertas',
+    librariesImported: 'Importadas',
+    librariesNoneImported: 'Todavía no hay bibliotecas importadas.',
+    libraryImport: 'Importar biblioteca',
+    libraryImportHint: 'Acepta .acb, .ase y UNBS JSON. El archivo se lee en tu navegador y nunca se envía.',
+    libraryImporting: 'Leyendo archivo…',
+    libraryImported: 'Biblioteca importada',
+    libraryReplaced: 'Biblioteca actualizada',
+    libraryRemoved: 'Biblioteca quitada',
+    libraryNotPersisted: 'Este navegador no permitió guardarla: dura hasta que recargues la página.',
+    libraryMemoryOnly: 'El almacenamiento está desactivado en este navegador: las bibliotecas importadas duran hasta recargar.',
+    libraryExport: 'Exportar biblioteca',
+    libraryRemove: 'Quitar biblioteca',
+    libraryUseInSearch: 'Usar en la búsqueda',
+    libraryColorsUnit: 'colores',
+    libraryBooksUnit: 'libros',
+    libraryLicence: 'Licencia',
+    librariesNoneActive: 'Ninguna biblioteca activa. Activa una en Ajustes, en Bibliotecas.',
+    manageLibraries: 'Gestionar bibliotecas',
+    showReferenceCodes: 'Códigos de referencia en tarjetas y paletas',
+    libErrTooLarge: 'El archivo supera los 50 MB.',
+    libErrUnsupported: 'Archivo no compatible. Usa .acb, .ase o UNBS JSON.',
+    libErrBadJson: 'El archivo no es un JSON válido.',
+    libErrBadFormat: 'Este JSON no es una biblioteca de referencias UNBS (formato "unbs-reference-library").',
+    libErrBadVersion: 'Esta versión de biblioteca no es compatible.',
+    libErrNoBooks: 'La biblioteca no tiene libros.',
+    libErrBadBook: 'Un libro del archivo está mal formado',
+    libErrBadColor: 'Un color no tiene código o valor válido',
+    libErrNoColors: 'No se encontraron colores en el archivo.',
+    libErrTooManyColors: 'Demasiados colores: el límite es 20.000 por libro y 100.000 por biblioteca.',
+    libErrBadAcb: 'No se pudo leer este archivo .acb.',
+    libErrBadAse: 'No se pudo leer este archivo .ase.'
   },
 };
 

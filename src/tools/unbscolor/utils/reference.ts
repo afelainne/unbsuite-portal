@@ -3,12 +3,12 @@ import type { ColorMatch, ReferenceColor } from '../types';
 /**
  * One formatter for every reference code shown to a person.
  *
- * The bundled books store codes as "<brand> 388 C". The brand name is never
- * displayed: the screen shows the code ("388 C") under a neutral "reference"
- * label, and the finish reads as a chip. Everything that renders a code — the
- * matcher, the multi-slot analysis, the print guide, the palettes and every
- * SVG / PNG / text export — goes through here, so the format is the same
- * everywhere and the brand can never leak back in.
+ * Codes come from the built-in open palettes ("Tailwind red-500") or from a
+ * library the person imported, and are shown as written in their file. The
+ * formatter only unwraps the localization key some color books carry, tidies
+ * the spacing and upper-cases the finish suffix, so a code reads the same in
+ * the matcher, the multi-slot analysis, the palettes and every SVG / PNG /
+ * text export.
  */
 
 /** Finish suffixes a code can carry. Longest first: "UP" must win over "U". */
@@ -16,29 +16,18 @@ export const FINISH_SUFFIXES = ['TCX', 'TPG', 'TPM', 'TPX', 'XGC', 'HC', 'UP', '
 
 const FINISH_SET = new Set<string>(FINISH_SUFFIXES);
 
-/** Photoshop localization wrapper: "$$$/colorbook/<book>/prefix=388 C$$$/...". */
+/** Localization wrapper some books use: "$$$/<path>/prefix=388 C$$$/...". */
 const LOCALIZATION_KEY = /\$\$\$\/[^=$]*=/g;
 const LOCALIZATION_TAIL = /\$\$\$.*$/;
 
-/**
- * The brand words a raw code can carry, glued ("PMS388") or spaced.
- * They are assembled from fragments so the name is not a literal string in
- * the bundle: it must not be findable in the shipped files either.
- */
-const BRAND_WORDS = [['pan', 'tone'].join(''), ['p', 'ms'].join('')];
-const BRAND_ALTERNATION = BRAND_WORDS.map((word) => `${word}\\s*(?:\\+|®)?`).join('|');
-const BRAND_GLUED = new RegExp(`(?:${BRAND_ALTERNATION})\\s*`, 'gi');
-/** Leftover standalone tokens, including the abbreviated "P." form. */
-const BRAND_TOKEN = new RegExp(`^(?:${BRAND_ALTERNATION}|p\\.)$`, 'i');
-
-/** Removes the brand name and any book wrapper from a raw code. */
-export const stripBrand = (raw?: string | null): string => {
+/** Removes a localization wrapper and collapses the spacing of a raw code. */
+export const cleanReferenceCode = (raw?: string | null): string => {
   if (typeof raw !== 'string' || raw.length === 0) return '';
-  const unwrapped = raw.replace(LOCALIZATION_KEY, ' ').replace(LOCALIZATION_TAIL, ' ');
-  const debranded = unwrapped.replace(BRAND_GLUED, ' ');
-  return debranded
+  return raw
+    .replace(LOCALIZATION_KEY, ' ')
+    .replace(LOCALIZATION_TAIL, ' ')
     .split(/\s+/)
-    .filter((token) => token.length > 0 && !BRAND_TOKEN.test(token))
+    .filter((token) => token.length > 0)
     .join(' ')
     .trim();
 };
@@ -58,7 +47,7 @@ const EMPTY_PARTS: ReferenceParts = { base: '', finish: '', code: '', key: '' };
 
 /** Splits a raw code into the reference itself and its finish. */
 export const parseReferenceCode = (raw?: string | null): ReferenceParts => {
-  const clean = stripBrand(raw);
+  const clean = cleanReferenceCode(raw);
   if (!clean) return EMPTY_PARTS;
 
   const tokens = clean.split(/\s+/);
@@ -72,7 +61,7 @@ export const parseReferenceCode = (raw?: string | null): ReferenceParts => {
   return { base: clean, finish: '', code: clean, key: clean.toUpperCase() };
 };
 
-/** The code as a person reads it: "388 C". Never carries a brand name. */
+/** The code as a person reads it: "388 C". */
 export const formatReferenceCode = (raw?: string | null): string => parseReferenceCode(raw).code;
 
 /** The reference without its finish: "388". */

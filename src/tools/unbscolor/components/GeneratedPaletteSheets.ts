@@ -16,7 +16,7 @@ export interface SheetColor {
     hex: string;
     name: string;
     weight: number;
-    /** Extra codes (RGB, CMYK, PMS…), hex excluded: it has its own switch. */
+    /** Extra codes (RGB, CMYK, references…), hex excluded: it has its own switch. */
     codes: string[];
 }
 

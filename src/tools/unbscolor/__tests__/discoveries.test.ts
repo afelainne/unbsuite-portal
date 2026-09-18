@@ -77,9 +77,9 @@ describe('neighbours in a book', () => {
     expect(findNeighbours('nope', BOOK)).toEqual([]);
   });
 
-  it('carries codes with no brand name', () => {
-    const neighbours = findNeighbours('#7F7F7F', [ref('PANTONE Cool Gray 4 C', '#ADADAD')]);
-    expect(neighbours[0].code).toBe('Cool Gray 4 C');
+  it('carries codes as written in the book, tidied', () => {
+    const neighbours = findNeighbours('#7F7F7F', [ref('ACME  Cool Gray 4 c', '#ADADAD')]);
+    expect(neighbours[0].code).toBe('ACME Cool Gray 4 C');
   });
 });
 
@@ -89,7 +89,7 @@ describe('harmonic partners', () => {
     expect(partners.map((p) => p.kind)).toEqual(['complement', 'analogousA', 'analogousB', 'triadicA', 'triadicB']);
     for (const partner of partners) {
       expect(partner.hex).toMatch(/^#[0-9A-F]{6}$/);
-      expect(partner.code).not.toMatch(/pantone|pms/i);
+      expect(typeof partner.code).toBe('string');
     }
   });
 

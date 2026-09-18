@@ -1,6 +1,6 @@
 
 import { RGB, CMYK, HSL, HSV, LAB, ReferenceColor, ColorMatch, HarmonyColor } from '../types';
-import { DEFAULT_LIBRARY, NAMED_COLORS } from '../constants';
+import { NAMED_COLORS } from '../constants';
 
 // --- Numeric helpers ---
 
@@ -470,7 +470,7 @@ const computeReferenceMatches = (targetHex: string, library: ReferenceColor[], c
  * Finds the closest references (ΔE2000 + perceptual rerank). Results are memoized
  * per library instance and normalized hex, so repeated renders are O(1).
  */
-export const findReferenceMatches = (targetHex: string, library: ReferenceColor[] = DEFAULT_LIBRARY, count: number = 5): ColorMatch[] => {
+export const findReferenceMatches = (targetHex: string, library: ReferenceColor[] = [], count: number = 5): ColorMatch[] => {
   const normalized = normalizeHex(targetHex);
   if (!normalized || !library || library.length === 0 || count <= 0) return [];
 

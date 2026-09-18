@@ -4,7 +4,7 @@ Quatro ferramentas de design que rodam inteiras no navegador, sem cadastro e sem
 
 | Ferramenta | O que faz |
 | --- | --- |
-| **UNBSCOLOR** | Converte entre HEX, RGB, CMYK, HSL, LAB e OKLCH, acha a referência PMS mais próxima por Delta E 2000, monta paletas, verifica contraste (WCAG e APCA), simula daltonismo e exporta em CSS, Tailwind, tokens, ASE e GPL. |
+| **UNBSCOLOR** | Converte entre HEX, RGB, CMYK, HSL, LAB e OKLCH, acha a referência mais próxima por Delta E 2000 em paletas abertas (Tailwind, Open Color, Radix, Material) ou em bibliotecas que a pessoa importa (.acb, .ase, UNBS JSON), monta paletas, verifica contraste (WCAG e APCA), simula daltonismo e exporta em CSS, Tailwind, tokens, ASE e GPL. |
 | **UNBSGRID** | Analisa um logo em SVG: 50 construções geométricas sobre o desenho real, métricas de proporção e equilíbrio, diagnóstico com nota, medição no canvas, comparação entre versões, folha de manual de marca e exportação em SVG por camadas, PNG e PDF. |
 | **UNBSFORMAT** | Grades editoriais com colunas e linhas reais sobre a linha de base, cânones clássicos (Van de Graaf, Villard, Tschichold, Müller-Brockmann, Gerstner), formatos conferidos e PDF com sangria e marcas de corte. |
 | **UNBSFONT** | Editor de fontes: desenho de glifos, espaçamento, kerning e exportação em OTF. |

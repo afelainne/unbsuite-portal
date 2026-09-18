@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { hexToRgb, rgbToHex, isValidHex, normalizeHex, mixColors, adjustHue, adjustSaturation, getContrastColor, getClosestColorName, findReferenceMatches } from '../utils/colorMath';
-import { DEFAULT_LIBRARY } from '../constants';
+import { hexToRgb, rgbToHex, isValidHex, normalizeHex, mixColors, adjustHue, adjustSaturation, getContrastColor, getClosestColorName } from '../utils/colorMath';
+import { useActiveBooks } from '../libraries/store';
+import { closestReference } from '../libraries/matching';
 import { formatReferenceCode } from '../utils/reference';
 import { useLanguage } from '../i18n';
 import type { Translations } from '../i18n';
@@ -79,6 +80,7 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
     const { t } = useLanguage();
     const [baseHex, setBaseHex] = useState(initialHex);
     const [useReference, setUseReference] = useState(false);
+    const books = useActiveBooks();
     const [showBatchPalettes, setShowBatchPalettes] = useState(false);
     const [selectedBatchIndex, setSelectedBatchIndex] = useState<number | null>(null);
     
@@ -123,11 +125,11 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
             color = mixColors(color, { r: 0, g: 0, b: 0 }, Math.min(100, i * darknessIntensity));
             color = adjustSaturation(color, satDark * (i / Math.max(1, darkCount)));
             const hexVal = rgbToHex(color.r, color.g, color.b);
-            newPalette.push({ hex: hexVal, referenceCode: useReference ? formatReferenceCode(findReferenceMatches(hexVal, DEFAULT_LIBRARY, 1)[0]?.reference.code) : undefined });
+            newPalette.push({ hex: hexVal, referenceCode: useReference ? formatReferenceCode(closestReference(hexVal, books)?.reference.code) : undefined });
         }
 
         // Base
-        const baseP = useReference ? formatReferenceCode(findReferenceMatches(baseHex, DEFAULT_LIBRARY, 1)[0]?.reference.code) : undefined;
+        const baseP = useReference ? formatReferenceCode(closestReference(baseHex, books)?.reference.code) : undefined;
         newPalette.push({ hex: baseHex, isBase: true, referenceCode: baseP });
 
         // Tints
@@ -136,10 +138,10 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
              color = mixColors(color, { r: 255, g: 255, b: 255 }, Math.min(100, i * lightnessIntensity));
              color = adjustSaturation(color, satLight * (i / Math.max(1, lightCount)));
              const hexVal = rgbToHex(color.r, color.g, color.b);
-             newPalette.push({ hex: hexVal, referenceCode: useReference ? formatReferenceCode(findReferenceMatches(hexVal, DEFAULT_LIBRARY, 1)[0]?.reference.code) : undefined });
+             newPalette.push({ hex: hexVal, referenceCode: useReference ? formatReferenceCode(closestReference(hexVal, books)?.reference.code) : undefined });
         }
         return newPalette;
-    }, [baseHex, darkCount, lightCount, darknessIntensity, lightnessIntensity, hueRotDark, hueRotLight, satDark, satLight, useReference]);
+    }, [baseHex, darkCount, lightCount, darknessIntensity, lightnessIntensity, hueRotDark, hueRotLight, satDark, satLight, useReference, books]);
 
     const [bgContext, setBgContext] = useState<'white' | 'black' | 'darkest' | 'lightest'>('white');
     const [feedback, showFeedback] = useTransientState<string>(1500);

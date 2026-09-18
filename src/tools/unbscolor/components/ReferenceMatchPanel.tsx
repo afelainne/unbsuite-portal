@@ -111,7 +111,7 @@ export const BestMatchCard: React.FC<BestMatchCardProps> = ({
           value={shown ? shown.deltaE.toFixed(2) : '—'}
           caption={shown ? `${t.deltaE00} · ${verdictLabel(t, deltaVerdict(shown.deltaE))}` : `${t.deltaE00} · ${t.matchQuality}`}
         />
-        {shown && best && best.variants.length > 1 && (
+        {shown && best && best.variants.length > 1 && best.variants.some((item) => item.finish) && (
           <div className="flex flex-col gap-2 min-w-0">
             <span className="text-[13px] text-muted-foreground">{t.variantsLabel}</span>
             <TextTabs<string>
@@ -149,8 +149,11 @@ interface ReferenceAlternativesProps {
   finishes: string[];
   allFinishes: string[];
   revealed: boolean;
+  /** False when every library is switched off. */
+  hasLibraries: boolean;
   className?: string;
   onFinishesChange: (finishes: string[]) => void;
+  onManageLibraries: () => void;
   onSelectHex: (hex: string) => void;
   onCopy: (value: string) => void;
 }
@@ -165,8 +168,10 @@ export const ReferenceAlternatives: React.FC<ReferenceAlternativesProps> = ({
   finishes,
   allFinishes,
   revealed,
+  hasLibraries,
   className = '',
   onFinishesChange,
+  onManageLibraries,
   onSelectHex,
   onCopy
 }) => {
@@ -184,9 +189,20 @@ export const ReferenceAlternatives: React.FC<ReferenceAlternativesProps> = ({
   const allActive = finishes.length === allFinishes.length;
 
   return (
-    <Card className={className} aria-label={t.rankedAlternatives} label={t.rankedAlternatives}>
+    <Card
+      className={className}
+      aria-label={t.rankedAlternatives}
+      label={t.rankedAlternatives}
+      actions={
+        <button type="button" onClick={onManageLibraries} className="ctl ctl-plain ctl-sm px-2.5">
+          {t.manageLibraries}
+        </button>
+      }
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
         <p className="text-[14px] text-muted-foreground">{t.alternativesHint}</p>
+        {/* Finishes appear only when an imported library carries them. */}
+        {allFinishes.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2" role="group" aria-label={t.variantsLabel}>
           <LegendToggle label={t.finishAll} on={allActive} onClick={() => onFinishesChange(allFinishes)} title={t.finishAll} />
           {allFinishes.map((finish) => (
@@ -199,10 +215,11 @@ export const ReferenceAlternatives: React.FC<ReferenceAlternativesProps> = ({
             />
           ))}
         </div>
+        )}
       </div>
 
       {groups.length === 0 ? (
-        <p className="text-[14px] text-muted-foreground">{t.noReferenceFound}</p>
+        <p className="text-[14px] text-muted-foreground">{hasLibraries ? t.noReferenceFound : t.librariesNoneActive}</p>
       ) : (
         <ul className="flex flex-col">
           {groups.map((group, index) => (
@@ -219,12 +236,12 @@ export const ReferenceAlternatives: React.FC<ReferenceAlternativesProps> = ({
                 aria-label={`${revealed ? group.code : group.hex} · ${group.hex}`}
               />
 
-              <div className="min-w-0 flex-1 basis-0 sm:basis-40 flex flex-col gap-1">
+              <div className="min-w-0 flex-1 basis-40 flex flex-col gap-1">
                 <span className="text-[16px] tabular text-foreground truncate">{revealed ? group.code : group.hex}</span>
                 <span className="text-[12px] text-muted-foreground truncate">{names[index]?.displayName}</span>
               </div>
 
-              {revealed && (
+              {revealed && group.variants.some((variant) => variant.finish) && (
                 <div className="order-last basis-full pl-16 sm:order-none sm:basis-auto sm:pl-0 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
                   {group.variants.map((variant) => (
                     <span

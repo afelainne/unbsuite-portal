@@ -427,7 +427,8 @@ export const parseAse = (input: ArrayBuffer | Uint8Array): AseSwatch[] => {
       } else if (model === 'Gray') {
         hex = rgbToHex(values[0] * 255, values[0] * 255, values[0] * 255);
       } else if (model === 'LAB') {
-        hex = labToHex({ l: values[0] * 100, a: values[1], b: values[2] });
+        // Adobe writes L as a 0–1 fraction; some tools write 0–100. A real L above 1 is never black.
+        hex = labToHex({ l: values[0] > 1 ? values[0] : values[0] * 100, a: values[1], b: values[2] });
       } else {
         offset = end;
         continue;

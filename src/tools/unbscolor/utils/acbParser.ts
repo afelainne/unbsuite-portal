@@ -153,13 +153,17 @@ function getString(view: DataView, offset: number, length: number): string {
 }
 
 /**
- * Photoshop books use localization keys like
- * "$$$/colorbook/<book>/title=<book> Solid Coated"; keep the display value.
+ * Photoshop books wrap their strings in localization keys like
+ * "$$$/<path>/title=Book name", sometimes followed by another "$$$/…" key.
+ * Keep only the display value of the first one.
  */
 export function stripLocalizationKey(text: string): string {
   if (text.startsWith('$$$')) {
     const eq = text.indexOf('=');
-    return eq >= 0 ? text.slice(eq + 1) : '';
+    if (eq < 0) return '';
+    const value = text.slice(eq + 1);
+    const tail = value.indexOf('$$$');
+    return tail >= 0 ? value.slice(0, tail) : value;
   }
   return text;
 }

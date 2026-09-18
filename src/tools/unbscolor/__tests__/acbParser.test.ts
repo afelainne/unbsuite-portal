@@ -133,5 +133,7 @@ describe('parseACB', () => {
     expect(stripLocalizationKey('$$$/a/b=Hello')).toBe('Hello');
     expect(stripLocalizationKey('$$$/a/b')).toBe('');
     expect(stripLocalizationKey('Plain')).toBe('Plain');
+    // A second wrapper after the value is not part of it.
+    expect(stripLocalizationKey('$$$/a/prefix=TEST 102 UP$$$/a/postfix=')).toBe('TEST 102 UP');
   });
 });

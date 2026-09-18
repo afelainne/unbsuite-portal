@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Copy, Shuffle } from 'lucide-react';
 import { findReferenceMatches, getClosestColorName, isValidHex } from '../utils/colorMath';
 import { groupReferenceMatches } from '../utils/reference';
 import { parseColorInput } from '../utils/parseColorInput';
-import { FINISH_ORDER, REFERENCE_LIBRARIES } from '../constants';
+import { sortFinishes } from '../constants';
+import { useActiveBooks } from '../libraries/store';
 import { AccessibilityCard } from './AccessibilityCard';
 import { BestMatchCard, ReferenceAlternatives } from './ReferenceMatchPanel';
 import { DiscoveriesPanel } from './DiscoveriesPanel';
@@ -41,6 +42,10 @@ interface MatcherViewProps {
   onRandomize: () => void;
   onCopy: (value: string) => void;
   onFeedback: (message: string) => void;
+  /** Opens the settings sheet on the libraries. */
+  onManageLibraries: () => void;
+  /** The code of the reference on screen, so its notes can follow it. */
+  onShownReferenceChange: (code: string) => void;
 }
 
 /** How many references each book contributes before the rows are grouped. */
@@ -71,15 +76,23 @@ export const MatcherView: React.FC<MatcherViewProps> = ({
   onHslChange,
   onRandomize,
   onCopy,
-  onFeedback
+  onFeedback,
+  onManageLibraries,
+  onShownReferenceChange
 }) => {
   const colorName = getClosestColorName(hex);
-  const [finishes, setFinishes] = useState<string[]>(FINISH_ORDER);
+  const books = useActiveBooks();
+  /** Finishes only exist when an imported library carries them. */
+  const allFinishes = useMemo(() => sortFinishes(books.map((book) => book.finish)), [books]);
+  const [excludedFinishes, setExcludedFinishes] = useState<string[]>([]);
+  const finishes = useMemo(() => allFinishes.filter((finish) => !excludedFinishes.includes(finish)), [allFinishes, excludedFinishes]);
   const [selectedFinish, setSelectedFinish] = useState<string | null>(null);
 
+  // Books without a finish (the open palettes) are never filtered out here:
+  // they are switched on and off in the libraries.
   const activeLibraries = useMemo(
-    () => REFERENCE_LIBRARIES.filter((library) => finishes.includes(library.finish)),
-    [finishes]
+    () => books.filter((book) => !book.finish || finishes.includes(book.finish)),
+    [books, finishes]
   );
 
   // One search per book, then the same reference across books collapses into
@@ -96,6 +109,11 @@ export const MatcherView: React.FC<MatcherViewProps> = ({
     return best.variants.find((item) => item.finish === selectedFinish) || best.variants[0];
   }, [best, selectedFinish]);
 
+  const shownCode = variant ? variant.code : '';
+  useEffect(() => {
+    onShownReferenceChange(shownCode);
+  }, [shownCode, onShownReferenceChange]);
+
   const referenceRows = useMemo(
     () => (variant ? buildReferenceRows(variant.hex) : []),
     [variant, buildReferenceRows]
@@ -103,8 +121,8 @@ export const MatcherView: React.FC<MatcherViewProps> = ({
 
   /** Neighbours and harmonic partners read from the book of the shown finish. */
   const readingLibrary = useMemo(() => {
-    const finish = variant?.finish;
-    const book = activeLibraries.find((library) => library.finish === finish) || activeLibraries[0];
+    const bookKey = variant?.reference.finishId;
+    const book = activeLibraries.find((library) => library.key === bookKey) || activeLibraries[0];
     return book ? book.colors : [];
   }, [activeLibraries, variant]);
 
@@ -167,9 +185,11 @@ export const MatcherView: React.FC<MatcherViewProps> = ({
           t={t}
           groups={groups}
           finishes={finishes}
-          allFinishes={FINISH_ORDER}
+          allFinishes={allFinishes}
           revealed={showRefMatch}
-          onFinishesChange={setFinishes}
+          hasLibraries={books.length > 0}
+          onFinishesChange={(next) => setExcludedFinishes(allFinishes.filter((finish) => !next.includes(finish)))}
+          onManageLibraries={onManageLibraries}
           onSelectHex={onHexChange}
           onCopy={onCopy}
         />
@@ -208,6 +228,7 @@ export const MatcherView: React.FC<MatcherViewProps> = ({
         hex={hex}
         library={readingLibrary}
         best={best}
+        showFinishes={allFinishes.length > 0}
         revealed={showRefMatch}
         loading={loadingAi}
         analysis={analysis}

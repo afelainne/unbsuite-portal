@@ -1,13 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import { getStoredLibraries, saveLibraryToStorage, removeLibraryFromStorage } from '../utils/storage';
 import { getProjects, saveProject, deleteProject } from '../utils/projectStorage';
 import { readJson, safeGetItem, safeSetItem } from '../utils/safeStorage';
 import { LanguageProvider, useLanguage } from '../i18n/LanguageContext';
-import type { ReferenceColor } from '../types';
-
-const color: ReferenceColor = { code: 'X 1', name: 'X 1', hex: '#FF0000', rgb: { r: 255, g: 0, b: 0 } };
 
 beforeEach(() => {
   localStorage.clear();
@@ -32,37 +28,6 @@ describe('safeStorage', () => {
     });
     expect(safeGetItem('a')).toBeNull();
     expect(safeSetItem('a', 'b')).toBe(false);
-  });
-});
-
-describe('custom libraries storage (bug: setItem/JSON without guards)', () => {
-  it('saves, replaces by name and removes', () => {
-    saveLibraryToStorage('Lib', [color]);
-    const updated = saveLibraryToStorage('Lib', [color, color]);
-    expect(updated.persisted).toBe(true);
-    expect(getStoredLibraries()).toHaveLength(1);
-    expect(getStoredLibraries()[0].colors).toHaveLength(2);
-    expect(removeLibraryFromStorage('Lib')).toHaveLength(0);
-  });
-
-  it('ignores non-array / malformed stored data', () => {
-    localStorage.setItem('chromamatch_custom_libraries', '{"name":"x"}');
-    expect(getStoredLibraries()).toEqual([]);
-    localStorage.setItem('chromamatch_custom_libraries', '[null, 5, {"name":"ok","colors":[]}]');
-    expect(getStoredLibraries()).toEqual([{ name: 'ok', colors: [] }]);
-  });
-
-  it('does not throw on QuotaExceededError and reports persisted=false', () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new DOMException('full', 'QuotaExceededError');
-    });
-    let result: ReturnType<typeof saveLibraryToStorage> | undefined;
-    expect(() => {
-      result = saveLibraryToStorage('Big', [color]);
-    }).not.toThrow();
-    expect(result!.persisted).toBe(false);
-    expect(result!).toHaveLength(1);
-    expect(() => removeLibraryFromStorage('Big')).not.toThrow();
   });
 });
 

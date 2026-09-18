@@ -26,6 +26,8 @@ interface DiscoveriesPanelProps {
   library: ReferenceColor[];
   /** Closest reference, already grouped across finishes. */
   best: ReferenceGroup | null;
+  /** False when no library carries finishes: the "other finishes" card is left out. */
+  showFinishes: boolean;
   revealed: boolean;
   loading: boolean;
   analysis: { description: string; usageTips: string[]; psychology: string } | null;
@@ -66,6 +68,7 @@ export const DiscoveriesPanel: React.FC<DiscoveriesPanelProps> = ({
   hex,
   library,
   best,
+  showFinishes,
   revealed,
   loading,
   analysis,
@@ -140,6 +143,7 @@ export const DiscoveriesPanel: React.FC<DiscoveriesPanelProps> = ({
         </Card>
 
         {/* The same reference on other paper */}
+        {showFinishes && (
         <Card as="article" className="lg:col-span-5" aria-label={t.otherFinishesTitle} label={t.otherFinishesTitle}>
             <p className="text-[14px] text-muted-foreground">{t.otherFinishesHint}</p>
             {!revealed || otherFinishes.length === 0 ? (
@@ -158,9 +162,10 @@ export const DiscoveriesPanel: React.FC<DiscoveriesPanelProps> = ({
               ))
             )}
         </Card>
+        )}
 
         {/* Harmonic partners */}
-        <Card as="article" className="lg:col-span-7" aria-label={t.harmonyTitle} label={t.harmonyTitle}>
+        <Card as="article" className={showFinishes ? 'lg:col-span-7' : 'lg:col-span-12'} aria-label={t.harmonyTitle} label={t.harmonyTitle}>
             <p className="text-[14px] text-muted-foreground">{t.harmonyHint}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
               {partners.map((partner, index) => (
@@ -177,15 +182,20 @@ export const DiscoveriesPanel: React.FC<DiscoveriesPanelProps> = ({
             </div>
         </Card>
 
-        {/* Notes for the matched reference */}
+        {/* Notes an imported library carries for the matched reference. */}
         {(loading || analysis) && (
           <Card as="article" className="lg:col-span-12" aria-label={t.usageTitle} aria-live="polite" label={t.usageTitle}>
               {analysis ? (
                 <>
-                  <p className="text-[16px] leading-[1.5] text-foreground max-w-[70ch]">{analysis.description}</p>
-                  <p className="text-[14px] text-muted-foreground">
-                    {t.mood}: {analysis.psychology}
-                  </p>
+                  {analysis.description && (
+                    <p className="text-[16px] leading-[1.5] text-foreground max-w-[70ch]">{analysis.description}</p>
+                  )}
+                  {analysis.psychology && (
+                    <p className="text-[14px] text-muted-foreground">
+                      {t.mood}: {analysis.psychology}
+                    </p>
+                  )}
+                  {analysis.usageTips.length > 0 && (
                   <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                     {analysis.usageTips.map((tip) => (
                       <li key={tip} className="flex items-baseline gap-2 text-[14px] text-foreground min-w-0">
@@ -194,6 +204,7 @@ export const DiscoveriesPanel: React.FC<DiscoveriesPanelProps> = ({
                       </li>
                     ))}
                   </ul>
+                  )}
                 </>
               ) : (
                 <p className="text-[14px] text-muted-foreground pulse-dot">{t.thinking}</p>

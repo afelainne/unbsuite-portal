@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { PaletteGenerator } from './components/PaletteGenerator';
 import { ColorGuide } from './components/ColorGuide';
 import { PaletteBuilder } from './components/PaletteBuilder';
@@ -14,12 +14,10 @@ import {
     rgbToHex,
     rgbToCmyk,
     rgbToHsl,
-    findReferenceMatches,
     isValidHex,
     rgbToHsv,
     hexToLab,
     getClosestColorName,
-    enrichLibraryWithLab,
     cmykToRgb,
     hslToRgb,
     normalizeHex
@@ -28,13 +26,13 @@ import { escapeXml, toSafeFileName } from './utils/escape';
 import { formatReferenceCode } from './utils/reference';
 import { formatOklch } from './utils/oklab';
 import { copyText, downloadBlob, downloadUrl, revokeObjectUrlLater, useTransientState } from './utils/browser';
-import { analyzeColor } from './services/analysisService';
-import { triggerFakeColorTraffic } from './services/obfuscatedColorService';
-import { fetchMatchesWithFallback } from './services/matchApi';
-import { RGB, CMYK, HSL, HSV, LAB, ColorMatch, AnalysisResult, ReferenceColor } from './types';
-import { LIBRARY_OPTIONS, getLibraryById, DEFAULT_LIBRARY } from './constants';
+import { RGB, CMYK, HSL, HSV, LAB } from './types';
+import { LibrariesPanel } from './components/LibrariesPanel';
+import { selectActiveBooks, selectReferenceNote, useReferenceLibraries } from './libraries/store';
+import { bestPerBook, closestReference, nearestAcrossBooks } from './libraries/matching';
 
-const defaultLibraryId = LIBRARY_OPTIONS[0]?.id || '';
+/** Reference lines per card, closest first, so a card never grows past four. */
+const CARD_REFERENCE_LIMIT = 4;
 
 type SettingsState = {
     showHex: boolean;
@@ -43,10 +41,8 @@ type SettingsState = {
     showHsb: boolean;
     showLab: boolean;
     showCmyk: boolean;
-    showRefBridgeC: boolean;
-    showRefBridgeU: boolean;
-    showRefSolidC: boolean;
-    showRefSolidU: boolean;
+    /** Reference codes on the multi-slot cards, the copied text and the palettes. */
+    showReferences: boolean;
     mixFormat: string;
 };
 
@@ -63,10 +59,7 @@ const App: React.FC = () => {
         showHsb: true,
         showLab: true,
         showCmyk: true,
-        showRefBridgeC: true,
-        showRefBridgeU: true,
-        showRefSolidC: true,
-        showRefSolidU: true,
+        showReferences: true,
         mixFormat: 'rgb(80, 184, 72)'
     });
 
@@ -77,49 +70,16 @@ const App: React.FC = () => {
     const [hsv, setHsv] = useState<HSV>(() => rgbToHsv(hexToRgb('#F0FF00')));
     const [lab, setLab] = useState<LAB>(() => hexToLab('#F0FF00'));
 
-    const [libraryType, setLibraryType] = useState<string>(defaultLibraryId);
-    const [library, setLibrary] = useState<ReferenceColor[]>(DEFAULT_LIBRARY);
-    const [matches, setMatches] = useState<ColorMatch[]>([]);
-    const [analysis, setAnalysis] = useState<{ description: string; usageTips: string[]; psychology: string } | null>(null);
-    const [loadingAi, setLoadingAi] = useState(false);
+    /** Every library, and the books of those switched on in Settings: open palettes and imported ones. */
+    const { entries } = useReferenceLibraries();
+    const books = selectActiveBooks(entries);
+    const [shownCode, setShownCode] = useState<string>('');
     const [copyFeedback, showCopyFeedback] = useTransientState<string>(2000);
     const [showRefMatch, setShowRefMatch] = useState(false);
 
     type CardTemplate = 'classic' | 'compact' | 'editorial' | 'swatchcard' | 'minimal' | 'mono';
     const [cardTemplate, setCardTemplate] = useState<CardTemplate>('classic');
     const [showAlternatives, setShowAlternatives] = useState<Set<number>>(new Set());
-
-    const bridgeCoatedLibrary = useMemo(() => {
-        return (
-            LIBRARY_OPTIONS.find((lib) => lib.systemId === 'sys_a' && lib.finishId === 'fin_c')?.colors ||
-            LIBRARY_OPTIONS.find((lib) => lib.finishId === 'coated')?.colors ||
-            DEFAULT_LIBRARY
-        );
-    }, []);
-
-    const bridgeUncoatedLibrary = useMemo(() => {
-        return (
-            LIBRARY_OPTIONS.find((lib) => lib.systemId === 'sys_a' && lib.finishId === 'fin_u')?.colors ||
-            LIBRARY_OPTIONS.find((lib) => lib.finishId === 'uncoated')?.colors ||
-            DEFAULT_LIBRARY
-        );
-    }, []);
-
-    const solidCoatedLibrary = useMemo(() => {
-        return (
-            LIBRARY_OPTIONS.find((lib) => lib.systemId === 'sys_b' && lib.finishId === 'fin_c')?.colors ||
-            LIBRARY_OPTIONS.find((lib) => lib.systemId === 'sys_b')?.colors ||
-            DEFAULT_LIBRARY
-        );
-    }, []);
-
-    const solidUncoatedLibrary = useMemo(() => {
-        return (
-            LIBRARY_OPTIONS.find((lib) => lib.systemId === 'sys_b' && lib.finishId === 'fin_u')?.colors ||
-            LIBRARY_OPTIONS.find((lib) => lib.systemId === 'sys_b')?.colors ||
-            DEFAULT_LIBRARY
-        );
-    }, []);
 
     const formatRgbDisplay = (r: number, g: number, b: number) => {
         if (settings.mixFormat === 'R=80, G=184, B=72') return `R=${r}, G=${g}, B=${b}`;
@@ -129,15 +89,6 @@ const App: React.FC = () => {
 
     /** Every code on screen or in an export goes through the one formatter. */
     const normalizeRefCode = (code?: string) => formatReferenceCode(code);
-
-    const sendObfuscationTraffic = useCallback((value: string) => {
-        if (isValidHex(value)) {
-            triggerFakeColorTraffic(value);
-        }
-    }, []);
-
-    const obfuscationOnce = useRef(false);
-    const obfuscationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const updateDerivedFromRgb = (currentRgb: RGB, currentHex: string) => {
         setCmyk(rgbToCmyk(currentRgb));
@@ -159,7 +110,7 @@ const App: React.FC = () => {
             updated[0] = newHex;
             return updated;
         });
-    }, [sendObfuscationTraffic]);
+    }, []);
 
     const updateBatchSlot0 = useCallback((newHex: string) => {
         setBatchColors((prev) => {
@@ -219,30 +170,6 @@ const App: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        if (!obfuscationOnce.current && library.length > 0 && isValidHex(hex)) {
-            sendObfuscationTraffic(hex);
-            obfuscationOnce.current = true;
-        }
-    }, [library, hex, sendObfuscationTraffic]);
-
-    useEffect(() => {
-        if (!library.length || !isValidHex(hex)) return;
-        if (obfuscationTimer.current) {
-            clearTimeout(obfuscationTimer.current);
-        }
-        obfuscationTimer.current = setTimeout(() => {
-            sendObfuscationTraffic(hex);
-        }, 2500);
-
-        return () => {
-            if (obfuscationTimer.current) {
-                clearTimeout(obfuscationTimer.current);
-                obfuscationTimer.current = null;
-            }
-        };
-    }, [hex, library, sendObfuscationTraffic]);
-
     interface CardExportPayload {
         index: number;
         hex: string;
@@ -265,11 +192,6 @@ const App: React.FC = () => {
         const kBatch = rgbToCmyk(rBatch);
         const lBatch = hexToLab(color);
 
-        const matchC = findReferenceMatches(color, bridgeCoatedLibrary, 1)[0];
-        const matchU = findReferenceMatches(color, bridgeUncoatedLibrary, 1)[0];
-        const matchSolidC = findReferenceMatches(color, solidCoatedLibrary, 1)[0];
-        const matchSolidU = findReferenceMatches(color, solidUncoatedLibrary, 1)[0];
-
         const stats: string[] = [];
         if (settings.showHex) stats.push(`HEX ${color}`);
         if (settings.showRgb) stats.push(formatRgbDisplay(rBatch.r, rBatch.g, rBatch.b));
@@ -278,41 +200,16 @@ const App: React.FC = () => {
         if (settings.showHsl) stats.push(`HSL ${hBatch.h}, ${hBatch.s}%, ${hBatch.l}%`);
         if (settings.showLab) stats.push(`LAB ${Math.round(lBatch.l)}, ${Math.round(lBatch.a)}, ${Math.round(lBatch.b)}`);
 
-        const matchesList: { label: string; code: string; swatch: string }[] = [];
+        // One line per library book, closest first.
+        const matchesList: { label: string; code: string; swatch: string }[] = settings.showReferences
+            ? bestPerBook(color, books, CARD_REFERENCE_LIMIT).map(({ book, match }) => ({
+                  label: book.name,
+                  code: match.deltaE < 10 ? normalizeRefCode(match.reference.code) : outOfGamutLabel,
+                  swatch: match.reference.hex
+              }))
+            : [];
 
-        if (settings.showRefSolidC) {
-            matchesList.push({
-                label: t.refSolidC,
-                    code: matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : outOfGamutLabel,
-                swatch: matchSolidC ? matchSolidC.reference.hex : '#e5e7eb'
-            });
-        }
-
-        if (settings.showRefSolidU) {
-            matchesList.push({
-                label: t.refSolidU,
-                    code: matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : outOfGamutLabel,
-                swatch: matchSolidU ? matchSolidU.reference.hex : '#e5e7eb'
-            });
-        }
-
-        if (settings.showRefBridgeC) {
-            matchesList.push({
-                label: t.refBridgeC,
-                    code: matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : outOfGamutLabel,
-                swatch: matchC ? matchC.reference.hex : '#e5e7eb'
-            });
-        }
-
-        if (settings.showRefBridgeU) {
-            matchesList.push({
-                label: t.refBridgeU,
-                    code: matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : outOfGamutLabel,
-                swatch: matchU ? matchU.reference.hex : '#e5e7eb'
-            });
-        }
-
-        const stripMatches = findReferenceMatches(color, library, 6);
+        const stripMatches = settings.showReferences ? nearestAcrossBooks(color, books, 6) : [];
         const strip = stripMatches.map((m) => ({
             hex: m.reference.hex,
             name: getClosestColorName(m.reference.hex),
@@ -740,11 +637,6 @@ const App: React.FC = () => {
                 const k = rgbToCmyk(r);
                 const l = hexToLab(c);
 
-                const matchC = findReferenceMatches(c, bridgeCoatedLibrary, 1)[0];
-                const matchU = findReferenceMatches(c, bridgeUncoatedLibrary, 1)[0];
-                const matchSolidC = findReferenceMatches(c, solidCoatedLibrary, 1)[0];
-                const matchSolidU = findReferenceMatches(c, solidUncoatedLibrary, 1)[0];
-
                 const output = [name];
                 if (settings.showHex) output.push(c);
                 if (settings.showRgb) output.push(formatRgbDisplay(r.r, r.g, r.b));
@@ -752,10 +644,11 @@ const App: React.FC = () => {
                 if (settings.showHsb) output.push(`hsb(${s.h}, ${s.s}, ${s.v})`);
                 if (settings.showHsl) output.push(`hsl(${h.h}, ${h.s}%, ${h.l}%)`);
                 if (settings.showLab) output.push(`lab(${Math.round(l.l)}, ${Math.round(l.a)}, ${Math.round(l.b)})`);
-                if (settings.showRefSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : `${t.outOfGamut.toUpperCase()} C`);
-                if (settings.showRefSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : `${t.outOfGamut.toUpperCase()} U`);
-                if (settings.showRefBridgeC) output.push(matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : `${t.outOfGamut.toUpperCase()} CP`);
-                if (settings.showRefBridgeU) output.push(matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : `${t.outOfGamut.toUpperCase()} UP`);
+                if (settings.showReferences) {
+                    bestPerBook(c, books).forEach(({ book, match }) => {
+                        output.push(`${book.name}: ${match.deltaE < 10 ? normalizeRefCode(match.reference.code) : t.outOfGamut.toUpperCase()}`);
+                    });
+                }
 
                 return output.join('\n');
             })
@@ -768,58 +661,35 @@ const App: React.FC = () => {
         void copyText(value).then((ok) => showCopyFeedback(ok ? `${t.copiedToClipboard} ${value}` : t.copyFailed));
     };
 
-    useEffect(() => {
-        const rawLib = getLibraryById(libraryType);
-        const enriched = enrichLibraryWithLab(rawLib);
-        setLibrary(enriched);
-    }, [libraryType]);
+    /**
+     * Notes an imported library carries for the reference the Matcher shows.
+     * They follow the shown code (and the language) once the search has run;
+     * with no notes, the reading in Discoveries is all there is.
+     */
+    const analysis = useMemo(() => {
+        if (!showRefMatch || !shownCode) return null;
+        const note = selectReferenceNote(entries, shownCode);
+        if (!note) return null;
+        return {
+            description: note.description[language] || note.description.en,
+            usageTips: note.usageTips[language]?.length ? note.usageTips[language] : note.usageTips.en,
+            psychology: note.psychology[language] || note.psychology.en
+        };
+    }, [showRefMatch, shownCode, entries, language]);
 
-    // Synchronous local matching for instant updates
-    const computedMatches = useMemo(() => {
-        if (!isValidHex(hex) || !library.length) return [];
-        return findReferenceMatches(hex, library, 12);
-    }, [hex, library]);
-
-    // Keep state in sync for components that read from state
-    useEffect(() => {
-        setMatches(computedMatches);
-        setAnalysis(null);
-    }, [computedMatches]);
-
-    // Latest hex (for discarding stale analysis results) and the hex of the pending request.
-    const currentHexRef = useRef(hex);
-    currentHexRef.current = hex;
-    const analysisRequestRef = useRef<string | null>(null);
-
-    /** `referenceCode` is the code the Matcher is showing, so the notes match it. */
-    const triggerAiAnalysis = async (referenceCode?: string) => {
-        const code = referenceCode || (matches[0] ? matches[0].reference.code : '');
-        if (!code) return;
-        const requestHex = hex;
-        analysisRequestRef.current = requestHex;
-        setLoadingAi(true);
-        try {
-            const result = await analyzeColor(requestHex, code, language);
-            if (analysisRequestRef.current === requestHex && currentHexRef.current === requestHex) {
-                setAnalysis(result);
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            if (analysisRequestRef.current === requestHex) {
-                analysisRequestRef.current = null;
-                setLoadingAi(false);
-            }
-        }
+    /** Reveals the reference codes; `referenceCode` is the code the Matcher is showing. */
+    const revealReference = (referenceCode?: string) => {
+        setShowRefMatch(true);
+        setShownCode(referenceCode || closestReference(hex, books)?.reference.code || '');
     };
 
-    // The selected color changed: any in-flight analysis is stale.
-    useEffect(() => {
-        if (analysisRequestRef.current && analysisRequestRef.current !== hex) {
-            analysisRequestRef.current = null;
-            setLoadingAi(false);
-        }
-    }, [hex]);
+    /** Opens the settings sheet on the libraries. */
+    const openLibrarySettings = () => {
+        setShowSettings(true);
+        requestAnimationFrame(() => {
+            document.getElementById('unbscolor-libraries-title')?.scrollIntoView({ block: 'start' });
+        });
+    };
 
     const matcherValueRows: MatcherValueRow[] = [
         { label: 'HEX', value: hex.toUpperCase() },
@@ -875,10 +745,7 @@ const App: React.FC = () => {
         { key: 'showCmyk', label: t.cmykProcess }
     ];
     const referenceToggles: { key: keyof SettingsState; label: string }[] = [
-        { key: 'showRefSolidC', label: t.refSolidC },
-        { key: 'showRefSolidU', label: t.refSolidU },
-        { key: 'showRefBridgeC', label: t.refBridgeC },
-        { key: 'showRefBridgeU', label: t.refBridgeU }
+        { key: 'showReferences', label: t.showReferenceCodes }
     ];
 
     const renderSwitchRows = (items: { key: keyof SettingsState; label: string }[]) => (
@@ -938,10 +805,10 @@ const App: React.FC = () => {
                                 {renderSwitchRows(modelToggles)}
                             </section>
 
-                            <section className="flex flex-col gap-2">
-                                <h3 className="label">{t.referenceLibraries}</h3>
+                            <div className="flex flex-col gap-2">
+                                <LibrariesPanel />
                                 {renderSwitchRows(referenceToggles)}
-                            </section>
+                            </div>
 
                             <section className="flex flex-col gap-4">
                                 <h3 className="label">{t.mixedFormatSyntax}</h3>
@@ -1034,11 +901,6 @@ const App: React.FC = () => {
                         onBatchColorUpdate={handleBatchColorUpdate}
                         onDownloadCard={handleDownloadCard}
                         onCopyAll={handleCopyAll}
-                        library={library}
-                        bridgeCoatedLibrary={bridgeCoatedLibrary}
-                        bridgeUncoatedLibrary={bridgeUncoatedLibrary}
-                        solidCoatedLibrary={solidCoatedLibrary}
-                        solidUncoatedLibrary={solidUncoatedLibrary}
                         formatRgbDisplay={formatRgbDisplay}
                         getClosestColorName={getClosestColorName}
                         cardTemplate={cardTemplate}
@@ -1062,8 +924,10 @@ const App: React.FC = () => {
                         buildReferenceRows={buildReferenceRows}
                         showRefMatch={showRefMatch}
                         analysis={analysis}
-                        loadingAi={loadingAi}
-                        onSearchReference={(referenceCode) => { setShowRefMatch(true); void triggerAiAnalysis(referenceCode); }}
+                        loadingAi={false}
+                        onSearchReference={revealReference}
+                        onShownReferenceChange={setShownCode}
+                        onManageLibraries={openLibrarySettings}
                         onHexChange={handleHexChange}
                         onRgbChange={handleRgbChange}
                         onCmykChange={handleCmykChange}

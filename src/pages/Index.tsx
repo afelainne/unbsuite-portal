@@ -18,7 +18,7 @@ interface Tool {
 }
 
 const TOOLS: Tool[] = [
-  { name: "UNBSCOLOR", tagline: "Cor e paletas", copy: "Converte entre HEX, CMYK, LAB e OKLCH, acha a referência mais próxima e verifica contraste.", status: "Destaque", path: "/unbscolor", icon: Palette, keywords: "cor cores paleta referencia codigo grafica cmyk rgb lab hex contraste oklch daltonismo" },
+  { name: "UNBSCOLOR", tagline: "Cor e paletas", copy: "Converte entre HEX, CMYK, LAB e OKLCH, acha a referência mais próxima nas suas bibliotecas e verifica contraste.", status: "Destaque", path: "/unbscolor", icon: Palette, keywords: "cor cores paleta referencia biblioteca acb ase codigo grafica cmyk rgb lab hex contraste oklch daltonismo" },
   { name: "UNBSGRID", tagline: "Anatomia de logo", copy: "Cinquenta construções geométricas sobre o desenho real, com diagnóstico e folha de marca.", status: "Destaque", path: "/unbsgrid", icon: Grid3X3, keywords: "grid grade malha logo logotipo razao aurea geometria svg construcao diagnostico" },
   { name: "UNBSFORMAT", tagline: "Grades editoriais", copy: "Colunas e linhas reais sobre a linha de base, cânones clássicos e formatos conferidos, com PDF pronto para a gráfica e valores para InDesign e Figma.", status: "Novo", path: "/unbsformat", icon: FileText, keywords: "formato sangria bleed margem impressao grafica a4 a3 cartao colunas pdf" },
   { name: "UNBSFONT", tagline: "Editor de fontes", copy: "Desenha glifos, ajusta espaçamento e kerning, e exporta OTF.", status: "Novo", path: "/unbsfont", icon: ALargeSmall, keywords: "fonte tipo glifo kerning otf ttf editor tipografia" },

@@ -2,7 +2,6 @@ import React from 'react';
 import { Download, ImageDown } from 'lucide-react';
 import { isValidHex, normalizeHex } from '../utils/colorMath';
 import { HexField } from './HexField';
-import { ReferenceColor } from '../types';
 import type { Translations } from '../i18n';
 import { Card, IconButton, LegendToggle, TextTabs } from './ui';
 
@@ -18,20 +17,12 @@ interface BatchAnalyzerProps {
         showHsb: boolean;
         showLab: boolean;
         showCmyk: boolean;
-        showRefBridgeC: boolean;
-        showRefBridgeU: boolean;
-        showRefSolidC: boolean;
-        showRefSolidU: boolean;
+        showReferences: boolean;
         mixFormat: string;
     };
     onBatchColorUpdate: (index: number, newHex: string) => void;
     onDownloadCard: (format: 'svg' | 'png', index: number) => void;
     onCopyAll: () => void;
-    library: ReferenceColor[];
-    bridgeCoatedLibrary: ReferenceColor[];
-    bridgeUncoatedLibrary: ReferenceColor[];
-    solidCoatedLibrary: ReferenceColor[];
-    solidUncoatedLibrary: ReferenceColor[];
     formatRgbDisplay: (r: number, g: number, b: number) => string;
     getClosestColorName: (hex: string) => string;
     cardTemplate: CardTemplate;
@@ -49,11 +40,6 @@ export const BatchAnalyzer: React.FC<BatchAnalyzerProps> = ({
     onBatchColorUpdate,
     onDownloadCard,
     onCopyAll,
-    library,
-    bridgeCoatedLibrary,
-    bridgeUncoatedLibrary,
-    solidCoatedLibrary,
-    solidUncoatedLibrary,
     formatRgbDisplay,
     getClosestColorName,
     cardTemplate,

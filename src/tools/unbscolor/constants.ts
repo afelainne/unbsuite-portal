@@ -1,10 +1,10 @@
-import { loadColorLibrary } from './data/encoded/loadColors';
-import { stripBrand } from './utils/reference';
-import { ReferenceColor } from './types';
-
-const colorsData = loadColorLibrary() as { colors: any[] };
-
-// Basic named colors used for friendly labels when matching custom HEX.
+/**
+ * Everyday colour names, used for friendly labels next to a hex value.
+ *
+ * A short list written for this tool: mostly the CSS / X11 named colours
+ * (W3C CSS Color Module, free to use) plus common descriptive names. It is
+ * not taken from any colour-reference book.
+ */
 export const NAMED_COLORS: { name: string; hex: string }[] = [
   // --- GRAYS & NEUTRALS ---
   { name: "Black", hex: "#000000" },
@@ -158,197 +158,19 @@ export const NAMED_COLORS: { name: string; hex: string }[] = [
   { name: "Sepia", hex: "#704214" }
 ];
 
-export type ColorLibraryFinish = {
-  systemId: string;
-  systemName: string;
-  finishId: string;
-  finishName: string;
-  colors: ReferenceColor[];
-};
-
-export type ColorLibrarySystem = {
-  systemId: string;
-  systemName: string;
-  finishes: ColorLibraryFinish[];
-};
-
-export type LibraryOption = {
-  id: string;
-  label: string;
-  /** Finish suffix the codes of this book carry: C, U, CP or UP. */
-  finish: string;
-  systemId: string;
-  finishId: string;
-  colors: ReferenceColor[];
-};
-
-const hexToRgbQuick = (hex: string) => {
-  const clean = hex.replace('#', '');
-  const intVal = parseInt(clean, 16);
-  return {
-    r: (intVal >> 16) & 255,
-    g: (intVal >> 8) & 255,
-    b: intVal & 255
-  };
-};
-
 /**
- * Pulls the code out of the book's localization wrapper and drops the brand
- * name on the way in, so no part of the app ever holds a branded code.
+ * Finish suffixes in the order the finish filter shows them. Only the
+ * finishes an imported library actually carries are ever shown; unknown ones
+ * follow in alphabetical order.
  */
-const extractCode = (raw: string) => {
-  const match = raw.match(/prefix=([^$]+)\$\$\$/);
-  const wrapped = match && match[1] ? match[1] : raw;
-  return stripBrand(wrapped) || stripBrand(raw);
-};
-
-const SYSTEM_ALIAS: Record<string, string> = {
-  cb_v4: 'sys_a',
-  sol_v4: 'sys_b'
-};
-
-const FINISH_ALIAS: Record<string, string> = {
-  coated: 'fin_c',
-  uncoated: 'fin_u'
-};
-
-const ALLOWED_FINISHES = new Set([
-  'sys_a_fin_c',
-  'sys_a_fin_u',
-  'sys_b_fin_c',
-  'sys_b_fin_u'
-]);
-
-// Map source keys from encoded data to internal aliases
-const SOURCE_REMAP: Record<string, { systemId: string; systemName: string; finishId: string; finishName: string }> = {};
-
-// Build remap dynamically from known source patterns
-const SRC_PATTERNS: Array<{ pattern: RegExp; systemId: string; finishId: string }> = [
-  { pattern: /Bridge.*Uncoated.*V4/i, systemId: 'cb_v4', finishId: 'uncoated' },
-  { pattern: /Bridge.*Coated.*V4/i, systemId: 'cb_v4', finishId: 'coated' },
-  { pattern: /Solid.*Uncoated.*V4/i, systemId: 'sol_v4', finishId: 'uncoated' },
-  { pattern: /Solid.*Coated.*V4/i, systemId: 'sol_v4', finishId: 'coated' },
-];
-
-const resolveSource = (source: string): { systemId: string; systemName: string; finishId: string; finishName: string } | null => {
-  for (const p of SRC_PATTERNS) {
-    if (p.pattern.test(source)) {
-      return {
-        systemId: p.systemId,
-        systemName: p.systemId === 'cb_v4' ? 'System A' : 'System B',
-        finishId: p.finishId,
-        finishName: p.finishId === 'coated' ? 'Coated' : 'Uncoated'
-      };
-    }
-  }
-  return null;
-};
-
-const buildSystems = (): ColorLibrarySystem[] => {
-  const grouped: Record<string, ColorLibraryFinish> = {};
-
-  colorsData.colors.forEach((color) => {
-    const meta = resolveSource(color.source || '');
-    if (!meta) return;
-    const systemId = SYSTEM_ALIAS[meta.systemId] || meta.systemId;
-    const finishId = FINISH_ALIAS[meta.finishId] || meta.finishId;
-    const key = `${systemId}_${finishId}`;
-    if (!ALLOWED_FINISHES.has(key)) return;
-
-    if (!grouped[key]) {
-      grouped[key] = {
-        systemId,
-        systemName: 'System ' + (systemId === 'sys_a' ? 'A' : systemId === 'sys_b' ? 'B' : systemId),
-        finishId,
-        finishName: finishId === 'fin_c' ? 'Finish C' : finishId === 'fin_u' ? 'Finish U' : meta.finishName,
-        colors: []
-      };
-    }
-
-    const hex = color.hex.toUpperCase();
-    const code = extractCode(color.name);
-
-    grouped[key].colors.push({
-      code,
-      name: code,
-      hex,
-      rgb: hexToRgbQuick(hex),
-      model: color.model,
-      cmyk: color.cmyk || undefined,
-      source: color.source,
-      systemId,
-      systemName: 'System ' + (systemId === 'sys_a' ? 'A' : systemId === 'sys_b' ? 'B' : systemId),
-      finishId,
-      finish: finishId === 'fin_c' ? 'Finish C' : finishId === 'fin_u' ? 'Finish U' : meta.finishName
-    } as ReferenceColor);
-  });
-
-  const systemsMap: Record<string, ColorLibrarySystem> = {};
-  Object.values(grouped).forEach((finish) => {
-    if (!systemsMap[finish.systemId]) {
-      systemsMap[finish.systemId] = {
-        systemId: finish.systemId,
-        systemName: finish.systemName,
-        finishes: []
-      };
-    }
-    systemsMap[finish.systemId].finishes.push(finish);
-  });
-
-  return Object.values(systemsMap).filter((system) => system.finishes.length > 0);
-};
-
-export const COLOR_SYSTEMS: ColorLibrarySystem[] = buildSystems();
-
-/**
- * Books are named by the finish their codes carry, never by the brand behind
- * them. The wording a person reads comes from the dictionaries; these labels
- * are only the neutral fallback.
- */
-const LABEL_MAP: Record<string, string> = {
-  sys_b_fin_c: 'Solid C',
-  sys_b_fin_u: 'Solid U',
-  sys_a_fin_c: 'Process CP',
-  sys_a_fin_u: 'Process UP'
-};
-
-/** Finish suffix carried by the codes of each book. */
-export const LIBRARY_FINISHES: Record<string, string> = {
-  sys_b_fin_c: 'C',
-  sys_b_fin_u: 'U',
-  sys_a_fin_c: 'CP',
-  sys_a_fin_u: 'UP'
-};
-
-export const LIBRARY_OPTIONS: LibraryOption[] = COLOR_SYSTEMS.flatMap((system) =>
-  system.finishes.map((finish) => {
-    const key = `${system.systemId}_${finish.finishId}`;
-    return {
-      id: key,
-      label: LABEL_MAP[key] || `${system.systemName} ${finish.finishName}`,
-      finish: LIBRARY_FINISHES[key] || finish.finishId,
-      systemId: system.systemId,
-      finishId: finish.finishId,
-      colors: finish.colors
-    };
-  })
-);
-
-/** The four books, ordered the way the finish filter shows them: C, U, CP, UP. */
 export const FINISH_ORDER = ['C', 'U', 'CP', 'UP'];
 
-export const REFERENCE_LIBRARIES: LibraryOption[] = [...LIBRARY_OPTIONS].sort(
-  (a, b) => FINISH_ORDER.indexOf(a.finish) - FINISH_ORDER.indexOf(b.finish)
-);
-
-export const DEFAULT_LIBRARY: ReferenceColor[] = LIBRARY_OPTIONS[0]?.colors || [];
-
-export const getLibraryById = (id: string): ReferenceColor[] => {
-  const lib = LIBRARY_OPTIONS.find((option) => option.id === id);
-  return lib ? lib.colors : DEFAULT_LIBRARY;
-};
-
-export const getLibraryLabel = (id: string): string => {
-  const lib = LIBRARY_OPTIONS.find((option) => option.id === id);
-  return lib ? lib.label : LIBRARY_OPTIONS[0]?.label || '';
-};
+export const sortFinishes = (finishes: Iterable<string>): string[] =>
+  Array.from(new Set(finishes))
+    .filter((finish) => finish.length > 0)
+    .sort((a, b) => {
+      const ia = FINISH_ORDER.indexOf(a);
+      const ib = FINISH_ORDER.indexOf(b);
+      if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+      return a.localeCompare(b);
+    });

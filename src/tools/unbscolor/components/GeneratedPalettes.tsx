@@ -1,10 +1,11 @@
 import { Download, Lock, Pencil, Plus, Shuffle, Unlock, Upload } from 'lucide-react';
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { hexToRgb, rgbToHex, isValidHex, getClosestColorName, rgbToHsl, hslToRgb, rgbToCmyk, rgbToHsv, findReferenceMatches, normalizeHex } from '../utils/colorMath';
+import { hexToRgb, rgbToHex, isValidHex, getClosestColorName, rgbToHsl, hslToRgb, rgbToCmyk, rgbToHsv, normalizeHex } from '../utils/colorMath';
 import { contrastRatio as wcagContrastRatio, wcagLevelFor } from '../utils/contrast';
 import { clusterPixels } from '../utils/imageExtraction';
 import { downloadBlob, downloadUrl } from '../utils/browser';
-import { getLibraryById } from '../constants';
+import { useActiveBooks } from '../libraries/store';
+import { bestPerBook } from '../libraries/matching';
 import { formatReferenceCode } from '../utils/reference';
 import { useLanguage } from '../i18n';
 import type { Translations } from '../i18n';
@@ -54,10 +55,7 @@ interface Settings {
     showHsb: boolean;
     showLab: boolean;
     showCmyk: boolean;
-    showRefBridgeC: boolean;
-    showRefBridgeU: boolean;
-    showRefSolidC: boolean;
-    showRefSolidU: boolean;
+    showReferences: boolean;
     mixFormat: string;
 }
 
@@ -74,10 +72,7 @@ const defaultSettings: Settings = {
     showHsb: true,
     showLab: true,
     showCmyk: true,
-    showRefBridgeC: false,
-    showRefBridgeU: false,
-    showRefSolidC: false,
-    showRefSolidU: false,
+    showReferences: false,
     mixFormat: 'rgb(80, 184, 72)'
 };
 
@@ -276,11 +271,8 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         [colors]
     );
 
-    // Bibliotecas de referência
-    const bridgeCoatedLibrary = useMemo(() => getLibraryById('sys_a_fin_c'), []);
-    const bridgeUncoatedLibrary = useMemo(() => getLibraryById('sys_a_fin_u'), []);
-    const solidCoatedLibrary = useMemo(() => getLibraryById('sys_b_fin_c'), []);
-    const solidUncoatedLibrary = useMemo(() => getLibraryById('sys_b_fin_u'), []);
+    // Books of the libraries switched on in Settings.
+    const books = useActiveBooks();
 
     const formatColorCodes = (hex: string): string[] => {
         const codes: string[] = [];
@@ -303,25 +295,11 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         if (settings.showHsl) codes.push(`HSL ${hsl.h}, ${hsl.s}%, ${hsl.l}%`);
         if (settings.showHsb) codes.push(`HSB ${hsv.h}, ${hsv.s}, ${hsv.v}`);
 
-        // System B (C) — primary (Solid Coated)
-        if (settings.showRefSolidC && solidCoatedLibrary.length > 0) {
-            const match = findReferenceMatches(hex, solidCoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
-        }
-        // System B (U) — primary (Solid Uncoated)
-        if (settings.showRefSolidU && solidUncoatedLibrary.length > 0) {
-            const match = findReferenceMatches(hex, solidUncoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
-        }
-        // System A (CP) — secondary (Bridge Coated)
-        if (settings.showRefBridgeC && bridgeCoatedLibrary.length > 0) {
-            const match = findReferenceMatches(hex, bridgeCoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
-        }
-        // System A (UP) — secondary (Bridge Uncoated)
-        if (settings.showRefBridgeU && bridgeUncoatedLibrary.length > 0) {
-            const match = findReferenceMatches(hex, bridgeUncoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
+        // The closest reference of each switched-on library, up to four, closest first.
+        if (settings.showReferences) {
+            bestPerBook(hex, books, 4).forEach(({ match }) => {
+                if (match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
+            });
         }
 
         return codes;

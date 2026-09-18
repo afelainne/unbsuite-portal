@@ -9,7 +9,7 @@ Instruções para agentes de código neste repositório. É a fonte da verdade; 
 | Rota | Ferramenta | O que faz |
 | --- | --- | --- |
 | `/` | Portal | Índice das ferramentas, com busca |
-| `/unbscolor` | UNBSCOLOR | Conversão de cor, referência de impressão mais próxima, paletas, contraste, escala tonal |
+| `/unbscolor` | UNBSCOLOR | Conversão de cor, referência mais próxima (paletas abertas e bibliotecas importadas), paletas, contraste, escala tonal |
 | `/unbsgrid` | UNBSGRID | Análise de logo em SVG: 50 construções geométricas, métricas, diagnóstico, folha de marca |
 | `/unbsformat` | UNBSFORMAT | Grades editoriais: colunas e linhas sobre a linha de base, cânones clássicos, formatos, PDF com sangria |
 | `/unbsfont` | UNBSFONT | Editor de fontes: glifos, espaçamento, kerning, export OTF |
@@ -34,7 +34,7 @@ React 18.3, Vite 5.4, TypeScript 5.8, Tailwind 3.4, shadcn/ui (estilo `default`,
 
 Tailwind fica na versão 3 de propósito. O shadcn/ui segue suportando v3; migrar para v4 move a configuração para dentro do CSS e não traz ganho para este app.
 
-Cada ferramenta é carregada sob demanda em `src/App.tsx`. A página inicial carrega cerca de 330 KB; só o UNBSCOLOR carrega os 19 MB de bibliotecas de cor, e só quando aberto. **Não importe ferramenta de forma estática no roteador.**
+Cada ferramenta é carregada sob demanda em `src/App.tsx`. A página inicial carrega cerca de 330 KB; as ferramentas mais pesadas são o UNBSGRID (paper.js, cerca de 1 MB) e o UNBSFONT, e cada uma só carrega quando aberta. **Não importe ferramenta de forma estática no roteador.**
 
 ## Estrutura
 
@@ -78,7 +78,7 @@ Regras do sistema, que valem para qualquer tela nova:
 ## Armadilhas por ferramenta
 
 - **UNBSGRID.** Todo SVG que entra passa por `lib/svg-sanitize.ts` antes de chegar ao paper.js: o import anexa o documento ao DOM. Use `resetPaperProject` em vez de `paper.setup`, que vaza projeto a cada chamada. Toda medida decorativa (traço, tracejado, rótulo, ponto) vem de `components/renderers/scale.ts`, para a exportação grande não virar fio de cabelo. Construções se baseiam na tinta real do desenho, não na caixa que a envolve.
-- **UNBSCOLOR.** As bibliotecas de referência são carregadas de arquivos codificados com fallback seguro. `findReferenceMatches` tem cache; não contorne. Texto interpolado em SVG de exportação passa por `escapeXml`.
+- **UNBSCOLOR.** Nenhum dado de biblioteca licenciada entra no código nem no build: o app traz só paletas abertas (`data/open/`, licença de cada uma no README de lá) e o resto é importado pela pessoa em Ajustes → Bibliotecas (`.acb`, `.ase`, UNBS JSON, formato em `data/LIBRARY_FORMAT.md`), lido no navegador e guardado no IndexedDB. Não embuta bibliotecas de terceiros nem cite marca de livro de cor na interface. Tudo que lê bibliotecas passa por `libraries/store.ts`. `findReferenceMatches` tem cache por array; não contorne. Texto interpolado em SVG de exportação passa por `escapeXml`.
 - **UNBSFONT.** Tem modo escuro próprio: a classe `dark` é aplicada na raiz da ferramenta, e os editores ficam dentro de um contêiner que a herda.
 - **Todas.** Acesso ao `localStorage` sempre dentro de `try/catch`. Download com `setTimeout` antes de liberar a URL do objeto, senão o navegador cancela.
 

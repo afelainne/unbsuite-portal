@@ -6,10 +6,9 @@ import {
   groupReferenceMatches,
   parseReferenceCode,
   referenceFinish,
-  stripBrand
+  cleanReferenceCode
 } from '../utils/reference';
 import { disambiguateColorNames } from '../utils/colorNames';
-import { DEFAULT_LIBRARY, LIBRARY_OPTIONS } from '../constants';
 import type { ColorMatch, ReferenceColor } from '../types';
 
 const ref = (code: string, hex: string): ReferenceColor => ({
@@ -35,58 +34,35 @@ const MODIFIERS = {
 };
 
 describe('reference code formatting', () => {
-  it('drops the brand name in every form it arrives in', () => {
-    expect(formatReferenceCode('PANTONE 388 C')).toBe('388 C');
-    expect(formatReferenceCode('PMS PANTONE 388 C')).toBe('388 C');
-    expect(formatReferenceCode('PMS 388 C')).toBe('388 C');
-    expect(formatReferenceCode('PMS388 C')).toBe('388 C');
-    expect(formatReferenceCode('P. 388 C')).toBe('388 C');
+  it('keeps the code as written in the file, brand and all', () => {
+    expect(formatReferenceCode('ACME 388 C')).toBe('ACME 388 C');
+    expect(formatReferenceCode('Tailwind red-500')).toBe('Tailwind red-500');
     // The finish is normalized to upper case; the rest keeps its own casing.
-    expect(formatReferenceCode('pantone+ 388 c')).toBe('388 C');
+    expect(formatReferenceCode('acme+  388 c')).toBe('acme+ 388 C');
   });
 
   it('unwraps the color book localization key', () => {
-    expect(formatReferenceCode('$$$/colorbook/PANTONE/prefix=PANTONE 102 UP$$$/colorbook/PANTONE/postfix=')).toBe('102 UP');
-  });
-
-  it('never returns a branded string', () => {
-    for (const raw of ['PANTONE Yellow 012 U', 'PMS Bright Red C', 'PANTONE 7406 CP']) {
-      expect(formatReferenceCode(raw)).not.toMatch(/pantone|pms/i);
-    }
+    expect(formatReferenceCode('$$$/book/ACME/prefix=ACME 102 UP$$$/book/ACME/postfix=')).toBe('ACME 102 UP');
+    expect(cleanReferenceCode('  a   b  ')).toBe('a b');
   });
 
   it('splits the finish from the reference', () => {
-    expect(parseReferenceCode('PANTONE 388 C')).toEqual({ base: '388', finish: 'C', code: '388 C', key: '388' });
-    expect(parseReferenceCode('PANTONE Yellow 012 U').base).toBe('Yellow 012');
-    expect(referenceFinish('PANTONE 102 UP')).toBe('UP');
-    expect(formatReferenceBase('PANTONE 7406 CP')).toBe('7406');
+    expect(parseReferenceCode('ACME 388 C')).toEqual({ base: 'ACME 388', finish: 'C', code: 'ACME 388 C', key: 'ACME 388' });
+    expect(parseReferenceCode('Yellow 012 U').base).toBe('Yellow 012');
+    expect(referenceFinish('ACME 102 UP')).toBe('UP');
+    expect(formatReferenceBase('7406 CP')).toBe('7406');
   });
 
   it('keeps a code that carries no finish', () => {
     expect(parseReferenceCode('Warm Gray')).toEqual({ base: 'Warm Gray', finish: '', code: 'Warm Gray', key: 'WARM GRAY' });
+    expect(referenceFinish('Open Color blue 6')).toBe('');
+    expect(referenceFinish('Material red A200')).toBe('');
   });
 
   it('survives empty and malformed input', () => {
     expect(formatReferenceCode(undefined)).toBe('');
     expect(formatReferenceCode('')).toBe('');
-    expect(stripBrand('   PANTONE   ')).toBe('');
-  });
-
-  it('is what the bundled books already carry', () => {
-    const sample = DEFAULT_LIBRARY.slice(0, 50);
-    expect(sample.length).toBeGreaterThan(0);
-    for (const color of sample) {
-      expect(color.code).not.toMatch(/pantone|pms/i);
-      expect(formatReferenceCode(color.code)).toBe(color.code);
-    }
-  });
-
-  it('labels every book with a brand-free name and a finish', () => {
-    expect(LIBRARY_OPTIONS.length).toBeGreaterThan(0);
-    for (const option of LIBRARY_OPTIONS) {
-      expect(option.label).not.toMatch(/pantone|pms/i);
-      expect(['C', 'U', 'CP', 'UP']).toContain(option.finish);
-    }
+    expect(cleanReferenceCode('   ')).toBe('');
   });
 });
 
