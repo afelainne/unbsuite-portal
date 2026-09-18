@@ -3,17 +3,11 @@ import { X } from 'lucide-react';
 import { cx } from './cx';
 
 /**
- * As peças de layout do UNBSFONT, no desenho do sistema UNBSTOOLS
- * (design-system/reference/ui_kits/workspace). São as mesmas do UNBSCOLOR
- * (`src/tools/unbscolor/components/ui.tsx`), copiadas para cá para que as
- * ferramentas continuem independentes, mais o que um editor de fontes pede:
- * fila de título, folha modal, campo com rótulo, interruptor e barra de
- * progresso.
- *
- * Tudo usa tokens (`bg-card`, `text-foreground`, `bg-canvas`...), então o modo
- * escuro da ferramenta funciona só com a classe `dark` na raiz dela.
+ * As peças de layout do UNBSFONT, no desenho do sistema UNBSTOOLS: cartão,
+ * botão de ícone, numeral, abas em texto, pílulas, fila de título, folha
+ * modal, campo com rótulo e interruptor. Tudo em tokens, então o modo escuro
+ * funciona só com a classe dark na raiz da ferramenta.
  */
-
 
 /* ---------------------------------------------------------------- Card */
 
@@ -195,39 +189,6 @@ export function Segmented<T extends string>({ items, value, onChange, ariaLabel,
   );
 }
 
-/* ------------------------------------------------------------ ValueRow */
-
-interface ValueRowProps {
-  label: React.ReactNode;
-  value: React.ReactNode;
-  last?: boolean;
-  className?: string;
-}
-
-/** Rótulo em cinza à esquerda, valor em tinta à direita, um fio embaixo. */
-export const ValueRow: React.FC<ValueRowProps> = ({ label, value, last, className }) => (
-  <div className={cx('flex items-center justify-between gap-4 min-h-10', !last && 'hairline-b', className)}>
-    <span className="text-[14px] text-muted-foreground shrink-0">{label}</span>
-    <span className="text-[14px] text-foreground tabular truncate text-right">{value}</span>
-  </div>
-);
-
-/** Título de seção entre grupos de cartões. */
-export const SectionHeading: React.FC<{ title: React.ReactNode; hint?: React.ReactNode; actions?: React.ReactNode; className?: string }> = ({
-  title,
-  hint,
-  actions,
-  className
-}) => (
-  <div className={cx('flex flex-wrap items-end justify-between gap-4', className)}>
-    <div className="flex flex-col gap-1 min-w-0">
-      <h2 className="text-[24px] md:text-[28px] font-normal leading-[1.2] tracking-[-0.01em] text-foreground">{title}</h2>
-      {hint && <p className="text-[14px] text-muted-foreground max-w-[60ch]">{hint}</p>}
-    </div>
-    {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
-  </div>
-);
-
 /* ------------------------------------------------------------ TitleRow */
 
 interface TitleRowProps {
@@ -393,25 +354,6 @@ export const Switch: React.FC<SwitchProps> = ({ checked, onChange, label, descri
   </button>
 );
 
-/* ------------------------------------------------------------ Progress */
-
-/** Barra fina em tinta sobre trilho cinza, de 0 a 1. */
-export const Progress: React.FC<{ value: number; className?: string; label?: string }> = ({ value, className, label }) => {
-  const v = Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0));
-  return (
-    <div
-      className={cx('h-1 w-full rounded-pill bg-fill-2 overflow-hidden', className)}
-      role="progressbar"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(v * 100)}
-    >
-      <div className="h-full rounded-pill bg-foreground transition-[width] duration-base ease-out" style={{ width: `${v * 100}%` }} />
-    </div>
-  );
-};
-
 /* ------------------------------------------------------------- Spinner */
 
 export const Spinner: React.FC<{ className?: string }> = ({ className }) => (
@@ -419,44 +361,4 @@ export const Spinner: React.FC<{ className?: string }> = ({ className }) => (
     aria-hidden="true"
     className={cx('inline-block w-4 h-4 rounded-pill border-2 border-current border-t-transparent animate-spin', className)}
   />
-);
-
-/* ------------------------------------------------------------ GlyphSvg */
-
-interface GlyphSvgProps {
-  pathData?: string;
-  leftSideBearing?: number;
-  baselineOffset?: number;
-  scale?: number;
-  className?: string;
-  style?: React.CSSProperties;
-  viewBox?: string;
-  label?: string;
-}
-
-/** Desenho de um glifo em `currentColor`, na caixa de 1000 unidades. */
-export const GlyphSvg: React.FC<GlyphSvgProps> = ({
-  pathData,
-  leftSideBearing = 0,
-  baselineOffset = 0,
-  scale = 1,
-  className,
-  style,
-  viewBox = '0 0 1000 1000',
-  label
-}) => (
-  <svg
-    viewBox={viewBox}
-    className={cx('fill-current overflow-visible', className)}
-    style={style}
-    role={label ? 'img' : undefined}
-    aria-label={label}
-    aria-hidden={label ? undefined : true}
-  >
-    {pathData && (
-      <g transform={`translate(${leftSideBearing}, ${baselineOffset}) scale(${scale})`}>
-        <path d={pathData} />
-      </g>
-    )}
-  </svg>
 );

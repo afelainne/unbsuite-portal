@@ -1,7 +1,4 @@
 {
   "name": "UNBSFONT",
-  "description": "A professional web-based font editor to create, edit, and export custom OTF fonts using SVG imports and AI generation.",
-  "requestFramePermissions": [
-    "clipboard-read"
-  ]
+  "description": "Gera uma fonte ou família a partir de uma folha SVG ou de SVGs colados, com espaçamento e kerning automáticos, e exporta OTF e TTF."
 }
