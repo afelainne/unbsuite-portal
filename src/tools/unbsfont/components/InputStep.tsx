@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ClipboardPaste, Combine, FileDown, Lock, LockOpen, Plus, Split, Trash2, Upload, X } from 'lucide-react';
-import type { FontStyle, Glyph, Project } from '../lib/types';
+import { ClipboardPaste, Combine, CopyPlus, FileDown, Lock, LockOpen, Plus, Split, Trash2, Unlink, Upload, X } from 'lucide-react';
+import type { FontStyle, Glyph, Metrics, Project } from '../lib/types';
 import {
   detectBaselines, measureGuides, mergeWithNext, pastedGlyph, setRowBaseline, sheetGroups, sheetToGlyphs,
   sourceCapHeight, splitGroup, type Sheet, type SheetGuides,
 } from '../lib/sheet';
-import { DEFAULT_SEQUENCE, PRESETS, sequenceChars } from '../lib/charset';
+import { BASIC_PRESETS, DEFAULT_SEQUENCE, PRESETS, sequenceChars } from '../lib/charset';
+import { caseSettings, copyMissing, copyToOtherCase, detachGlyph, nudgeAccent, otherCase, recomposeAll, setCaseSettings } from '../lib/derive';
+import { CaseCard } from './CaseCard';
 import { toPathData } from '../lib/geometry';
 import { advanceOf } from '../lib/outline';
 import { makeSpec, type Paper } from '../lib/cartela';
@@ -24,6 +26,8 @@ interface InputStepProps {
   onAddGlyphs: (glyphs: Glyph[], srcCap: number, guides?: SheetGuides) => void;
   onGlyph: (glyph: Glyph) => void;
   onRemoveGlyph: (char: string) => void;
+  /** Muda o estilo inteiro (unicase, acentos): a função recebe o estilo e as métricas atuais. */
+  onUpdateStyle: (fn: (s: FontStyle, m: Metrics) => FontStyle) => void;
   notify: Notify;
 }
 
@@ -35,7 +39,7 @@ const readSequence = () => {
 const isEditable = (el: EventTarget | null) =>
   el instanceof HTMLElement && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 
-export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyphs, onGlyph, onRemoveGlyph, notify }) => {
+export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyphs, onGlyph, onRemoveGlyph, onUpdateStyle, notify }) => {
   const m = project.metrics;
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const [sequence, setSequence] = useState(readSequence);
@@ -178,16 +182,42 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
 
   /* ------------------------------------------------ slots */
 
+  // Grade: o básico (A–Z, a–z, 0–9, pontuação), o que estiver na ordem, o que já existe e o que foi acrescentado.
   const slots = useMemo(() => {
-    const base = PRESETS.flatMap(p => Array.from(p.chars));
+    const base = Array.from(new Set([...BASIC_PRESETS.flatMap(p => Array.from(p.chars)), ...chars]));
     const set = new Set(base);
     const extra = [...Object.keys(style.glyphs), ...extraChars]
       .filter(c => !set.has(c) && c !== ' ')
       .sort((a, b) => (a.codePointAt(0) || 0) - (b.codePointAt(0) || 0));
     return [...base, ...Array.from(new Set(extra))];
-  }, [style.glyphs, extraChars]);
-  const drawn = Object.values(style.glyphs).filter(g => g.outline.length).length;
+  }, [style.glyphs, extraChars, chars]);
+  const drawn = Object.values(style.glyphs).filter(g => g.outline.length && !g.derived).length;
+  const derivedCount = Object.values(style.glyphs).filter(g => g.derived).length;
   const glyph = selectedChar ? style.glyphs[selectedChar] : undefined;
+  const cs = caseSettings(style);
+  const nudge = selectedChar ? cs.nudges[selectedChar] ?? { dx: 0, dy: 0 } : { dx: 0, dy: 0 };
+  const other = selectedChar ? otherCase(selectedChar) : null;
+
+  /* ------------------------------------------------ unicase e acentos */
+
+  const copyOther = () => {
+    if (!selectedChar || !other) return;
+    const target = style.glyphs[other];
+    if (target && !target.derived && !window.confirm(`${other} já tem desenho. Trocar pelo desenho de ${selectedChar}?`)) return;
+    onUpdateStyle((s, mm) => copyToOtherCase(s, selectedChar, mm, true));
+    notify(`${other} agora usa o desenho de ${selectedChar}.`, 'ok');
+  };
+  const fillMissing = (from: 'upper' | 'lower') => {
+    const { count } = copyMissing(style, from, m);
+    if (!count) { notify(from === 'upper' ? 'Nenhuma minúscula faltando com maiúscula correspondente.' : 'Nenhuma maiúscula faltando com minúscula correspondente.', 'info'); return; }
+    onUpdateStyle((s, mm) => copyMissing(s, from, mm).style);
+    notify(`${count} ${from === 'upper' ? 'minúsculas' : 'maiúsculas'} preenchidas com a outra caixa.`, 'ok');
+  };
+  const detach = () => {
+    if (!selectedChar) return;
+    onUpdateStyle((s, mm) => detachGlyph(s, selectedChar, mm));
+    notify(`${selectedChar} deixou de ser derivado. Desenhe ou copie para preencher.`, 'info');
+  };
 
   const addChar = () => {
     const c = Array.from(newChar.trim())[0];
@@ -302,26 +332,42 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
         )}
       </Card>
 
+      <CaseCard
+        style={style}
+        chars={chars}
+        onCases={patch => onUpdateStyle((s, mm) => setCaseSettings(s, patch, mm))}
+        onCopyMissing={fillMissing}
+        onRecompose={() => { onUpdateStyle((s, mm) => recomposeAll(s, mm)); notify('Acentos recompostos, sem os ajustes finos.', 'ok'); }}
+      />
+
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px] items-start">
-        <Card label={`Glifos · ${style.name}`} actions={<span className="text-[12px] text-muted-foreground tabular">{drawn} desenhados</span>}>
+        <Card
+          label={`Glifos · ${style.name}`}
+          actions={<span className="text-[12px] text-muted-foreground tabular">{drawn} desenhados{derivedCount ? ` · ${derivedCount} derivados` : ''}</span>}
+        >
           <div className="grid gap-1.5 grid-cols-[repeat(auto-fill,minmax(52px,1fr))]" role="listbox" aria-label="Caracteres">
             {slots.map(c => {
               const g = style.glyphs[c];
               const on = c === selectedChar;
+              const d = g?.derived;
+              const tag = d ? (d.kind === 'unicase' ? `de ${d.from}` : 'comp.') : null;
+              const about = d ? (d.kind === 'unicase' ? `derivado de ${d.from}` : `composto de ${d.from} e ${d.mark}`) : '';
               return (
                 <button
                   key={c}
                   type="button"
                   role="option"
                   aria-selected={on}
-                  aria-label={`${c}${g ? '' : ', sem desenho'}`}
+                  aria-label={`${c}${!g ? ', sem desenho' : about ? `, ${about}` : ''}`}
+                  title={about ? `${c}: ${about}` : undefined}
                   onClick={() => setSelectedChar(on ? null : c)}
                   className={cx(
-                    'aspect-square rounded-sm flex items-center justify-center p-1.5 transition-colors duration-fast ease-out',
-                    on ? 'bg-primary text-primary-foreground' : 'bg-fill hover:bg-fill-2 text-foreground',
+                    'relative aspect-square rounded-sm flex items-center justify-center p-1.5 transition-colors duration-fast ease-out',
+                    on ? 'bg-primary text-primary-foreground' : d ? 'bg-fill hover:bg-fill-2 text-muted-foreground' : 'bg-fill hover:bg-fill-2 text-foreground',
                   )}
                 >
-                  {g ? <GlyphThumb glyph={g} m={m} className="w-full h-full" /> : <span className={cx('text-[18px]', on ? 'opacity-70' : 'text-muted-foreground/60')}>{c}</span>}
+                  {g ? <GlyphThumb glyph={g} m={m} className={cx('w-full h-full', tag && 'pb-2')} /> : <span className={cx('text-[18px]', on ? 'opacity-70' : 'text-muted-foreground/60')}>{c}</span>}
+                  {tag && <span aria-hidden="true" className={cx('absolute bottom-0.5 inset-x-0 text-center text-[9px] leading-none', on ? 'text-primary-foreground/80' : 'text-muted-foreground')}>{tag}</span>}
                 </button>
               );
             })}
@@ -339,14 +385,46 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
               <>
                 <IconButton label="Colar SVG neste glifo" onClick={readClipboard}><ClipboardPaste aria-hidden="true" /></IconButton>
                 <IconButton label="Enviar SVG para este glifo" onClick={() => glyphFile.current?.click()}><Upload aria-hidden="true" /></IconButton>
-                {glyph && (
+                {glyph && !glyph.derived && (
                   <IconButton label="Apagar o desenho" variant="danger" onClick={() => onRemoveGlyph(selectedChar)}><Trash2 aria-hidden="true" /></IconButton>
+                )}
+                {glyph?.derived && (
+                  <IconButton label="Desfazer derivação" onClick={detach}><Unlink aria-hidden="true" /></IconButton>
                 )}
               </>
             }
             className="xl:sticky xl:top-0"
           >
-            {glyph ? (
+            {glyph?.derived ? (
+              <>
+                <div className="surface-inset h-[300px] md:h-[360px] w-full p-2"><GlyphStage glyph={glyph} m={m} /></div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[14px] text-foreground">
+                    {glyph.derived.kind === 'unicase' ? `Derivado de ${glyph.derived.from} (unicase)` : `Composto: ${glyph.derived.from} + ${glyph.derived.mark}`}
+                  </span>
+                  <span className="text-[12px] text-muted-foreground">
+                    Margens e kerning seguem {glyph.derived.from}. Um desenho colado ou enviado para {selectedChar} substitui o derivado.
+                  </span>
+                  {glyph.derived.note && <span className="text-[12px] text-foreground">{glyph.derived.note}</span>}
+                </div>
+                {glyph.derived.kind === 'composite' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label="Acento, horizontal">
+                      <NumberInput label="Ajuste horizontal do acento" value={nudge.dx} onCommit={v => onUpdateStyle((s, mm) => nudgeAccent(s, selectedChar, v, nudge.dy, mm))} />
+                    </Field>
+                    <Field label="Acento, vertical">
+                      <NumberInput label="Ajuste vertical do acento" value={nudge.dy} onCommit={v => onUpdateStyle((s, mm) => nudgeAccent(s, selectedChar, nudge.dx, v, mm))} />
+                    </Field>
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-4 justify-between">
+                  <Metric size="sm" value={advanceOf(glyph, m)} caption="avanço" />
+                  <button type="button" className="ctl ctl-sm ctl-outline" onClick={detach}>
+                    <Unlink className="w-3.5 h-3.5" aria-hidden="true" />Desfazer derivação
+                  </button>
+                </div>
+              </>
+            ) : glyph ? (
               <>
                 <div className="surface-inset h-[300px] md:h-[360px] w-full p-2"><GlyphStage glyph={glyph} m={m} onMargins={setMargins} /></div>
                 <div className="grid grid-cols-3 gap-4">
@@ -368,6 +446,11 @@ export const InputStep: React.FC<InputStepProps> = ({ project, style, onAddGlyph
                   label={<span className="inline-flex items-center gap-1.5">{glyph.locked ? <Lock className="w-3.5 h-3.5" aria-hidden="true" /> : <LockOpen className="w-3.5 h-3.5" aria-hidden="true" />}Margens à mão</span>}
                   description="Ligado, o espaçamento automático não mexe neste glifo."
                 />
+                {other && (
+                  <button type="button" className="ctl ctl-sm ctl-outline self-start" onClick={copyOther}>
+                    <CopyPlus className="w-3.5 h-3.5" aria-hidden="true" />Copiar para a outra caixa ({other})
+                  </button>
+                )}
               </>
             ) : (
               <p className="text-[14px] text-muted-foreground">

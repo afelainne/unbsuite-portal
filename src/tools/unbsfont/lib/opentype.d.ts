@@ -16,6 +16,7 @@ declare module 'opentype.js' {
     index: number;
     unicode?: number;
     unicodes: number[];
+    addUnicode(unicode: number): void;
     advanceWidth: number;
     path: Path;
   }

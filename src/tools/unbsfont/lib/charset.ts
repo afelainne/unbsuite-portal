@@ -1,13 +1,38 @@
 /** Conjuntos de caracteres, categorias e nomes de glifo. */
 
+const range = (from: number, to: number, skip: number[] = []) => {
+  let s = '';
+  for (let cp = from; cp <= to; cp++) if (!skip.includes(cp)) s += String.fromCodePoint(cp);
+  return s;
+};
+
+/** Sinais de acento desenháveis (caracteres de espaçamento), na ordem da cartela. */
+export const MARKS_BASIC = '´`ˆ˜¨¸˚';
+/** Sinais que só o Latin Extended-A usa. */
+export const MARKS_EXTENDED = 'ˇ˘˙˝˛¯';
+/** Letras sem pingo: o acento do í e do ĵ vai sobre elas, quando desenhadas. */
+export const DOTLESS: Record<string, string> = { i: 'ı', j: 'ȷ' };
+
+export const ACCENTS_PT_ES = 'ÁÀÂÃÄÇÉÈÊËÍÌÎÏÑÓÒÔÕÖÚÙÛÜÝ' + 'áàâãäçéèêëíìîïñóòôõöúùûüýÿ';
+/** Latin-1 Supplement (menos o hífen condicional) e os extras do Windows-1252. */
+export const LATIN_1 = range(0xa1, 0xff, [0xad]) + '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
+export const LATIN_EXT_A = range(0x100, 0x17f) + MARKS_EXTENDED;
+
+/** Conjuntos da ordem de caracteres. Os quatro primeiros formam a grade básica de glifos. */
 export const PRESETS = [
   { id: 'upper', label: 'A–Z', chars: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' },
   { id: 'lower', label: 'a–z', chars: 'abcdefghijklmnopqrstuvwxyz' },
   { id: 'digits', label: '0–9', chars: '0123456789' },
   { id: 'punct', label: 'Pontuação', chars: '.,:;!?\'"-()&@#%/*+=' },
+  { id: 'marks', label: 'Sinais de acento', chars: `${MARKS_BASIC}ı` },
+  { id: 'accents', label: 'Acentos PT/ES', chars: ACCENTS_PT_ES },
+  { id: 'latin1', label: 'Latin-1 completo', chars: LATIN_1 },
+  { id: 'latinA', label: 'Latin Extended-A', chars: LATIN_EXT_A },
 ] as const;
 
-export const DEFAULT_SEQUENCE = PRESETS.map(p => p.chars).join('\n');
+export const BASIC_PRESETS = PRESETS.slice(0, 4);
+
+export const DEFAULT_SEQUENCE = BASIC_PRESETS.map(p => p.chars).join('\n');
 
 /** Caracteres da sequência, na ordem, sem espaços nem quebras de linha. */
 export const sequenceChars = (sequence: string): string[] => Array.from(sequence).filter(c => !/\s/.test(c));
@@ -36,8 +61,8 @@ export function charKind(c: string): CharKind {
 /* Posição na folha: de onde a linha de base pode ser lida com confiança. */
 export const FLAT_BOTTOM = new Set(Array.from('ABDEFHIKLMNPRTXZbdhiklmnrxz12457'));
 export const ROUND_BOTTOM = new Set(Array.from('CGOSUcoesau03689.!?:'));
-export const DESCENDS = new Set(Array.from('gjpqyQ,;'));
-export const RAISED = new Set(Array.from('\'"‘’“”`´^°*~'));
+export const DESCENDS = new Set(Array.from('gjpqyQ,;¸˛'));
+export const RAISED = new Set(Array.from('\'"‘’“”`´^°*~ˆ˜¨˚ˇ˘˙˝¯'));
 
 /* Referências para as guias da folha, em ordem de preferência. */
 export const CAP_REFS = Array.from('HIEFTLZNMKXBDPR');
@@ -59,11 +84,22 @@ const NAMES: Record<string, string> = {
   '“': 'quotedblleft', '”': 'quotedblright', '‚': 'quotesinglbase', '„': 'quotedblbase', '…': 'ellipsis', '•': 'bullet',
   '€': 'Euro', '£': 'sterling', '™': 'trademark', 'ß': 'germandbls', 'Æ': 'AE', 'æ': 'ae', 'Ø': 'Oslash', 'ø': 'oslash',
   'Œ': 'OE', 'œ': 'oe', '´': 'acute', '¨': 'dieresis', '¸': 'cedilla', 'ª': 'ordfeminine', 'º': 'ordmasculine',
+  'ˆ': 'circumflex', '˜': 'tilde', '˚': 'ring', 'ˇ': 'caron', '˘': 'breve', '˙': 'dotaccent', '˝': 'hungarumlaut', '˛': 'ogonek',
+  '¯': 'macron', 'ı': 'dotlessi', 'ȷ': 'dotlessj', '¢': 'cent', '¥': 'yen', '¤': 'currency', '¦': 'brokenbar', '§': 'section',
+  '¬': 'logicalnot', '±': 'plusminus', '²': 'twosuperior', '³': 'threesuperior', '¹': 'onesuperior', 'µ': 'mu', '¶': 'paragraph',
+  '¼': 'onequarter', '½': 'onehalf', '¾': 'threequarters', '×': 'multiply', '÷': 'divide', 'Ð': 'Eth', 'ð': 'eth', 'Þ': 'Thorn',
+  'þ': 'thorn', 'Đ': 'Dcroat', 'đ': 'dcroat', 'Ħ': 'Hbar', 'ħ': 'hbar', 'Ł': 'Lslash', 'ł': 'lslash', 'Ŋ': 'Eng', 'ŋ': 'eng',
+  'ĸ': 'kgreenlandic', 'Ŀ': 'Ldot', 'ŀ': 'ldot', 'ŉ': 'napostrophe', 'Ĳ': 'IJ', 'ĳ': 'ij', 'ſ': 'longs', 'ƒ': 'florin',
+  '‹': 'guilsinglleft', '›': 'guilsinglright', '†': 'dagger', '‡': 'daggerdbl', '‰': 'perthousand',
+  'Ģ': 'Gcommaaccent', 'ģ': 'gcommaaccent', 'Ķ': 'Kcommaaccent', 'ķ': 'kcommaaccent', 'Ļ': 'Lcommaaccent', 'ļ': 'lcommaaccent',
+  'Ņ': 'Ncommaaccent', 'ņ': 'ncommaaccent', 'Ŗ': 'Rcommaaccent', 'ŗ': 'rcommaaccent',
 };
 
 const MARKS: Record<string, string> = Object.fromEntries(
-  ([[0x300, 'grave'], [0x301, 'acute'], [0x302, 'circumflex'], [0x303, 'tilde'], [0x308, 'dieresis'], [0x30a, 'ring'], [0x327, 'cedilla'], [0x30c, 'caron']] as const)
-    .map(([cp, name]) => [String.fromCharCode(cp), name]),
+  ([
+    [0x300, 'grave'], [0x301, 'acute'], [0x302, 'circumflex'], [0x303, 'tilde'], [0x304, 'macron'], [0x306, 'breve'], [0x307, 'dotaccent'],
+    [0x308, 'dieresis'], [0x30a, 'ring'], [0x30b, 'hungarumlaut'], [0x30c, 'caron'], [0x327, 'cedilla'], [0x328, 'ogonek'],
+  ] as const).map(([cp, name]) => [String.fromCharCode(cp), name]),
 );
 
 /** Nome de glifo pela Adobe Glyph List quando existe; `uniXXXX` nos demais. */

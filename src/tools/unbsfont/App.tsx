@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, FilePlus2, FolderOpen, Moon, Save, Sun } from 'lucide-react';
 import type { FontStyle, Glyph, KerningSettings, Metrics, Project, SpacingSettings } from './lib/types';
-import { addGlyphs, rekern, removeGlyph, respace, setGlyph, setMetrics } from './lib/actions';
+import { addGlyphs, rekern, removeGlyph, respace, setMetrics, updateGlyph } from './lib/actions';
 import {
   AUTOSAVE_KEY, downloadBlob, loadAutosave, newId, newProject, newStyle, parseProject, PROJECT_EXTENSION, rescaleUpm, saveAutosave, serializeProject,
 } from './lib/project';
@@ -97,11 +97,8 @@ const App: React.FC = () => {
   }, [style.id]);
 
   const onGlyph = useCallback((g: Glyph) => {
-    updateStyle((s, m) => {
-      const next = setGlyph(s, g);
-      // Destravado (ou mudou a forma): o automático refaz as margens.
-      return g.locked ? next : respace(next, m);
-    });
+    // Destravado (ou mudou a forma): o automático refaz as margens. Os derivados acompanham sempre.
+    updateStyle((s, m) => updateGlyph(s, g, m));
   }, [updateStyle]);
 
   const onSpacing = (spacing: SpacingSettings) => updateStyle((s, m) => respace({ ...s, spacing }, m));
@@ -239,6 +236,7 @@ const App: React.FC = () => {
                   onAddGlyphs={onAddGlyphs}
                   onGlyph={onGlyph}
                   onRemoveGlyph={char => updateStyle((s, m) => respace(removeGlyph(s, char), m))}
+                  onUpdateStyle={updateStyle}
                   notify={notify}
                 />
               )}

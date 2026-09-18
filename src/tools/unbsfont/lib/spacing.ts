@@ -151,10 +151,12 @@ export function glyphSpacing(g: Glyph, m: Metrics, ref: SpacingReference, settin
 
 /** Aplica o espaçamento automático a todos os glifos que não foram ajustados à mão. */
 export function autoSpace(glyphs: Record<string, Glyph>, m: Metrics, settings: SpacingSettings): Record<string, Glyph> {
-  const ref = spacingReference(glyphs, m, settings);
+  // Derivados (unicase, compostos) herdam as margens da origem: não medem nem servem de referência.
+  const drawn = Object.fromEntries(Object.entries(glyphs).filter(([, g]) => !g.derived));
+  const ref = spacingReference(drawn, m, settings);
   const out: Record<string, Glyph> = {};
   for (const [c, g] of Object.entries(glyphs)) {
-    if (g.locked || !g.outline.length) { out[c] = g; continue; }
+    if (g.locked || !g.outline.length || g.derived) { out[c] = g; continue; }
     const { lsb, rsb } = glyphSpacing(g, m, ref, settings);
     out[c] = lsb === g.lsb && rsb === g.rsb ? g : { ...g, lsb, rsb };
   }

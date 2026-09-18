@@ -25,7 +25,8 @@ export const SpacingStep: React.FC<SpacingStepProps> = ({ project, style, onSpac
   const [text, setText] = useState(TRACY.join('\n'));
   const ref = useMemo(() => spacingReference(style.glyphs, m, style.spacing), [style.glyphs, m, style.spacing]);
   const lines = useMemo(() => layoutText(text, style, m, null), [text, style, m]);
-  const glyphs = Object.values(style.glyphs).filter(g => g.outline.length).sort((a, b) => (a.char.codePointAt(0) || 0) - (b.char.codePointAt(0) || 0));
+  // Derivados (unicase, compostos) herdam as margens da origem: não entram na lista.
+  const glyphs = Object.values(style.glyphs).filter(g => g.outline.length && !g.derived).sort((a, b) => (a.char.codePointAt(0) || 0) - (b.char.codePointAt(0) || 0));
   const locked = glyphs.filter(g => g.locked).length;
 
   return (

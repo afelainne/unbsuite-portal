@@ -30,6 +30,41 @@ export interface Glyph {
   rsb: number;
   /** Margens ajustadas à mão: o espaçamento automático não mexe. */
   locked: boolean;
+  /** Glifo que não foi desenhado: sai de outro (unicase) ou da letra-base com um sinal (composto). */
+  derived?: Derivation;
+}
+
+/**
+ * De onde vem um glifo derivado. Ele é refeito a cada mudança a partir da
+ * origem, então o desenho, as margens e o kerning acompanham.
+ */
+export interface Derivation {
+  kind: 'unicase' | 'composite';
+  /** Unicase: o caractere copiado. Composto: a letra-base usada (pode ser o ı sem pingo). */
+  from: string;
+  /** Composto: o sinal de acento (caractere de espaçamento, como ´). */
+  mark?: string;
+  /** Criado pelo modo unicase ou pela composição automática (some quando ela desliga). */
+  auto: boolean;
+  /** Composto: observação para quem desenha (por exemplo, o pingo do i retirado). */
+  note?: string;
+}
+
+/** Unicase: 'upper' põe as maiúsculas no lugar das minúsculas; 'lower', o contrário. */
+export type UnicaseMode = 'off' | 'upper' | 'lower';
+
+export interface CaseSettings {
+  unicase: UnicaseMode;
+  /** Compõe os acentuados que faltam a partir da letra-base e do sinal desenhados. */
+  compose: boolean;
+  /** Compõe também os acentuados do Latin Extended-A (Ă, Č, Ő…), além dos do Latin-1. */
+  composeExtended: boolean;
+  /** Unidades somadas à distância do acento sobre as maiúsculas (negativo: mais baixo). */
+  capAccentOffset: number;
+  /** Ajuste fino do acento de cada composto, em unidades. */
+  nudges: Record<string, { dx: number; dy: number }>;
+  /** Caracteres cuja derivação foi desfeita: ficam vazios até serem desenhados ou copiados. */
+  detached: string[];
 }
 
 export interface Metrics {
@@ -73,6 +108,8 @@ export interface FontStyle {
   kerning: KerningState;
   /** Altura das maiúsculas da última fonte de origem (para colar glifo avulso na mesma escala). */
   srcCap?: number;
+  /** Unicase e acentos compostos. Ausente em projetos antigos: vale o padrão. */
+  cases?: CaseSettings;
 }
 
 export interface Project {

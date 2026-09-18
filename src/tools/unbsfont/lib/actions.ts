@@ -1,6 +1,7 @@
 import type { FontStyle, Glyph, Metrics, Project } from './types';
 import { autoSpace } from './spacing';
 import { autoKern } from './kerning';
+import { caseSettings, resolveDerived } from './derive';
 import type { SheetGuides } from './sheet';
 
 /**
@@ -10,8 +11,8 @@ import type { SheetGuides } from './sheet';
  */
 
 export function respace(style: FontStyle, m: Metrics): FontStyle {
-  const glyphs = autoSpace(style.glyphs, m, style.spacing);
-  const next = { ...style, glyphs };
+  // Primeiro as margens do que foi desenhado; os derivados (unicase, compostos) herdam da origem.
+  const next = resolveDerived({ ...style, glyphs: autoSpace(style.glyphs, m, style.spacing) }, m);
   return Object.keys(style.kerning.auto).length ? rekern(next, m) : next;
 }
 
@@ -48,7 +49,9 @@ export function addGlyphs(project: Project, styleId: string, glyphs: Glyph[], sr
       if (s.id !== styleId) return s;
       const merged = { ...s.glyphs };
       for (const g of glyphs) merged[g.char] = g;
-      const withGlyphs = { ...s, glyphs: merged, srcCap };
+      // Desenhar um caractere cuja derivação foi desfeita encerra o caso.
+      const cases = s.cases ? { ...s.cases, detached: caseSettings(s).detached.filter(c => !glyphs.some(g => g.char === c)) } : undefined;
+      const withGlyphs = { ...s, glyphs: merged, srcCap, ...(cases ? { cases } : {}) };
       return rekern(respace(withGlyphs, metrics), metrics);
     }),
   };
@@ -66,6 +69,12 @@ export function setMetrics(project: Project, metrics: Metrics): Project {
 
 export function setGlyph(style: FontStyle, glyph: Glyph): FontStyle {
   return { ...style, glyphs: { ...style.glyphs, [glyph.char]: glyph } };
+}
+
+/** Glifo alterado à mão: margens travadas não disparam o espaçamento, mas os derivados acompanham. */
+export function updateGlyph(style: FontStyle, glyph: Glyph, m: Metrics): FontStyle {
+  const next = setGlyph(style, glyph);
+  return glyph.locked ? resolveDerived(next, m) : respace(next, m);
 }
 
 export function removeGlyph(style: FontStyle, char: string): FontStyle {

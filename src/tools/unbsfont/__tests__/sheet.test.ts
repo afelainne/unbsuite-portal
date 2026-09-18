@@ -20,6 +20,24 @@ describe('folha de caracteres', () => {
     expect(sheet.strokeOnly).toBe(1);
   });
 
+  it('numa linha só de sinais, o trema e as aspas ficam num glifo só', () => {
+    // Linha de letras de referência, depois ´ ¨ ˜ " ` numa linha própria: os pingos
+    // do trema têm a altura da linha de sinais, mas são pequenos perto das letras.
+    const rect = (x: number, y: number, w: number, h: number) => `<rect x="${x}" y="${y}" width="${w}" height="${h}"/>`;
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 3000 2000">' +
+      rect(100, 100, 500, 700) + rect(750, 100, 500, 700) + rect(1400, 100, 500, 700) +
+      rect(100, 1700, 90, 120) +                       // ´
+      rect(400, 1700, 70, 70) + rect(510, 1700, 70, 70) + // ¨
+      rect(800, 1700, 220, 60) +                       // ˜
+      rect(1200, 1700, 60, 120) + rect(1310, 1700, 60, 120) + // "
+      rect(1600, 1700, 90, 120) +                      // `
+      '</svg>';
+    const s = readSheet(svg);
+    expect(s.rows.map(r => r.groups.length)).toEqual([3, 5]);
+    expect(s.rows[1].groups.map(g => g.components.length)).toEqual([1, 2, 1, 2, 1]);
+  });
+
   it('ordena em ordem de leitura e casa com a sequência', () => {
     expect(chars.join('')).toBe('HOAVTnoxij%;"');
     const lefts = sheet.rows.map(r => r.groups.map(g => g.box.x0));

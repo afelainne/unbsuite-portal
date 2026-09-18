@@ -83,15 +83,28 @@ function classKerning(style: FontStyle, m: Metrics, gidOf: (c: string) => number
       if (gx !== undefined && gy !== undefined) flat.push([gx, gy, v]);
     }
   }
-  const toGids = (ids: string[], members: Record<string, string[]>) =>
-    ids.map(id => members[id].map(gidOf).filter((g): g is number => g !== undefined));
+  // Unicase compartilha glifo (A e a no mesmo índice): cada índice entra numa classe só, uma vez.
+  const toGids = (ids: string[], members: Record<string, string[]>) => {
+    const seen = new Set<number>();
+    return ids.map(id => members[id].map(gidOf).filter((g): g is number => {
+      if (g === undefined || seen.has(g)) return false;
+      seen.add(g);
+      return true;
+    }));
+  };
+  const pairSeen = new Set<string>();
   return {
     classes: {
       left: toGids(leftIds, membersR),
       right: toGids(rightIds, membersL),
       value: (a, b) => table.get(`${a}:${b}`) ?? 0,
     },
-    flat,
+    flat: flat.filter(([a, b]) => {
+      const k = `${a}:${b}`;
+      if (pairSeen.has(k)) return false;
+      pairSeen.add(k);
+      return true;
+    }),
   };
 }
 
@@ -109,9 +122,17 @@ function kerningTables(style: FontStyle, m: Metrics, gidOf: (c: string) => numbe
 export function buildOtf(project: Project, style: FontStyle): BuiltFont {
   const m = project.metrics;
   const names = fontNames(project.family.trim() || 'Sem nome', style.name);
-  const drawn = Object.values(style.glyphs)
+  const all = Object.values(style.glyphs)
     .filter(g => g.outline.length && g.char !== ' ')
     .sort((a, b) => (a.char.codePointAt(0) || 0) - (b.char.codePointAt(0) || 0));
+  // Cópia unicase idêntica à origem vira só mais um código no mesmo glifo (a → glifo do A).
+  const shares = (g: (typeof all)[number]) => {
+    const src = g.derived?.kind === 'unicase' ? style.glyphs[g.derived.from] : undefined;
+    return !!src && src.derived?.kind !== 'unicase' && src.outline === g.outline && src.lsb === g.lsb && src.rsb === g.rsb
+      && src.scale === g.scale && src.srcCap === g.srcCap && src.yOffset === g.yOffset;
+  };
+  const drawn = all.filter(g => !shares(g));
+  const shared = all.filter(shares);
 
   // .notdef: a caixa vazada de sempre, para caracteres que a fonte não tem.
   const nd = new opentype.Path();
@@ -142,6 +163,12 @@ export function buildOtf(project: Project, style: FontStyle): BuiltFont {
     usedNames.add(name);
     gids.set(g.char, glyphs.length);
     glyphs.push(new opentype.Glyph({ name, unicode: g.char.codePointAt(0), advanceWidth: advanceOf(g, m), path }));
+  }
+  for (const g of shared) {
+    const gid = gids.get(g.derived!.from);
+    if (gid === undefined) continue;
+    glyphs[gid].addUnicode(g.char.codePointAt(0) || 0);
+    gids.set(g.char, gid);
   }
 
   // OS/2 fsSelection: itálico (1), negrito (32), regular (64) e USE_TYPO_METRICS (128).

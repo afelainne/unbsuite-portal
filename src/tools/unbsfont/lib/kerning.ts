@@ -173,11 +173,28 @@ function computeClasses(glyphs: Record<string, Glyph>, m: Metrics, useClasses: b
   const right: Record<string, string> = {};
   const left: Record<string, string> = {};
   for (const c of chars) { right[c] = c; left[c] = c; }
-  if (!useClasses) return { right, left };
+  // Derivados entram sempre na classe da origem (a de unicase, a letra-base do composto),
+  // com ou sem classes: é o mesmo desenho naquele lado. Algumas voltas resolvem cadeias (á → Á → A).
+  const follow = (map: Record<string, string>) => {
+    for (let pass = 0; pass < 3; pass++) {
+      for (const c of chars) {
+        const d = glyphs[c].derived;
+        if (!d) continue;
+        const b = baseChar(c);
+        const src = d.kind === 'unicase' ? d.from : glyphs[b]?.outline.length ? b : d.from;
+        if (src !== c && map[src]) map[c] = map[src];
+      }
+    }
+  };
+  if (!useClasses) {
+    follow(right);
+    follow(left);
+    return { right, left };
+  }
   const tol = m.unitsPerEm * 0.02;
   const assign = (groups: string[], side: 'left' | 'right', map: Record<string, string>) => {
     for (const group of groups) {
-      const members = Array.from(group).filter(c => glyphs[c]?.outline.length);
+      const members = Array.from(group).filter(c => glyphs[c]?.outline.length && !glyphs[c].derived);
       if (members.length < 2) continue;
       const leader = members[0];
       const sigL = sideSignature(glyphs[leader], m, side);
@@ -192,6 +209,7 @@ function computeClasses(glyphs: Record<string, Glyph>, m: Metrics, useClasses: b
       const b = baseChar(c);
       if (b !== c && glyphs[b]?.outline.length) map[c] = map[b];
     }
+    follow(map);
   };
   assign(RIGHT_SIDE_GROUPS, 'right', right);
   assign(LEFT_SIDE_GROUPS, 'left', left);

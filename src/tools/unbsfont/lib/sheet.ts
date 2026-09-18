@@ -185,14 +185,17 @@ export function groupComponents(input: Component[]): SheetRow[] {
     }
     groups.sort((a, b) => a.box.x0 - b.box.x0);
 
-    // 4. Marcas pequenas lado a lado e bem próximas formam um glifo só (aspas).
+    // 4. Marcas pequenas lado a lado e bem próximas formam um glifo só (aspas, trema).
+    // "Pequena" é medida contra a letra típica da folha, não contra a linha: numa
+    // linha só de sinais (´ ` ˆ ˜ ¨), os pingos do trema têm a altura da própria linha.
+    const smallLimit = Math.max(rowH, typical) * 0.5;
     const gaps = groups.slice(1).map((g, k) => g.box.x0 - groups[k].box.x1).filter(v => v > 0);
     const typicalGap = median(gaps);
     for (let k = 0; k < groups.length - 1; k++) {
       const a = groups[k];
       const b = groups[k + 1];
       const gap = b.box.x0 - a.box.x1;
-      const bothSmall = boxHeight(a.box) < rowH * 0.5 && boxHeight(b.box) < rowH * 0.5;
+      const bothSmall = boxHeight(a.box) < smallLimit && boxHeight(b.box) < smallLimit;
       const sameHeight = overlap(a.box.y0, a.box.y1, b.box.y0, b.box.y1) >= 0.5 * Math.min(boxHeight(a.box), boxHeight(b.box));
       if (bothSmall && sameHeight && typicalGap > 0 && gap < typicalGap * 0.5) {
         a.comps.push(...b.comps);

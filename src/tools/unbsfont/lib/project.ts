@@ -1,5 +1,6 @@
-import type { Cmd, FontStyle, Glyph, Metrics, Project } from './types';
+import type { CaseSettings, Cmd, Derivation, FontStyle, Glyph, Metrics, Project } from './types';
 import { DEFAULT_KERNING } from './kerning';
+import { resolveDerived } from './derive';
 
 export const DEFAULT_METRICS: Metrics = {
   unitsPerEm: 1000,
@@ -54,6 +55,13 @@ export function rescaleUpm(project: Project, upm: number): Project {
       spacing: { ...s.spacing, tracking: r(s.spacing.tracking) },
       glyphs: Object.fromEntries(Object.entries(s.glyphs).map(([c, g]) => [c, { ...g, lsb: r(g.lsb), rsb: r(g.rsb), yOffset: r(g.yOffset) }])),
       kerning: { ...s.kerning, auto: scaleMap(s.kerning.auto), manual: scaleMap(s.kerning.manual) },
+      ...(s.cases ? {
+        cases: {
+          ...s.cases,
+          capAccentOffset: r(s.cases.capAccentOffset),
+          nudges: Object.fromEntries(Object.entries(s.cases.nudges).map(([c, n]) => [c, { dx: r(n.dx), dy: r(n.dy) }])),
+        },
+      } : {}),
     })),
   };
 }
@@ -95,6 +103,44 @@ function readGlyph(char: string, raw: unknown): Glyph | null {
     lsb: num(o.lsb, 0),
     rsb: num(o.rsb, 0),
     locked: o.locked === true,
+    ...readDerivation(o.derived),
+  };
+}
+
+const oneChar = (v: unknown): v is string => typeof v === 'string' && Array.from(v).length === 1;
+
+function readDerivation(raw: unknown): { derived?: Derivation } {
+  if (!raw || typeof raw !== 'object') return {};
+  const d = raw as Record<string, unknown>;
+  if ((d.kind !== 'unicase' && d.kind !== 'composite') || !oneChar(d.from)) return {};
+  return {
+    derived: {
+      kind: d.kind,
+      from: d.from,
+      auto: d.auto !== false,
+      ...(oneChar(d.mark) ? { mark: d.mark } : {}),
+      ...(typeof d.note === 'string' ? { note: d.note.slice(0, 200) } : {}),
+    },
+  };
+}
+
+function readCases(raw: unknown): CaseSettings | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const c = raw as Record<string, unknown>;
+  const nudges: CaseSettings['nudges'] = {};
+  if (c.nudges && typeof c.nudges === 'object') {
+    for (const [k, v] of Object.entries(c.nudges as Record<string, unknown>)) {
+      const n = (v || {}) as Record<string, unknown>;
+      if (oneChar(k)) nudges[k] = { dx: num(n.dx, 0), dy: num(n.dy, 0) };
+    }
+  }
+  return {
+    unicase: c.unicase === 'upper' || c.unicase === 'lower' ? c.unicase : 'off',
+    compose: c.compose !== false,
+    composeExtended: c.composeExtended === true,
+    capAccentOffset: num(c.capAccentOffset, 0),
+    nudges,
+    detached: Array.isArray(c.detached) ? c.detached.filter(oneChar) : [],
   };
 }
 
@@ -139,6 +185,7 @@ export function parseProject(text: string): Project {
       id: typeof s.id === 'string' ? s.id : base.id,
       glyphs,
       srcCap: typeof s.srcCap === 'number' ? s.srcCap : undefined,
+      ...(readCases(s.cases) ? { cases: readCases(s.cases) } : {}),
       spacing: { factor: num(sp.factor, 1), tracking: num(sp.tracking, 0) },
       kerning: {
         auto: readNumbers(k.auto),
@@ -157,7 +204,8 @@ export function parseProject(text: string): Project {
     family: typeof o.family === 'string' ? o.family : 'Minha fonte',
     designer: typeof o.designer === 'string' ? o.designer : '',
     metrics,
-    styles,
+    // Derivados são refeitos da origem: o arquivo nunca traz um composto fora de sincronia.
+    styles: styles.map(s => (s.cases || Object.values(s.glyphs).some(g => g.derived) ? resolveDerived(s, metrics) : s)),
   };
 }
 
