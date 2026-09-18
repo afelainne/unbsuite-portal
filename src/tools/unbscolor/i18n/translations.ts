@@ -397,6 +397,8 @@ export interface Translations {
   // GeneratedPalettes - Albers editing
   externalColorLabel: string;
   internalColorLabel: string;
+  comboManualColor: string;
+  comboCloseEditor: string;
   resetCombo: string;
   availableCombinations: string;
   backgroundLabel: string;
@@ -1136,8 +1138,10 @@ export const translations: Record<Language, Translations> = {
     colorWeightAria: 'Color weight percentage',
     
     // GeneratedPalettes - Albers editing
-    externalColorLabel: 'Ext',
-    internalColorLabel: 'Int',
+    externalColorLabel: 'Background',
+    internalColorLabel: 'Centre',
+    comboManualColor: 'Other colour (code)',
+    comboCloseEditor: 'Close',
     resetCombo: 'Reset',
     availableCombinations: 'available combinations',
     backgroundLabel: 'Background',
@@ -1254,7 +1258,7 @@ export const translations: Record<Language, Translations> = {
     fullContrast: 'Full contrast',
     lockSlot: 'Lock slot',
     unlockSlot: 'Unlock slot',
-    middleColorLabel: 'Mid',
+    middleColorLabel: 'Middle',
 
     // Palette sheet templates
     templateStripes: 'Stripes',
@@ -1869,8 +1873,10 @@ export const translations: Record<Language, Translations> = {
     colorWeightAria: 'Porcentagem do peso da cor',
     
     // GeneratedPalettes - Albers editing
-    externalColorLabel: 'Ext',
-    internalColorLabel: 'Int',
+    externalColorLabel: 'Fundo',
+    internalColorLabel: 'Centro',
+    comboManualColor: 'Outra cor (código)',
+    comboCloseEditor: 'Fechar',
     resetCombo: 'Resetar',
     availableCombinations: 'combinações disponíveis',
     backgroundLabel: 'Fundo',
@@ -2602,8 +2608,10 @@ export const translations: Record<Language, Translations> = {
     colorWeightAria: 'Porcentaje del peso del color',
     
     // GeneratedPalettes - Albers editing
-    externalColorLabel: 'Ext',
-    internalColorLabel: 'Int',
+    externalColorLabel: 'Fondo',
+    internalColorLabel: 'Centro',
+    comboManualColor: 'Otro color (código)',
+    comboCloseEditor: 'Cerrar',
     resetCombo: 'Restablecer',
     availableCombinations: 'combinaciones disponibles',
     cardTemplateLabel: 'Plantilla de tarjeta',

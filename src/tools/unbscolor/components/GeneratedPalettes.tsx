@@ -247,6 +247,15 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     const [draggedComboIndex, setDraggedComboIndex] = useState<number | null>(null);
     const [comboOrder, setComboOrder] = useState<number[]>([]);
     const [editingComboIndex, setEditingComboIndex] = useState<number | null>(null);
+    /** Camadas em que a pessoa abriu o código manual, por "combo-camada". */
+    const [manualComboLayers, setManualComboLayers] = useState<Record<string, boolean>>({});
+    /** As cores da paleta, uma vez cada, para escolher a cor de cada camada das combinações. */
+    const paletteSlotColors = useMemo(() => {
+        const seen = new Set<string>();
+        return colors
+            .map((c) => ({ hex: c.hex.toUpperCase(), name: c.name }))
+            .filter((c) => isValidHex(c.hex) && !seen.has(c.hex) && (seen.add(c.hex), true));
+    }, [colors]);
     const [customCombos, setCustomCombos] = useState<{ [key: number]: { outer?: string; middle?: string; inner?: string } }>({});
     const [albersLayerCount, setAlbersLayerCount] = useState<2 | 3 | 4>(3);
     const [comboLocks, setComboLocks] = useState<Record<number, boolean>>({});
@@ -1081,7 +1090,7 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                                 onDrop={(e) => { e.preventDefault(); handleComboDrop(idx); }}
                                 onDragEnd={() => setDraggedComboIndex(null)}
-                                className={`flex min-w-0 flex-col gap-2 transition-opacity duration-fast ease-out ${editingComboIndex === idx ? '' : 'cursor-grab active:cursor-grabbing'} ${draggedComboIndex === idx ? 'opacity-40' : ''}`}
+                                className={`relative flex min-w-0 flex-col gap-2 transition-opacity duration-fast ease-out ${editingComboIndex === idx ? '' : 'cursor-grab active:cursor-grabbing'} ${draggedComboIndex === idx ? 'opacity-40' : ''}`}
                             >
                                 <div
                                     className={`relative aspect-square cursor-pointer overflow-hidden rounded-md shadow-hairline ${editingComboIndex === idx ? 'ring-[1.5px] ring-foreground ring-offset-2 ring-offset-card' : ''}`}
@@ -1106,23 +1115,71 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                                     )}
                                 </div>
 
-                                {editingComboIndex === idx ? (
-                                    <div className="material-popover materialize flex flex-col gap-1.5 p-2">
+                                {editingComboIndex === idx && (
+                                    <div
+                                        role="dialog"
+                                        aria-label={`${t.externalColorLabel}, ${t.middleColorLabel}, ${t.internalColorLabel}`}
+                                        onKeyDown={(e) => { if (e.key === 'Escape') setEditingComboIndex(null); }}
+                                        className={`material-popover materialize absolute top-[calc(100%-2.75rem)] z-30 flex w-[252px] flex-col gap-3 p-3 ${idx % 2 === 1 ? 'right-0' : 'left-0'}`}
+                                    >
                                         {(['outer', 'middle', 'inner'] as const).map((key) => {
                                             const label = key === 'outer' ? t.externalColorLabel : key === 'middle' ? t.middleColorLabel : t.internalColorLabel;
+                                            const current = combo[key].toUpperCase();
+                                            const inPalette = paletteSlotColors.some((c) => c.hex === current);
+                                            const manualKey = `${idx}-${key}`;
+                                            const manual = !!manualComboLayers[manualKey] || !inPalette;
                                             return (
-                                                <div key={key} className="flex items-center gap-1.5">
-                                                    <span className="w-10 shrink-0 truncate text-[12px] text-muted-foreground">{label}</span>
-                                                    <input type="color" value={combo[key]} onChange={(e) => updateComboColor(idx, key, e.target.value)} aria-label={label} className="h-6 w-6 shrink-0 cursor-pointer rounded-sm" />
-                                                    <HexField value={combo[key]} onCommit={(hex) => updateComboColor(idx, key, hex)} maxLength={7} aria-label={`${label} hex`} className="field field-sm tabular w-16 min-w-0 flex-1 px-1.5 text-[12px]" />
+                                                <div key={key} className="flex flex-col gap-1.5">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="text-[12px] text-muted-foreground">{label}</span>
+                                                        <span className="text-[12px] tabular text-foreground">{current}</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={label}>
+                                                        {paletteSlotColors.map((c) => {
+                                                            const selected = c.hex === current;
+                                                            return (
+                                                                <button
+                                                                    key={c.hex}
+                                                                    type="button"
+                                                                    role="radio"
+                                                                    aria-checked={selected}
+                                                                    aria-label={`${label}: ${c.name || c.hex} ${c.hex}`}
+                                                                    title={`${c.name || c.hex} · ${c.hex}`}
+                                                                    onClick={() => { updateComboColor(idx, key, c.hex); setManualComboLayers((prev) => ({ ...prev, [manualKey]: false })); }}
+                                                                    className={`h-6 w-6 rounded-sm shadow-hairline transition-shadow duration-fast ease-out ${selected ? 'ring-[1.5px] ring-foreground ring-offset-2 ring-offset-card' : ''}`}
+                                                                    style={{ backgroundColor: c.hex }}
+                                                                />
+                                                            );
+                                                        })}
+                                                        <button
+                                                            type="button"
+                                                            aria-pressed={manual}
+                                                            aria-label={`${label}: ${t.comboManualColor}`}
+                                                            title={t.comboManualColor}
+                                                            onClick={() => setManualComboLayers((prev) => ({ ...prev, [manualKey]: !manual }))}
+                                                            className={`flex h-6 w-6 items-center justify-center rounded-sm transition-colors duration-fast ease-out ${manual ? 'bg-foreground text-background' : 'bg-secondary text-foreground hover:bg-fill-3'}`}
+                                                        >
+                                                            <Pencil className="h-3 w-3" aria-hidden="true" />
+                                                        </button>
+                                                    </div>
+                                                    {manual && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <input type="color" value={combo[key]} onChange={(e) => updateComboColor(idx, key, e.target.value)} aria-label={`${label}: ${t.comboManualColor}`} className="h-8 w-8 shrink-0 cursor-pointer rounded-sm" />
+                                                            <HexField value={combo[key]} onCommit={(hex) => updateComboColor(idx, key, hex)} maxLength={7} aria-label={`${label} hex`} className="field field-sm tabular min-w-0 flex-1" />
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })}
-                                        {customCombos[idx] && (
-                                            <button type="button" onClick={() => resetCombo(idx)} className="ctl ctl-outline ctl-sm w-full">{t.resetCombo}</button>
-                                        )}
+                                        <div className="flex items-center gap-2">
+                                            {customCombos[idx] && (
+                                                <button type="button" onClick={() => resetCombo(idx)} className="ctl ctl-outline ctl-sm flex-1">{t.resetCombo}</button>
+                                            )}
+                                            <button type="button" onClick={() => setEditingComboIndex(null)} className="ctl ctl-filled ctl-sm flex-1">{t.comboCloseEditor}</button>
+                                        </div>
                                     </div>
-                                ) : (
+                                )}
+                                {(
                                     <div className="flex flex-col gap-1">
                                         <span className="text-[14px] tabular text-foreground">{ratio.toFixed(1)}:1</span>
                                         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5" title={t.gpWeightInPalette}>
