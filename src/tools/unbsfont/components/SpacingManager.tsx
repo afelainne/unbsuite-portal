@@ -1,5 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { Minus, Plus, X } from 'lucide-react';
+import { Card, Field, IconButton, Segmented, TextTabs, Sheet } from './ui';
+import { cx } from './cx';
 import { GlyphData, FontMetadata, ShapeCategory, DEFAULT_TRACKING_PROFILES } from '../types';
 import { generateSmartAutoKerning, resolveKerningValue } from '../services/kerningService';
 import { autoCenterGlyph, enforceMonospaceWidth, scaleGlyphWidth } from '../services/metricsService';
@@ -184,9 +187,9 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                             newKerning[key] = p.value;
                         }
                     });
-                    message = `Smart + Fallback Pro: ${Object.keys(newKerning).length} pairs gerados.`;
+                    message = `Kerning geométrico com reforço profissional: ${Object.keys(newKerning).length} pares gerados.`;
                 } else {
-                    message = `Smart Auto-Kern: ${Object.keys(newKerning).length} pairs gerados.`;
+                    message = `Kerning geométrico: ${Object.keys(newKerning).length} pares gerados.`;
                 }
                 break;
             case 'professional': {
@@ -202,7 +205,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                 profPairs.forEach(p => {
                     newKerning[`${p.left}${p.right}`] = p.value;
                 });
-                message = `Professional Kerning (${fontStyle}): ${profPairs.length} pairs - Grade: ${quality.grade}`;
+                message = `Kerning profissional (${fontStyle}): ${profPairs.length} pares, nota ${quality.grade}.`;
                 break;
             }
             case 'hybrid': {
@@ -217,7 +220,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                 hybridPairs.forEach(p => {
                     newKerning[`${p.left}${p.right}`] = p.value;
                 });
-                message = `Kerning Hybrid (${fontStyle}): ${hybridPairs.length} pairs - Grade: ${quality.grade}`;
+                message = `Kerning híbrido (${fontStyle}): ${hybridPairs.length} pares, nota ${quality.grade}.`;
                 break;
             }
         }
@@ -232,7 +235,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
     const handleApplyTemplate = () => {
         const template = KERNING_TEMPLATES.find(t => t.id === selectedTemplate);
         if (!template) {
-            pushNotice('Selecione um template primeiro.', 'warning');
+            pushNotice('Selecione um modelo primeiro.', 'warning');
             return;
         }
 
@@ -253,26 +256,26 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
         }
 
         applyKerningMap(newKerning);
-        pushNotice(`Template "${template.name}" aplicado com ${Object.keys(newKerning).length} pairs.`, 'success');
+        pushNotice(`Modelo "${template.name}" aplicado com ${Object.keys(newKerning).length} pares.`, 'success');
     };
     const handleResetAutoKern = () => {
         clearAllPairs();
         setSelectedPair("");
         setTestString("");
         setCurrentKernValue(0);
-        pushNotice('All kerning pairs were reset.', 'info');
+        pushNotice('Todos os pares de kerning foram zerados.', 'info');
     };
 
     const handleResetSelectedPair = () => {
         if (selectedPair.length < 2) {
-            pushNotice('Digite pelo menos dois caracteres para resetar um par.', 'warning');
+            pushNotice('Digite pelo menos dois caracteres para zerar um par.', 'warning');
             return;
         }
         const exists = metadata.kerning[selectedPair] !== undefined;
         removePair(selectedPair);
         setCurrentKernValue(0);
         pushNotice(
-            exists ? `Pair ${selectedPair} was reset.` : `No active adjustment found for ${selectedPair}.`,
+            exists ? `Par ${selectedPair} zerado.` : `Nenhum ajuste ativo para ${selectedPair}.`,
             'info'
         );
     };
@@ -362,166 +365,210 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
 
     if (!isOpen) return null;
 
-  const bgMain = isDarkMode ? 'bg-slate-900' : 'bg-white';
-  const textMain = isDarkMode ? 'text-white' : 'text-black';
-  const textSub = isDarkMode ? 'text-slate-500' : 'text-neutral-500';
-  const borderMain = isDarkMode ? 'border-slate-800' : 'border-black';
-  const cardBg = isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-neutral-200';
-  const inputBg = isDarkMode ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-neutral-300 text-black';
-  const btnSec = isDarkMode ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 text-white' : 'bg-white border-neutral-300 hover:border-black text-neutral-500 hover:text-black';
     const canResetAutoKern = Object.keys(metadata.kerning).length > 0;
+    const metricsTerm = metricsSearch.trim().toLowerCase();
+    const visibleGlyphs = glyphs
+        .filter(g => g.pathData)
+        .filter(g => {
+            if (!metricsTerm) return true;
+            return g.char.toLowerCase().includes(metricsTerm) || (g.name || '').toLowerCase().includes(metricsTerm);
+        });
+    const templateGroups: { category: KerningTemplate['category']; label: string }[] = [
+        { category: 'sans', label: 'Sem serifa' },
+        { category: 'serif', label: 'Serifada' },
+        { category: 'geometric', label: 'Geométrica' },
+        { category: 'display', label: 'Display' },
+        { category: 'humanist', label: 'Humanista' },
+        { category: 'script', label: 'Script e manuscrita' },
+        { category: 'slab', label: 'Slab serif' },
+        { category: 'condensed', label: 'Condensada' },
+        { category: 'mono', label: 'Monoespaçada' },
+    ];
+    const shapeOptions = (
+        <>
+            <option value="straight">Reta</option>
+            <option value="round">Redonda</option>
+            <option value="diagonal">Diagonal</option>
+            <option value="overhang">Saliente</option>
+        </>
+    );
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-    <div className={`border rounded-xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden ${bgMain} ${borderMain}`}>
-        
-        <div className={`p-4 border-b flex justify-between items-center ${isDarkMode ? 'border-slate-800' : 'border-neutral-200'}`}>
-            <div className="flex gap-4">
-                <button onClick={() => setActiveTab('METRICS')} className={`text-sm uppercase tracking-wider font-bold px-4 py-2 rounded-lg transition-colors ${activeTab === 'METRICS' ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : textSub}`}>Metrics</button>
-                <button onClick={() => setActiveTab('KERNING')} className={`text-sm uppercase tracking-wider font-bold px-4 py-2 rounded-lg transition-colors ${activeTab === 'KERNING' ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : textSub}`}>Kerning</button>
-            </div>
-            <button onClick={onClose} className={`rounded-full p-2 transition-colors ${isDarkMode ? 'bg-slate-800 hover:bg-slate-700 text-white' : 'bg-white hover:bg-neutral-100 text-black'}`}>
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-        </div>
+    return (
+        <Sheet
+            open={isOpen}
+            onClose={onClose}
+            full
+            size="max-w-[1240px]"
+            zIndex="z-[9999]"
+            title="Espaçamento e kerning"
+            description="Métricas dos glifos, grupos de classe e ajuste de pares."
+            bodyClassName="bg-background hairline-t pt-5"
+            footer={
+                <button type="button" onClick={onClose} className="ctl ctl-filled">Concluir</button>
+            }
+        >
+            <div className="flex flex-col gap-5 min-w-0">
+                <TextTabs<'METRICS' | 'KERNING'>
+                    ariaLabel="Seções"
+                    items={[
+                        { value: 'METRICS', label: 'Métricas' },
+                        { value: 'KERNING', label: 'Kerning' },
+                    ]}
+                    value={activeTab}
+                    onChange={setActiveTab}
+                />
 
-        <div className={`flex-1 overflow-y-auto p-6 ${isDarkMode ? 'bg-slate-950' : 'bg-neutral-50'}`}>
-            {activeTab === 'METRICS' && (
-                <div className="space-y-8">
-                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <h4 className={`font-bold mb-2 uppercase text-xs ${textMain}`}>Auto Center</h4>
-                            <div className="flex gap-2 mb-2">
-                                <input type="number" value={targetPadding} onChange={e => setTargetPadding(parseInt(e.target.value))} className={`w-16 rounded px-2 font-bold ${inputBg}`} />
-                                <span className={`${textSub} text-sm py-1`}>px padding</span>
-                            </div>
-                            <button onClick={applyAutoCenter} className={`w-full py-2 rounded text-sm font-bold ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>Apply</button>
+                {activeTab === 'METRICS' && (
+                    <div className="flex flex-col gap-5 min-w-0">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <Card label="Centralizar" className="p-5">
+                                <Field label="Margem lateral (px)">
+                                    <input type="number" value={targetPadding} onChange={e => setTargetPadding(parseInt(e.target.value))} className="field tabular" />
+                                </Field>
+                                <button type="button" onClick={applyAutoCenter} className="ctl ctl-outline w-full">Aplicar</button>
+                            </Card>
+                            <Card label="Monoespaçar" className="p-5">
+                                <Field label="Largura fixa (px)">
+                                    <input type="number" value={fixedWidth} onChange={e => setFixedWidth(parseInt(e.target.value))} className="field tabular" />
+                                </Field>
+                                <button type="button" onClick={applyMonospace} className="ctl ctl-outline w-full">Aplicar</button>
+                            </Card>
+                            <Card label="Escalar tudo" className="p-5">
+                                <Field label="Multiplicador">
+                                    <input type="number" step="0.1" value={scaleFactor} onChange={e => setScaleFactor(parseFloat(e.target.value))} className="field tabular" />
+                                </Field>
+                                <button type="button" onClick={applyScale} className="ctl ctl-outline w-full">Aplicar</button>
+                            </Card>
                         </div>
-                         <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <h4 className={`font-bold mb-2 uppercase text-xs ${textMain}`}>Monospace</h4>
-                            <div className="flex gap-2 mb-2">
-                                <input type="number" value={fixedWidth} onChange={e => setFixedWidth(parseInt(e.target.value))} className={`w-16 rounded px-2 font-bold ${inputBg}`} />
-                                <span className={`${textSub} text-sm py-1`}>px width</span>
+
+                        <div className="flex flex-col gap-4 min-w-0">
+                            <div className="flex flex-wrap items-center gap-3">
+                                <span className="label">Dados dos glifos</span>
+                                <div className="flex items-center gap-2 flex-1 min-w-[220px] max-w-sm">
+                                    <input
+                                        type="text"
+                                        value={metricsSearch}
+                                        onChange={(e) => setMetricsSearch(e.target.value)}
+                                        placeholder="Buscar glifo"
+                                        aria-label="Buscar glifo"
+                                        className="field"
+                                    />
+                                    {metricsSearch && (
+                                        <IconButton label="Limpar busca" variant="plain" onClick={() => setMetricsSearch('')}>
+                                            <X className="w-4 h-4" aria-hidden="true" />
+                                        </IconButton>
+                                    )}
+                                </div>
+                                <span className="text-[13px] text-muted-foreground tabular">{visibleGlyphs.length} encontrados</span>
                             </div>
-                            <button onClick={applyMonospace} className={`w-full py-2 rounded text-sm font-bold ${isDarkMode ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-neutral-200 text-black hover:bg-neutral-300'}`}>Apply</button>
-                        </div>
-                        <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <h4 className={`font-bold mb-2 uppercase text-xs ${textMain}`}>Scale All</h4>
-                            <div className="flex gap-2 mb-2">
-                                <input type="number" step="0.1" value={scaleFactor} onChange={e => setScaleFactor(parseFloat(e.target.value))} className={`w-16 rounded px-2 font-bold ${inputBg}`} />
-                                <span className={`${textSub} text-sm py-1`}>multiplier</span>
-                            </div>
-                            <button onClick={applyScale} className={`w-full py-2 rounded text-sm font-bold ${isDarkMode ? 'bg-slate-700 text-white hover:bg-slate-600' : 'bg-neutral-200 text-black hover:bg-neutral-300'}`}>Apply</button>
-                        </div>
-                     </div>
-                                         <div>
-                         <h3 className={`font-black text-xl mb-4 tracking-tight ${textMain}`}>GLYPH DATA</h3>
-                                                 <div className="flex items-center gap-3 mb-4">
-                                                     <input
-                                                         type="text"
-                                                         value={metricsSearch}
-                                                         onChange={(e) => setMetricsSearch(e.target.value)}
-                                                         placeholder="Buscar glyph..."
-                                                         className={`w-full max-w-sm rounded-lg border px-3 py-2 text-sm font-medium outline-none ${inputBg}`}
-                                                     />
-                                                     {metricsSearch && (
-                                                         <button
-                                                             onClick={() => setMetricsSearch('')}
-                                                             className={`text-xs font-bold uppercase px-3 py-2 rounded border ${btnSec}`}
-                                                         >
-                                                             Limpar
-                                                         </button>
-                                                     )}
-                                                    <div className={`text-[11px] ${textSub}`}>Encontrados: {glyphs.filter(g => g.pathData).filter(g => { if (!metricsSearch.trim()) return true; const term = metricsSearch.trim().toLowerCase(); return g.char.toLowerCase().includes(term) || (g.name || '').toLowerCase().includes(term); }).length}</div>
-                                                 </div>
-                         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                                                         {glyphs
-                                                             .filter(g => g.pathData)
-                                                             .filter(g => {
-                                                                 if (!metricsSearch.trim()) return true;
-                                                                 const term = metricsSearch.trim().toLowerCase();
-                                                                 return g.char.toLowerCase().includes(term) || (g.name || '').toLowerCase().includes(term);
-                                                             })
-                                                             .map(g => (
-                                 <div key={g.char} className={`flex flex-col gap-2 p-3 rounded-lg border transition-colors ${isDarkMode ? 'bg-slate-900 border-slate-700 hover:border-white' : 'bg-white border-neutral-200 hover:border-black'}`}>
-                                     <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 flex items-center justify-center rounded font-bold text-lg font-mono ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}`}>{g.char}</div>
-                                        <div className="flex-1 grid grid-cols-2 gap-2">
-                                            <div><label className={`text-[9px] uppercase font-bold ${textSub}`}>L-Group</label><input type="text" value={g.groups.left || ''} placeholder={g.char} onChange={(e) => handleGroupLChange(g.char, e.target.value)} className={`w-full rounded px-2 py-1 text-sm font-bold outline-none uppercase ${inputBg}`}/></div>
-                                            <div><label className={`text-[9px] uppercase font-bold ${textSub}`}>R-Group</label><input type="text" value={g.groups.right || ''} placeholder={g.char} onChange={(e) => handleGroupRChange(g.char, e.target.value)} className={`w-full rounded px-2 py-1 text-sm font-bold outline-none uppercase ${inputBg}`}/></div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+                                {visibleGlyphs.map(g => {
+                                    const sharers = glyphs.filter(other => other.inheritsFrom === g.char);
+                                    return (
+                                        <div key={g.char} className="material-card p-4 flex flex-col gap-3 min-w-0">
+                                            <div className="flex items-end gap-3">
+                                                <div className="w-10 h-10 shrink-0 flex items-center justify-center rounded-md bg-canvas text-[20px] font-normal text-foreground">{g.char}</div>
+                                                <div className="flex-1 grid grid-cols-2 gap-2 min-w-0">
+                                                    <Field label="Grupo esquerdo">
+                                                        <input type="text" value={g.groups.left || ''} placeholder={g.char} onChange={(e) => handleGroupLChange(g.char, e.target.value)} className="field field-sm" />
+                                                    </Field>
+                                                    <Field label="Grupo direito">
+                                                        <input type="text" value={g.groups.right || ''} placeholder={g.char} onChange={(e) => handleGroupRChange(g.char, e.target.value)} className="field field-sm" />
+                                                    </Field>
+                                                </div>
+                                            </div>
+                                            {g.inheritsFrom && (
+                                                <div className="flex items-center justify-between gap-2 rounded-md bg-fill px-2.5 py-1.5 text-[12px] text-foreground">
+                                                    <span className="flex items-center gap-2">
+                                                        <span className="w-1.5 h-1.5 rounded-pill bg-foreground" aria-hidden="true" />
+                                                        Herda de {g.inheritsFrom}
+                                                    </span>
+                                                    <button type="button" onClick={() => handleRemoveShare(g.char)} className="ctl ctl-plain ctl-sm">Remover</button>
+                                                </div>
+                                            )}
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <Field label="Forma à esquerda">
+                                                    <select value={g.shapeLeft} onChange={(e) => handleShapeChange(g.char, 'shapeLeft', e.target.value as any)} className="field field-sm">{shapeOptions}</select>
+                                                </Field>
+                                                <Field label="Forma à direita">
+                                                    <select value={g.shapeRight} onChange={(e) => handleShapeChange(g.char, 'shapeRight', e.target.value as any)} className="field field-sm">{shapeOptions}</select>
+                                                </Field>
+                                            </div>
+                                            <div className="flex items-end gap-3">
+                                                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                                                    <span className="text-[12px] text-muted-foreground">Compartilhar com</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <input
+                                                            type="text"
+                                                            value={memberInputs[g.char] || ''}
+                                                            placeholder="ex.: VT"
+                                                            aria-label={`Compartilhar ${g.char} com`}
+                                                            onChange={(e) => handleMemberInputChange(g.char, e.target.value)}
+                                                            onKeyDown={(e) => handleMemberSubmit(g.char, e)}
+                                                            className="field field-sm"
+                                                        />
+                                                        <IconButton label="Adicionar" onClick={() => handleMemberAdd(g.char)}>
+                                                            <Plus className="w-4 h-4" aria-hidden="true" />
+                                                        </IconButton>
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                                    <span className="text-[20px] font-normal leading-none tabular text-foreground">{g.advanceWidth}</span>
+                                                    <span className="text-[12px] text-muted-foreground">Largura</span>
+                                                </div>
+                                            </div>
+                                            {sharers.length > 0 && (
+                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                    <span className="text-[12px] text-muted-foreground">Compartilhando com</span>
+                                                    {sharers.map(other => (
+                                                        <span key={`${g.char}-${other.char}`} className="chip chip-outline">{other.char}</span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
-                                     </div>
-                                     {g.inheritsFrom && (
-                                         <div className={`flex items-center justify-between text-[10px] font-bold uppercase px-2 py-1 rounded ${isDarkMode ? 'bg-amber-500/10 text-amber-200 border border-amber-500/40' : 'bg-amber-50 text-amber-600 border border-amber-200'}`}>
-                                             <span>Inherits from {g.inheritsFrom}</span>
-                                             <button onClick={() => handleRemoveShare(g.char)} className={`text-[9px] underline ${isDarkMode ? 'text-amber-200' : 'text-amber-600'}`}>Remove</button>
-                                         </div>
-                                     )}
-                                     <div className={`flex gap-2 p-1.5 rounded border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                                         <div className="flex-1"><label className={`text-[8px] block font-bold uppercase ${textSub}`}>Shape Left</label><select value={g.shapeLeft} onChange={(e) => handleShapeChange(g.char, 'shapeLeft', e.target.value as any)} className={`w-full bg-transparent text-[10px] font-medium outline-none ${textMain}`}><option value="straight">Straight</option><option value="round">Round</option><option value="diagonal">Diagonal</option><option value="overhang">Overhang</option></select></div>
-                                         <div className={`w-px ${isDarkMode ? 'bg-slate-600' : 'bg-neutral-300'}`}></div>
-                                         <div className="flex-1 text-right"><label className={`text-[8px] block font-bold uppercase ${textSub}`}>Shape Right</label><select value={g.shapeRight} onChange={(e) => handleShapeChange(g.char, 'shapeRight', e.target.value as any)} className={`w-full bg-transparent text-[10px] font-medium outline-none text-right ${textMain}`}><option value="straight">Straight</option><option value="round">Round</option><option value="diagonal">Diagonal</option><option value="overhang">Overhang</option></select></div>
-                                     </div>
-                                     <div className="flex gap-2">
-                                        <div className="flex-1"><label className={`text-[9px] uppercase font-bold ${textSub}`}>Share With</label><div className="flex"><input type="text" value={memberInputs[g.char] || ''} placeholder="e.g. VT" onChange={(e) => handleMemberInputChange(g.char, e.target.value)} onKeyDown={(e) => handleMemberSubmit(g.char, e)} className={`w-full border border-r-0 rounded-l px-2 py-1 text-xs font-medium outline-none ${inputBg}`}/><button onClick={() => handleMemberAdd(g.char)} className={`px-2 rounded-r text-xs font-bold ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}`}>+</button></div></div>
-                                        <div className="flex flex-col text-right justify-end"><span className={`text-[10px] font-bold uppercase ${textSub}`}>Width</span><span className={`text-xs font-mono font-bold ${textMain}`}>{g.advanceWidth}</span></div>
-                                     </div>
-                                     {glyphs.some(other => other.inheritsFrom === g.char) && (
-                                         <div className="flex flex-wrap gap-1 text-[10px] uppercase">
-                                             <span className={`${textSub} font-bold`}>Compartilhando com:</span>
-                                             {glyphs.filter(other => other.inheritsFrom === g.char).map(other => (
-                                                 <span key={`${g.char}-${other.char}`} className={`px-2 py-0.5 rounded-full border text-[9px] font-bold ${isDarkMode ? 'border-slate-600 text-white' : 'border-neutral-300 text-black'}`}>{other.char}</span>
-                                             ))}
-                                         </div>
-                                     )}
-                                 </div>
-                             ))}
-                         </div>
-                     </div>
-                </div>
-            )}
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
-            {activeTab === 'KERNING' && (
-                <div className="flex flex-col h-full overflow-hidden">
-                    <div className="flex flex-col lg:flex-row gap-8 h-full">
-                        <div className="flex-1 flex flex-col gap-6 overflow-y-auto pr-2">
-                            <div className={`p-4 rounded-2xl border flex flex-col gap-3 relative ${cardBg}`}>
-                                <label className={`text-xs font-bold absolute top-4 left-4 uppercase ${textSub}`}>Test Pair</label>
-                                <button
-                                    onClick={handleResetSelectedPair}
-                                    disabled={selectedPair.length < 2}
-                                    className={`text-[11px] font-bold uppercase px-3 py-1 rounded-full absolute top-3 right-3 border transition-colors ${selectedPair.length < 2
-                                        ? isDarkMode ? 'border-slate-700 text-slate-600 cursor-not-allowed' : 'border-neutral-200 text-neutral-300 cursor-not-allowed'
-                                        : isDarkMode ? 'border-white/40 text-white hover:bg-white hover:text-black' : 'border-black text-black hover:bg-black hover:text-white'
-                                    }`}
-                                >
-                                    Resetar Par
-                                </button>
-                                <input 
+                {activeTab === 'KERNING' && (
+                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-5 min-w-0 items-start">
+                        <div className="flex flex-col gap-5 min-w-0">
+                            <Card
+                                label="Par de teste"
+                                className="p-5"
+                                actions={
+                                    <button type="button" onClick={handleResetSelectedPair} disabled={selectedPair.length < 2} className="ctl ctl-outline ctl-sm disabled:opacity-40">
+                                        Zerar par
+                                    </button>
+                                }
+                            >
+                                <input
                                     type="text"
                                     maxLength={32}
                                     value={testString}
                                     onChange={(e) => handleTestInputChange(e.target.value)}
                                     placeholder="Digite letras para ajustar"
-                                    className={`text-4xl bg-transparent text-center outline-none font-mono tracking-[0.4em] w-full uppercase py-2 font-black ${textMain} placeholder-neutral-500`}
+                                    aria-label="Texto de teste"
+                                    className="field h-16 text-center text-[28px] font-normal placeholder:text-[16px]"
                                 />
-                                {selectedPair.length >= 2 && (
-                                    <p className={`text-[11px] text-center font-mono uppercase ${textSub}`}>
-                                        Par ativo: {selectedPair}
-                                    </p>
-                                )}
-                            </div>
-                            
-                            <div className={`p-6 rounded-2xl border space-y-4 ${cardBg}`}>
-                                <p className={`text-[11px] ${textSub}`}>
-                                    Type 2 or more letters to preview each consecutive spacing. Values can be edited directly below.
+                                <p className="text-[13px] text-muted-foreground">
+                                    {selectedPair.length >= 2
+                                        ? <>Par ativo: <span className="text-foreground">{selectedPair}</span></>
+                                        : 'Digite duas letras ou mais para ver cada espaço entre elas. Os valores podem ser editados logo abaixo.'}
                                 </p>
+                            </Card>
+
+                            <Card label="Pré-visualização" className="p-5">
                                 {kerningContextLayout ? (
                                     <>
-                                        <div className={`border rounded-xl p-3 flex items-center justify-center ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-neutral-200'}`}>
+                                        <div className="bg-canvas rounded-xl p-3 flex items-center justify-center">
                                             <svg
                                                 viewBox={kerningContextLayout.viewBox}
-                                                className={`w-full max-w-3xl h-56 mx-auto ${isDarkMode ? 'fill-white' : 'fill-black'}`}
+                                                className="w-full max-w-3xl h-56 mx-auto text-foreground fill-current"
                                                 preserveAspectRatio="xMidYMid meet"
                                             >
                                                 <line
@@ -529,12 +576,13 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                     y1={kerningContextLayout.baselineY}
                                                     x2={kerningContextLayout.viewStart + kerningContextLayout.viewWidth}
                                                     y2={kerningContextLayout.baselineY}
-                                                    stroke={isDarkMode ? '#475569' : '#94a3b8'}
+                                                    stroke="currentColor"
+                                                    strokeOpacity={0.25}
                                                     strokeWidth={10}
                                                     strokeDasharray="14,14"
                                                 />
                                                 {kerningContextLayout.gaps.map((gap, idx) => {
-                                                    const color = gap.gap >= 0 ? (isDarkMode ? '#4ade80' : '#16a34a') : (isDarkMode ? '#fb7185' : '#dc2626');
+                                                    const negative = gap.gap < 0;
                                                     const leftBounds = kerningNodeBounds?.bounds.get(gap.leftIndex);
                                                     const rightBounds = kerningNodeBounds?.bounds.get(gap.rightIndex);
                                                     const startX = leftBounds ? leftBounds.right : gap.startX;
@@ -545,8 +593,8 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                     const overlayHeight = kerningOverlayBand ? kerningOverlayHeight : Math.max(overlayBottom - overlayTop, 80);
                                                     const rectX = Math.min(startX, endX);
                                                     const rectWidth = Math.max(Math.abs(endX - startX), 8);
-                                                    const fillOpacity = gap.gap >= 0 ? (isDarkMode ? 0.18 : 0.12) : (isDarkMode ? 0.25 : 0.18);
-                                                    const strokeOpacity = isDarkMode ? 0.65 : 0.55;
+                                                    const fillOpacity = negative ? 0.16 : 0.07;
+                                                    const strokeOpacity = negative ? 0.6 : 0.35;
                                                     return (
                                                         <g key={`kerning-gap-${gap.leftChar}-${gap.rightChar}-${idx}`}>
                                                             <rect
@@ -554,7 +602,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                                 y={overlayTop}
                                                                 width={rectWidth}
                                                                 height={overlayHeight}
-                                                                fill={color}
+                                                                fill="currentColor"
                                                                 fillOpacity={fillOpacity}
                                                                 rx={12}
                                                             />
@@ -563,7 +611,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                                 x2={startX}
                                                                 y1={overlayTop}
                                                                 y2={overlayBottom}
-                                                                stroke={color}
+                                                                stroke="currentColor"
                                                                 strokeWidth={3}
                                                                 strokeOpacity={strokeOpacity}
                                                                 strokeDasharray="4,6"
@@ -573,7 +621,7 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                                 x2={endX}
                                                                 y1={overlayTop}
                                                                 y2={overlayBottom}
-                                                                stroke={color}
+                                                                stroke="currentColor"
                                                                 strokeWidth={3}
                                                                 strokeOpacity={strokeOpacity}
                                                                 strokeDasharray="4,6"
@@ -583,7 +631,8 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                                 x2={endX}
                                                                 y1={kerningGapBandY}
                                                                 y2={kerningGapBandY}
-                                                                stroke={color}
+                                                                stroke="currentColor"
+                                                                strokeOpacity={negative ? 0.85 : 0.45}
                                                                 strokeWidth={10}
                                                                 strokeLinecap="round"
                                                             />
@@ -591,9 +640,9 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                                 x={mid}
                                                                 y={kerningGapBandY - 18}
                                                                 textAnchor="middle"
-                                                                fontFamily="monospace"
+                                                                fontFamily="inherit"
                                                                 fontSize={20}
-                                                                fill={isDarkMode ? '#f8fafc' : '#1f2937'}
+                                                                fill="currentColor"
                                                             >
                                                                 {formatGapValue(gap.gap)}
                                                             </text>
@@ -613,13 +662,30 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                 })}
                                             </svg>
                                         </div>
+
                                         {selectedPair.length === 2 && (
-                                            <div className={`border rounded-xl p-4 space-y-4 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-neutral-200'}`}>
-                                                <div className="flex justify-between items-center">
-                                                    <span className={`font-black text-lg ${textMain}`}>ADJUSTMENT</span>
-                                                    <button onClick={() => handleDeletePair()} className={`text-xs font-bold px-3 py-1 rounded border uppercase ${isDarkMode ? 'text-red-400 border-red-900 hover:bg-red-900/20' : 'text-red-600 border-red-200 hover:bg-red-50'}`}>
-                                                        Delete Pair
-                                                    </button>
+                                            <div className="flex flex-col gap-4 hairline-b pb-5">
+                                                <div className="flex flex-wrap items-end justify-between gap-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="label">Ajuste</span>
+                                                        <span className="text-[28px] font-normal leading-[1.14] tabular text-foreground">
+                                                            {previewKerningValue >= 0 ? `+${previewKerningValue}` : previewKerningValue}
+                                                        </span>
+                                                        <span className="text-[13px] text-muted-foreground">
+                                                            {selectedPair} · desvio {biasContribution >= 0 ? `+${biasContribution}` : biasContribution}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <button type="button" onClick={() => handleKernChange(currentKernValue - 10)} className="ctl ctl-outline ctl-sm tabular" aria-label="Diminuir 10">
+                                                            <Minus className="w-3.5 h-3.5" aria-hidden="true" />10
+                                                        </button>
+                                                        <button type="button" onClick={() => handleKernChange(currentKernValue + 10)} className="ctl ctl-outline ctl-sm tabular" aria-label="Aumentar 10">
+                                                            <Plus className="w-3.5 h-3.5" aria-hidden="true" />10
+                                                        </button>
+                                                        <button type="button" onClick={() => handleDeletePair()} className="ctl ctl-danger ctl-sm">
+                                                            Excluir par
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <input
                                                     type="range"
@@ -628,274 +694,220 @@ const SpacingManager: React.FC<SpacingManagerProps> = ({
                                                     step="5"
                                                     value={currentKernValue}
                                                     onChange={(e) => handleKernChange(parseInt(e.target.value))}
-                                                    className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`}
+                                                    aria-label={`Kerning de ${selectedPair}`}
+                                                    className="tool-slider w-full"
                                                 />
-                                                <div className={`text-sm text-center font-mono ${textSub}`}>
-                                                    {selectedPair}: {previewKerningValue >= 0 ? `+${previewKerningValue}` : previewKerningValue}
-                                                    <span className="ml-1 text-xs">
-                                                        ({biasContribution >= 0 ? `bias +${biasContribution}` : `bias ${biasContribution}`})
-                                                    </span>
-                                                </div>
-                                                <div className="flex gap-2 justify-center">
-                                                    <button onClick={() => handleKernChange(currentKernValue - 10)} className={`w-10 h-10 border rounded font-bold ${btnSec}`}>-10</button>
-                                                    <button onClick={() => handleKernChange(currentKernValue + 10)} className={`w-10 h-10 border rounded font-bold ${btnSec}`}>+10</button>
-                                                </div>
                                             </div>
                                         )}
 
                                         {kerningContextLayout.gaps.length > 0 ? (
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                                 {kerningContextLayout.gaps.map((gap, idx) => {
                                                     const pairKey = `${gap.leftChar}${gap.rightChar}`;
                                                     const normalizedPairKey = pairKey.toUpperCase();
                                                     const kerningValue = metadata.kerning?.[normalizedPairKey] ?? 0;
+                                                    const on = selectedPair === normalizedPairKey;
                                                     return (
                                                         <div
                                                             key={`kerning-gap-card-${gap.leftChar}-${gap.rightChar}-${idx}`}
                                                             role="button"
                                                             tabIndex={0}
+                                                            aria-pressed={on}
                                                             onClick={() => setSelectedPair(normalizedPairKey)}
                                                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedPair(normalizedPairKey); } }}
-                                                            className={`p-3 rounded-lg border text-center font-mono space-y-2 cursor-pointer transition-colors ${selectedPair === normalizedPairKey ? (isDarkMode ? 'border-white bg-white/10 text-white' : 'border-black bg-black/5 text-black') : (isDarkMode ? 'border-slate-800 bg-slate-900 text-white' : 'border-neutral-200 bg-white text-black')}`}
+                                                            className={cx(
+                                                                'rounded-lg p-3 flex flex-col gap-2 cursor-pointer transition-colors duration-fast ease-out',
+                                                                on ? 'bg-primary text-primary-foreground' : 'bg-fill text-foreground hover:bg-fill-2'
+                                                            )}
                                                         >
-                                                            <div className="flex items-center justify-center gap-2 text-[10px] uppercase">
-                                                                <span>{gap.leftChar}</span>
-                                                                <span className={textSub}>→</span>
-                                                                <span>{gap.rightChar}</span>
+                                                            <div className="flex items-baseline justify-between gap-2">
+                                                                <span className="text-[20px] font-normal leading-none">{gap.leftChar}{gap.rightChar}</span>
+                                                                <span className={cx('text-[12px] tabular', on ? 'opacity-70' : 'text-muted-foreground')}>
+                                                                    Espaço {formatGapValue(gap.gap)}
+                                                                </span>
                                                             </div>
                                                             <input
                                                                 type="number"
                                                                 value={kerningValue}
                                                                 onChange={(e) => handleInlineKerningInput(normalizedPairKey, parseFloat(e.target.value))}
                                                                 onClick={(e) => e.stopPropagation()}
-                                                                className={`w-full text-center text-lg font-bold rounded border px-1 py-0.5 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-neutral-300 text-black'}`}
+                                                                aria-label={`Kerning de ${normalizedPairKey}`}
+                                                                className="field field-sm text-center tabular text-foreground"
                                                             />
-                                                            <p className={`text-xs ${textSub}`}>
-                                                                Gap {formatGapValue(gap.gap)}
-                                                            </p>
                                                         </div>
                                                     );
                                                 })}
                                             </div>
                                         ) : (
-                                            <div className={`p-4 rounded-lg border text-center text-xs ${isDarkMode ? 'border-slate-800 text-slate-400' : 'border-neutral-200 text-neutral-500'}`}>
+                                            <p className="text-[13px] text-muted-foreground text-center py-2">
                                                 Digite pelo menos duas letras para ver ajustes de kerning.
-                                            </div>
+                                            </p>
                                         )}
                                     </>
                                 ) : (
-                                    <div className={`h-48 rounded-xl flex items-center justify-center border-2 border-dashed ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-100 border-neutral-300'}`}>
-                                        <span className={`${textSub} font-bold uppercase text-sm`}>Type text to preview</span>
+                                    <div className="h-48 bg-canvas rounded-xl flex items-center justify-center">
+                                        <span className="text-[14px] text-muted-foreground">Digite um texto para pré-visualizar</span>
                                     </div>
                                 )}
-                            </div>
-
+                            </Card>
                         </div>
 
-                        <div className={`w-full lg:w-80 rounded-xl border flex flex-col shrink-0 ${cardBg}`}>
-                            <div className={`p-4 border-b space-y-3 ${isDarkMode ? 'border-slate-800' : 'border-neutral-200'}`}>
-                                <span className={`text-xs font-bold uppercase tracking-wider block ${textMain}`}>Templates Profissionais</span>
-                                <div className="space-y-2">
+                        <div className="flex flex-col gap-5 min-w-0">
+                            <Card label="Modelos profissionais" className="p-5" bodyClassName="gap-4">
+                                <Field label="Modelo">
                                     <select
                                         value={selectedTemplate}
                                         onChange={(e) => setSelectedTemplate(e.target.value)}
-                                        className={`w-full rounded px-2 py-2 text-sm font-bold outline-none ${inputBg}`}
+                                        className="field"
                                     >
-                                        <option value="">Selecione um template...</option>
-                                        <optgroup label="Sans-Serif">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'sans').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Serif">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'serif').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Geometric">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'geometric').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Display">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'display').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Humanist">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'humanist').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Script & Handwritten">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'script').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Slab Serif">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'slab').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Condensed">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'condensed').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                        <optgroup label="Monospace">
-                                            {KERNING_TEMPLATES.filter(t => t.category === 'mono').map(t => (
-                                                <option key={t.id} value={t.id}>{t.name}</option>
-                                            ))}
-                                        </optgroup>
-                                    </select>
-                                    {selectedTemplate && (
-                                        <p className={`text-[10px] ${textSub}`}>
-                                            {KERNING_TEMPLATES.find(t => t.id === selectedTemplate)?.description}
-                                        </p>
-                                    )}
-                                    <div className="space-y-1">
-                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Scale: {(templateScale * 100).toFixed(0)}%</label>
-                                        <input type="range" min="0.5" max="1.5" step="0.05" value={templateScale} onChange={(e) => setTemplateScale(parseFloat(e.target.value))} className={`w-full h-1 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <input type="checkbox" id="blendGeo" checked={blendWithGeometry} onChange={(e) => setBlendWithGeometry(e.target.checked)} className="w-4 h-4" />
-                                        <label htmlFor="blendGeo" className={`text-[10px] font-bold uppercase ${textSub}`}>Merge with SVG analysis</label>
-                                    </div>
-                                    {blendWithGeometry && (
-                                        <div className="space-y-1">
-                                            <label className={`text-[10px] font-bold uppercase ${textSub}`}>Blend: {(blendFactor * 100).toFixed(0)}% geometry</label>
-                                            <input type="range" min="0" max="1" step="0.1" value={blendFactor} onChange={(e) => setBlendFactor(parseFloat(e.target.value))} className={`w-full h-1 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
-                                        </div>
-                                    )}
-                                    <button onClick={handleApplyTemplate} disabled={!selectedTemplate} className={`w-full py-2 rounded text-xs font-bold transition-colors ${selectedTemplate ? (isDarkMode ? 'bg-emerald-600 text-white hover:bg-emerald-500' : 'bg-emerald-600 text-white hover:bg-emerald-700') : 'bg-neutral-400 text-neutral-200 cursor-not-allowed'}`}>
-                                        Apply Template
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className={`p-4 border-b space-y-3 ${isDarkMode ? 'border-slate-800' : 'border-neutral-200'}`}>
-                                <span className={`text-xs font-bold uppercase tracking-wider block ${textMain}`}>Advanced Auto-Kern</span>
-                                
-                                {/* Seletor de Modo de Kerning */}
-                                <div className="space-y-1">
-                                    <label className={`text-[10px] font-bold uppercase ${textSub}`}>Modo de Kerning</label>
-                                    <div className="grid grid-cols-3 gap-1">
-                                        {(['smart', 'professional', 'hybrid'] as const).map(mode => (
-                                            <button
-                                                key={mode}
-                                                onClick={() => setKerningMode(mode)}
-                                                className={`py-1.5 px-2 rounded text-[9px] font-bold uppercase tracking-wider transition-colors ${
-                                                    kerningMode === mode
-                                                        ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white')
-                                                        : `border ${isDarkMode ? 'border-slate-700 text-slate-400 hover:text-white' : 'border-neutral-300 text-neutral-500 hover:text-black'}`
-                                                }`}
-                                            >
-                                                {mode === 'smart' ? '📐 Smart' : mode === 'professional' ? '🎯 Pro' : '⚡ Hybrid'}
-                                            </button>
+                                        <option value="">Selecione um modelo</option>
+                                        {templateGroups.map(group => (
+                                            <optgroup key={group.category} label={group.label}>
+                                                {KERNING_TEMPLATES.filter(t => t.category === group.category).map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </optgroup>
                                         ))}
-                                    </div>
-                                    <p className={`text-[9px] ${textSub}`}>
-                                        {kerningMode === 'smart' && 'SVG geometric analysis (detected shapes)'}
-                                        {kerningMode === 'professional' && 'Real font tables (Helvetica, Futura, etc.)'}
-                                        {kerningMode === 'hybrid' && 'Combines professional tables + geometry'}
+                                    </select>
+                                </Field>
+                                {selectedTemplate && (
+                                    <p className="text-[12px] text-muted-foreground">
+                                        {KERNING_TEMPLATES.find(t => t.id === selectedTemplate)?.description}
+                                    </p>
+                                )}
+                                <Field label="Escala" value={`${(templateScale * 100).toFixed(0)}%`}>
+                                    <input type="range" min="0.5" max="1.5" step="0.05" value={templateScale} onChange={(e) => setTemplateScale(parseFloat(e.target.value))} className="tool-slider w-full" />
+                                </Field>
+                                <label className="flex items-center gap-2 text-[14px] text-foreground cursor-pointer">
+                                    <input type="checkbox" checked={blendWithGeometry} onChange={(e) => setBlendWithGeometry(e.target.checked)} className="ctl-check" />
+                                    Mesclar com a análise do SVG
+                                </label>
+                                {blendWithGeometry && (
+                                    <Field label="Peso da geometria" value={`${(blendFactor * 100).toFixed(0)}%`}>
+                                        <input type="range" min="0" max="1" step="0.1" value={blendFactor} onChange={(e) => setBlendFactor(parseFloat(e.target.value))} className="tool-slider w-full" />
+                                    </Field>
+                                )}
+                                <button type="button" onClick={handleApplyTemplate} disabled={!selectedTemplate} className="ctl ctl-filled w-full disabled:opacity-40">
+                                    Aplicar modelo
+                                </button>
+                            </Card>
+
+                            <Card label="Kerning automático" className="p-5" bodyClassName="gap-4">
+                                <div className="flex flex-col gap-1.5">
+                                    <span className="text-[12px] text-muted-foreground">Modo</span>
+                                    <Segmented<'smart' | 'professional' | 'hybrid'>
+                                        ariaLabel="Modo de kerning"
+                                        className="w-full [&>*]:flex-1"
+                                        items={[
+                                            { value: 'smart', label: 'Geométrico' },
+                                            { value: 'professional', label: 'Profissional' },
+                                            { value: 'hybrid', label: 'Híbrido' },
+                                        ]}
+                                        value={kerningMode}
+                                        onChange={setKerningMode}
+                                    />
+                                    <p className="text-[12px] text-muted-foreground">
+                                        {kerningMode === 'smart' && 'Análise geométrica do SVG, pelas formas detectadas.'}
+                                        {kerningMode === 'professional' && 'Tabelas de fontes reais (Helvetica, Futura e outras).'}
+                                        {kerningMode === 'hybrid' && 'Combina as tabelas profissionais com a geometria.'}
                                     </p>
                                 </div>
 
-                                {/* Font Style - for professional/hybrid modes */}
                                 {(kerningMode === 'professional' || kerningMode === 'hybrid') && (
-                                    <div className="space-y-1">
-                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Typographic Style</label>
+                                    <Field label="Estilo tipográfico">
                                         <select
                                             value={fontStyle}
                                             onChange={(e) => setFontStyle(e.target.value as FontStyle)}
-                                            className={`w-full rounded px-2 py-2 text-sm font-bold outline-none ${inputBg}`}
+                                            className="field"
                                         >
-                                            <option value="geometric-sans">Geometric Sans (Futura, Avenir)</option>
-                                            <option value="humanist-sans">Humanist Sans (Frutiger, Myriad)</option>
-                                            <option value="neo-grotesque">Neo-Grotesque (Helvetica, Arial)</option>
-                                            <option value="serif-oldstyle">Old Style Serif (Garamond)</option>
-                                            <option value="serif-modern">Modern Serif (Bodoni, Didot)</option>
-                                            <option value="slab">Slab Serif (Rockwell)</option>
-                                            <option value="display">Display (Decorative)</option>
-                                            <option value="script">Script (Handwritten)</option>
+                                            <option value="geometric-sans">Geométrica sem serifa (Futura, Avenir)</option>
+                                            <option value="humanist-sans">Humanista sem serifa (Frutiger, Myriad)</option>
+                                            <option value="neo-grotesque">Neogrotesca (Helvetica, Arial)</option>
+                                            <option value="serif-oldstyle">Serifada old style (Garamond)</option>
+                                            <option value="serif-modern">Serifada moderna (Bodoni, Didot)</option>
+                                            <option value="slab">Slab serif (Rockwell)</option>
+                                            <option value="display">Display (decorativa)</option>
+                                            <option value="script">Script (manuscrita)</option>
                                         </select>
-                                    </div>
+                                    </Field>
                                 )}
 
-                                {/* Font type for Smart mode */}
                                 {kerningMode === 'smart' && (
-                                    <div className="space-y-1">
-                                        <label className={`text-[10px] font-bold uppercase ${textSub}`}>Font type</label>
+                                    <Field label="Tipo de fonte">
                                         <select
                                             value={kerningProfile || 'sans'}
                                             onChange={(e) => handleKerningProfileChange(e.target.value as FontMetadata['kerningProfile'])}
-                                            className={`w-full rounded px-2 py-2 text-sm font-bold outline-none ${inputBg}`}
+                                            className="field"
                                         >
                                             <option value="display">Display</option>
-                                            <option value="geometric">Geometric</option>
-                                            <option value="sans">Sans</option>
-                                            <option value="serif">Serif</option>
-                                            <option value="mono">Mono</option>
+                                            <option value="geometric">Geométrica</option>
+                                            <option value="sans">Sem serifa</option>
+                                            <option value="serif">Serifada</option>
+                                            <option value="mono">Monoespaçada</option>
                                         </select>
-                                    </div>
+                                    </Field>
                                 )}
 
-                                <div className="space-y-1">
-                                    <label className={`text-[10px] font-bold uppercase ${textSub}`}>Intensity: {(autoKernIntensity * 100).toFixed(0)}%</label>
-                                    <input type="range" min="0" max="2" step="0.1" value={autoKernIntensity} onChange={(e) => setAutoKernIntensity(parseFloat(e.target.value))} className={`w-full h-1 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`} />
+                                <Field label="Intensidade" value={`${(autoKernIntensity * 100).toFixed(0)}%`}>
+                                    <input type="range" min="0" max="2" step="0.1" value={autoKernIntensity} onChange={(e) => setAutoKernIntensity(parseFloat(e.target.value))} className="tool-slider w-full" />
+                                </Field>
+                                <div className="flex flex-col gap-2">
+                                    <button type="button" onClick={handleAutoKern} className="ctl ctl-tinted w-full">
+                                        Aplicar kerning automático
+                                    </button>
+                                    <button type="button" onClick={handleResetAutoKern} disabled={!canResetAutoKern} className="ctl ctl-outline w-full disabled:opacity-40">
+                                        Zerar todos os pares
+                                    </button>
                                 </div>
-                                <button onClick={handleAutoKern} className={`w-full py-2 rounded text-xs font-bold transition-colors ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>
-                                    {kerningMode === 'smart' ? 'Run Smart Auto-Kern' : kerningMode === 'professional' ? 'Apply Professional Kerning' : 'Apply Hybrid Kerning'}
-                                </button>
-                                <button
-                                    onClick={handleResetAutoKern}
-                                    disabled={!canResetAutoKern}
-                                    className={`w-full py-2 rounded text-xs font-bold transition-colors border ${isDarkMode ? 'border-slate-700 text-white hover:bg-slate-800' : 'border-neutral-300 text-black hover:bg-neutral-100'} ${canResetAutoKern ? '' : 'opacity-40 cursor-not-allowed hover:bg-transparent'}`}
-                                >
-                                    Reset Auto-Kern
-                                </button>
-                            </div>
-                            <div className={`p-4 border-b space-y-2 ${isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-neutral-200 bg-neutral-50'}`}>
-                                <div className="flex justify-between items-center">
-                                    <span className={`font-bold text-xs uppercase ${textMain}`}>Pairs</span>
-                                    <span className={`text-xs border px-2 py-1 rounded font-bold ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-neutral-200 text-black'}`}>{filteredPairs.length}/{Object.keys(metadata.kerning).length}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase">
-                                    <span className={textSub}>Filter:</span>
+                            </Card>
+
+                            <Card
+                                label="Pares"
+                                className="p-5"
+                                bodyClassName="gap-3"
+                                actions={<span className="chip tabular">{filteredPairs.length}/{Object.keys(metadata.kerning).length}</span>}
+                            >
+                                <div className="flex items-center gap-1.5">
                                     <input
                                         type="text"
                                         value={kerningFilterChar}
                                         onChange={(e) => setKerningFilterChar(e.target.value)}
-                                        placeholder="Type pair or glyph"
-                                        className={`flex-1 rounded px-2 py-1 text-[10px] font-mono uppercase outline-none ${inputBg}`}
+                                        placeholder="Filtrar por par ou glifo"
+                                        aria-label="Filtrar pares"
+                                        className="field field-sm"
                                     />
                                     {kerningFilterChar && (
-                                        <button onClick={() => setKerningFilterChar('')} className={`text-[10px] underline ${isDarkMode ? 'text-white' : 'text-black'}`}>Clear</button>
+                                        <IconButton label="Limpar filtro" variant="plain" onClick={() => setKerningFilterChar('')}>
+                                            <X className="w-4 h-4" aria-hidden="true" />
+                                        </IconButton>
                                     )}
                                 </div>
-                            </div>
-                            <div className={`flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar ${isDarkMode ? 'bg-slate-900' : 'bg-white'}`}>
-                                {filteredPairs.length === 0 && (
-                                    <div className={`${textSub} text-[10px] uppercase text-center py-6`}>No pairs{kerningFilterChar ? ` with ${kerningFilterChar}` : ''}.</div>
-                                )}
-                                {filteredPairs.map(([pair, val]) => (
-                                    <button key={pair} onClick={() => selectPair(pair)} className={`w-full flex justify-between items-center p-3 rounded-lg transition-all border ${selectedPair === pair ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black') : (isDarkMode ? 'text-slate-400 border-transparent hover:bg-slate-800' : 'text-neutral-500 border-transparent hover:bg-neutral-50 hover:border-neutral-200 hover:text-black')}`}>
-                                        <span className="font-mono tracking-widest font-bold text-lg">{pair}</span>
-                                        <span className="font-mono text-sm font-bold">{val as number}</span>
-                                    </button>
-                                ))}
-                            </div>
+                                <div className="max-h-[420px] overflow-y-auto custom-scrollbar -mx-2.5 flex flex-col gap-0.5">
+                                    {filteredPairs.length === 0 && (
+                                        <p className="text-[13px] text-muted-foreground text-center py-6">
+                                            Nenhum par{kerningFilterChar ? ` com ${kerningFilterChar}` : ''}.
+                                        </p>
+                                    )}
+                                    {filteredPairs.map(([pair, val]) => (
+                                        <button
+                                            key={pair}
+                                            type="button"
+                                            onClick={() => selectPair(pair)}
+                                            aria-pressed={selectedPair === pair}
+                                            className={cx('row min-h-12 justify-between', selectedPair === pair && 'is-active')}
+                                        >
+                                            <span className="text-[20px] font-normal leading-none">{pair}</span>
+                                            <span className="text-[20px] font-normal leading-none tabular">{val as number}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </Card>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
-        <div className={`p-6 border-t text-right ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-neutral-200'}`}>
-             <button onClick={onClose} className={`px-8 py-3 rounded-xl font-bold transition-colors ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>Done</button>
-        </div>
-      </div>
-    </div>
-  );
+                )}
+            </div>
+        </Sheet>
+    );
 };
 
 export default SpacingManager;

@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
+import { CheckCircle2, MoreHorizontal, Pencil, Ruler, Wrench } from 'lucide-react';
 import { GlyphData, FontMetadata } from '../types';
 import {
   runFullDiagnostics,
@@ -14,10 +15,13 @@ import {
   GlyphDiagnostic,
   DiagnosticSeverity
 } from '../services/glyphDiagnosticService';
+import { IconButton, Metric, Segmented, Sheet, Spinner } from './ui';
+import { cx } from './cx';
 
 interface GlyphDiagnosticsProps {
   glyphs: GlyphData[];
   metadata: FontMetadata;
+  /** Mantido para os chamadores; as cores vêm dos tokens, que viram com a classe `dark`. */
   isDarkMode: boolean;
   isOpen: boolean;
   onClose: () => void;
@@ -25,42 +29,38 @@ interface GlyphDiagnosticsProps {
   onEditGlyph: (char: string) => void;
 }
 
-const SeverityIcon: React.FC<{ severity: DiagnosticSeverity }> = ({ severity }) => {
-  switch (severity) {
-    case 'error':
-      return (
-        <svg className="w-4 h-4 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M15 9l-6 6M9 9l6 6" />
-        </svg>
-      );
-    case 'warning':
-      return (
-        <svg className="w-4 h-4 text-amber-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 9v4M12 17h.01" />
-          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-        </svg>
-      );
-    case 'info':
-      return (
-        <svg className="w-4 h-4 text-blue-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 16v-4M12 8h.01" />
-        </svg>
-      );
-  }
+const SEVERITY_LABEL: Record<DiagnosticSeverity, string> = {
+  error: 'Erro',
+  warning: 'Aviso',
+  info: 'Informação'
 };
+
+/** Gravidade em tinta: erro é o ponto cheio, aviso o ponto vazado, informação o ponto cinza. */
+const SeverityIcon: React.FC<{ severity: DiagnosticSeverity }> = ({ severity }) => (
+  <span
+    role="img"
+    aria-label={SEVERITY_LABEL[severity]}
+    title={SEVERITY_LABEL[severity]}
+    className={cx(
+      'w-2 h-2 rounded-pill shrink-0 mt-[7px]',
+      severity === 'error' && 'bg-foreground',
+      severity === 'warning' && 'shadow-[inset_0_0_0_1.5px_hsl(var(--foreground))]',
+      severity === 'info' && 'shadow-[inset_0_0_0_1.5px_hsl(var(--muted-foreground))]'
+    )}
+  />
+);
+
+type Filter = DiagnosticSeverity | 'all';
 
 const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
   glyphs,
   metadata,
-  isDarkMode,
   isOpen,
   onClose,
   onUpdateGlyph,
   onEditGlyph
 }) => {
-  const [filter, setFilter] = useState<DiagnosticSeverity | 'all'>('all');
+  const [filter, setFilter] = useState<Filter>('all');
   const [isFixing, setIsFixing] = useState(false);
   const [lastFixResult, setLastFixResult] = useState<{ fixed: number; failed: number } | null>(null);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -112,7 +112,7 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
   const handleNormalizeGlyph = useCallback((char: string) => {
     const glyph = glyphs.find(g => g.char === char);
     if (!glyph) return;
-    
+
     const fixes = normalizeGlyphToReference(glyph, glyphs);
     if (fixes) {
       onUpdateGlyph(char, fixes);
@@ -121,233 +121,161 @@ const GlyphDiagnostics: React.FC<GlyphDiagnosticsProps> = ({
 
   if (!isOpen) return null;
 
-  const bgClass = isDarkMode ? 'bg-slate-950' : 'bg-white';
-  const borderClass = isDarkMode ? 'border-white/10' : 'border-black/10';
-  const textClass = isDarkMode ? 'text-white' : 'text-black';
-  const mutedClass = isDarkMode ? 'text-slate-400' : 'text-neutral-500';
-  const cardClass = isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200';
-  const btnClass = isDarkMode 
-    ? 'bg-slate-800 border-slate-600 hover:bg-slate-700 text-white' 
-    : 'bg-white border-neutral-300 hover:bg-neutral-100 text-black';
+  const fixableCount = diagnostics.diagnostics.filter(d => d.autoFixAvailable).length;
+
+  const filterItems: { value: Filter; label: React.ReactNode }[] = (['all', 'error', 'warning', 'info'] as const).map(f => {
+    const count = f === 'all' ? diagnostics.diagnostics.length : f === 'error' ? diagnostics.errors : f === 'warning' ? diagnostics.warnings : diagnostics.infos;
+    const label = f === 'all' ? 'Todos' : f === 'error' ? 'Erros' : f === 'warning' ? 'Avisos' : 'Informações';
+    return {
+      value: f,
+      label: (
+        <>
+          {label}<span className="tabular opacity-60 ml-1.5">{count}</span>
+        </>
+      )
+    };
+  });
 
   return (
-    <div
-      className={`fixed inset-0 z-[70] flex items-center justify-center px-4 ${isDarkMode ? 'bg-black/70' : 'bg-white/70'}`}
-      onClick={onClose}
-    >
-      <div
-        className={`w-full max-w-4xl max-h-[85vh] rounded-3xl border ${bgClass} ${borderClass} ${textClass} flex flex-col overflow-hidden`}
-        onClick={(e) => e.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-      >
-        {/* Header — single row */}
-        <div className={`flex items-center gap-4 px-6 py-3 border-b ${borderClass}`}>
-          <div className="flex-1 min-w-0">
-            <p className="text-base font-black uppercase tracking-tight flex items-center gap-2">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <path d="M21 21l-4.35-4.35" />
-              </svg>
-              Diagnostics
-            </p>
-            <p className={`text-[11px] ${mutedClass}`}>
-              {diagnostics.glyphsWithIssues} de {diagnostics.totalGlyphs} glyphs com problemas
-            </p>
-          </div>
-
-          {/* Stats pills */}
-          <div className={`hidden sm:flex items-center gap-1 text-[11px] font-bold rounded-full border px-3 py-1.5 ${borderClass}`}>
-            <span>{diagnostics.totalGlyphs}</span>
-            <span className={`mx-1 ${mutedClass}`}>·</span>
-            <span className="text-red-500">{diagnostics.errors}E</span>
-            <span className={`mx-1 ${mutedClass}`}>·</span>
-            <span className="text-amber-500">{diagnostics.warnings}A</span>
-            <span className={`mx-1 ${mutedClass}`}>·</span>
-            <span className="text-blue-500">{diagnostics.infos}I</span>
-          </div>
-
-          {/* Primary action */}
+    <Sheet
+      open={isOpen}
+      onClose={onClose}
+      size="max-w-4xl"
+      title="Diagnóstico"
+      description={`${diagnostics.glyphsWithIssues} de ${diagnostics.totalGlyphs} glifos com problema`}
+      actions={
+        <>
           <button
+            type="button"
             onClick={handleAutoFixAll}
-            disabled={isFixing || diagnostics.diagnostics.filter(d => d.autoFixAvailable).length === 0}
-            className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-wider transition flex items-center gap-2 ${
-              isDarkMode
-                ? 'bg-emerald-600 hover:bg-emerald-500 text-white disabled:bg-slate-700 disabled:text-slate-500'
-                : 'bg-emerald-500 hover:bg-emerald-600 text-white disabled:bg-neutral-200 disabled:text-neutral-400'
-            }`}
+            disabled={isFixing || fixableCount === 0}
+            className="ctl ctl-filled"
           >
-            {isFixing ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 11-6.219-8.56" /></svg>
-                Corrigindo
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" /></svg>
-                Auto-Corrigir
-              </>
-            )}
+            {isFixing ? <Spinner /> : <Wrench className="w-4 h-4" aria-hidden="true" />}
+            <span className="hidden sm:inline">{isFixing ? 'Corrigindo' : 'Corrigir tudo'}</span>
           </button>
 
-          {/* More actions */}
           <div className="relative">
-            <button
+            <IconButton
+              label="Mais ações"
+              variant="surface"
+              active={moreOpen}
+              aria-expanded={moreOpen}
+              aria-haspopup="menu"
               onClick={() => setMoreOpen(o => !o)}
-              className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
-              aria-label="More actions"
             >
-              ⋯
-            </button>
+              <MoreHorizontal className="w-4 h-4" aria-hidden="true" />
+            </IconButton>
             {moreOpen && (
-              <div className={`absolute right-0 top-11 z-10 w-56 rounded-xl border shadow-lg p-1 ${bgClass} ${borderClass}`}>
+              <div role="menu" className="absolute right-0 top-12 z-10 w-64 material-popover p-1.5">
                 <button
+                  type="button"
+                  role="menuitem"
                   onClick={() => { setMoreOpen(false); handleNormalizeAll(); }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs font-bold ${isDarkMode ? 'hover:bg-white/10' : 'hover:bg-neutral-100'}`}
+                  className="row w-full text-left flex-col items-start gap-0.5 h-auto py-2"
                 >
-                  Normalizar tamanhos
-                  <p className={`text-[10px] font-normal ${mutedClass}`}>Equalizes visual height across all glyphs.</p>
+                  <span className="text-[14px] text-foreground">Normalizar tamanhos</span>
+                  <span className="text-[12px] text-muted-foreground">Iguala a altura visual de todos os glifos.</span>
                 </button>
               </div>
             )}
           </div>
+        </>
+      }
+      bodyClassName="flex flex-col gap-6"
+    >
+      {/* Resumo */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
+        <Metric value={diagnostics.totalGlyphs} caption="Glifos verificados" />
+        <Metric value={diagnostics.glyphsWithIssues} caption="Com problema" />
+        <Metric value={diagnostics.errors} caption="Erros" />
+        <Metric value={diagnostics.warnings} caption="Avisos" />
+      </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
-              aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Filter tabs */}
-        <div className={`flex items-center gap-1 px-6 py-2 border-b ${borderClass}`}>
-          {(['all', 'error', 'warning', 'info'] as const).map(f => {
-            const count = f === 'all' ? diagnostics.diagnostics.length : f === 'error' ? diagnostics.errors : f === 'warning' ? diagnostics.warnings : diagnostics.infos;
-            const label = f === 'all' ? 'All' : f === 'error' ? 'Errors' : f === 'warning' ? 'Warnings' : 'Info';
-            const active = filter === f;
-            return (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-md transition ${
-                  active
-                    ? isDarkMode ? 'bg-white text-black' : 'bg-black text-white'
-                    : `${mutedClass} hover:${textClass}`
-                }`}
-              >
-                {label} <span className="opacity-60">{count}</span>
-              </button>
-            );
-          })}
+      <div className="flex flex-col gap-3 min-w-0">
+        <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
+          <Segmented<Filter> items={filterItems} value={filter} onChange={setFilter} ariaLabel="Filtrar por gravidade" />
         </div>
 
         {/* Last Fix Result */}
         {lastFixResult && (
-          <div className={`px-6 py-2 border-b ${borderClass} ${isDarkMode ? 'bg-emerald-500/10' : 'bg-emerald-50'}`}>
-            <p className="text-sm text-emerald-600 flex items-center gap-2">
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-              {lastFixResult.fixed} fixes applied
-              {lastFixResult.failed > 0 && ` (${lastFixResult.failed} falharam)`}
-            </p>
-          </div>
+          <p className="flex items-center gap-2 text-[14px] text-foreground" role="status">
+            <span aria-hidden="true" className="w-2 h-2 rounded-pill bg-foreground shrink-0" />
+            {lastFixResult.fixed} {lastFixResult.fixed === 1 ? 'correção aplicada' : 'correções aplicadas'}
+            {lastFixResult.failed > 0 && (
+              <span className="text-muted-foreground">({lastFixResult.failed} falharam)</span>
+            )}
+          </p>
         )}
-
-        {/* Diagnostics List */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {filteredDiagnostics.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="w-16 h-16 mx-auto mb-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                <path d="M22 4L12 14.01l-3-3" />
-              </svg>
-              <p className="font-bold text-lg">No issues found!</p>
-              <p className={`text-sm ${mutedClass}`}>
-                All glyphs have consistent metrics.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {Array.from(groupedByGlyph.entries()).map(([char, diags]) => (
-                <div
-                  key={char}
-                  className={`border rounded-2xl overflow-hidden ${cardClass}`}
-                >
-                  {/* Glyph Header */}
-                  <div className={`px-4 py-3 border-b ${borderClass} flex items-center gap-4`}>
-                    <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center text-2xl font-black">
-                      {char}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold">{diags[0].glyphName}</p>
-                      <p className={`text-xs ${mutedClass}`}>
-                        {diags.length} problema{diags.length > 1 ? 's' : ''} detectado{diags.length > 1 ? 's' : ''}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => { onEditGlyph(char); onClose(); }}
-                        className={`px-3 py-1.5 text-xs font-bold rounded-full border ${btnClass} flex items-center gap-1.5`}
-                      >
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleNormalizeGlyph(char)}
-                        className={`w-8 h-8 text-lg font-black rounded-full border ${btnClass} flex items-center justify-center`}
-                        title="Normalize based on other glyphs"
-                      >
-                        ⋯
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Issues List */}
-                  <div className="divide-y divide-inherit">
-                    {diags.map((diag, idx) => (
-                      <div key={idx} className="px-4 py-3 flex items-start gap-3">
-                        <SeverityIcon severity={diag.severity} />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-sm">{diag.message}</p>
-                          <p className={`text-xs ${mutedClass} mt-0.5 flex items-start gap-1`}>
-                            <svg className="w-3 h-3 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M9 18l6-6-6-6" />
-                            </svg>
-                            {diag.suggestion}
-                          </p>
-                          <p className={`text-[10px] ${mutedClass} mt-1 font-mono`}>
-                            Code: {diag.code}
-                          </p>
-                        </div>
-                        {diag.autoFixAvailable && (
-                          <button
-                            onClick={() => handleFixSingle(diag)}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-full transition ${
-                              isDarkMode 
-                                ? 'bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600/30' 
-                                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                            }`}
-                          >
-                            Corrigir
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
-    </div>
+
+      {/* Diagnostics List */}
+      {filteredDiagnostics.length === 0 ? (
+        <div className="bg-canvas rounded-xl flex flex-col items-center justify-center gap-2 py-14 px-5 text-center">
+          <CheckCircle2 className="w-8 h-8 text-muted-foreground mb-1" aria-hidden="true" />
+          <p className="text-[17px] text-foreground">Nenhum problema encontrado</p>
+          <p className="text-[14px] text-muted-foreground">Todos os glifos têm métricas consistentes.</p>
+        </div>
+      ) : (
+        <ul className="flex flex-col min-w-0 hairline-t">
+          {Array.from(groupedByGlyph.entries()).map(([char, diags]) => (
+            <li key={char} className="hairline-b py-4 flex flex-col gap-3 min-w-0">
+              {/* Glyph Header */}
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-14 h-14 rounded-md bg-canvas text-foreground flex items-center justify-center text-[32px] leading-none shrink-0">
+                  {char}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[14px] font-medium text-foreground truncate">{diags[0].glyphName}</p>
+                  <p className="text-[12px] text-muted-foreground">
+                    {diags.length} {diags.length > 1 ? 'problemas encontrados' : 'problema encontrado'}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => { onEditGlyph(char); onClose(); }}
+                    className="ctl ctl-sm ctl-outline"
+                  >
+                    <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                    Editar
+                  </button>
+                  <IconButton label="Normalizar pelos outros glifos" onClick={() => handleNormalizeGlyph(char)}>
+                    <Ruler className="w-4 h-4" aria-hidden="true" />
+                  </IconButton>
+                </div>
+              </div>
+
+              {/* Issues List */}
+              <ul className="flex flex-col min-w-0 sm:pl-[72px]">
+                {diags.map((diag, idx) => (
+                  <li key={idx} className={cx('flex items-start gap-3 py-2.5 min-w-0', idx > 0 && 'hairline-t')}>
+                    <SeverityIcon severity={diag.severity} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] text-foreground">
+                        {diag.severity === 'error' && <span className="text-destructive">Erro: </span>}
+                        {diag.message}
+                      </p>
+                      <p className="text-[13px] text-muted-foreground mt-0.5">{diag.suggestion}</p>
+                      <p className="text-[12px] text-muted-foreground mt-1 tabular">Código: {diag.code}</p>
+                    </div>
+                    {diag.autoFixAvailable && (
+                      <button
+                        type="button"
+                        onClick={() => handleFixSingle(diag)}
+                        className="ctl ctl-sm ctl-outline shrink-0"
+                      >
+                        Corrigir
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Sheet>
   );
 };
 

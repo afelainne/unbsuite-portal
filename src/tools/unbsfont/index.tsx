@@ -1,4 +1,3 @@
-import './styles/editor.css';
 import App from './App';
 
 const UnbsFontApp = () => {

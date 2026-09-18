@@ -26,6 +26,9 @@ import { processSVGSheet, generateCompositePath, GLYPH_NAME_MAP, measurePath, ex
 import { buildProjectFilePayload, downloadProjectFile, parseProjectFile, PROJECT_FILE_EXTENSION } from './services/projectFileService';
 import { NoticeContext, NoticeVariant } from './contexts/NoticeContext';
 import { KerningPair } from './services/professionalKerningService';
+import { ClipboardPaste, Copy, Download, Eraser, Eye, Home, Moon, MoveHorizontal, PanelsTopLeft, Plus, Ruler, ScanSearch, Sun, X } from 'lucide-react';
+import { Field, IconButton, Segmented, Sheet, Spinner, Switch, TextTabs, TitleRow, ValueRow } from './components/ui';
+import { cx } from './components/cx';
 
 type ViewMode = 'GRID' | 'TEST';
 type Screen = 'DASHBOARD' | 'MODE_SELECT' | 'EDITOR';
@@ -56,6 +59,24 @@ interface AppSnapshot {
 }
 
 const HISTORY_LIMIT = 200;
+
+const CATEGORY_UPPER = 'Maiúsculas';
+const CATEGORY_LOWER = 'Minúsculas';
+const CATEGORY_NUMBERS = 'Números';
+const CATEGORY_SYMBOLS = 'Pontuação e símbolos';
+const CATEGORY_OTHER = 'Acentuados e outros';
+
+/**
+ * Avisos em tinta: o ponto amarelo marca o que deu certo (o sinal da marca),
+ * o erro usa o vermelho destrutivo, o alerta é um anel vazado e a informação
+ * fica em cinza.
+ */
+const NOTICE_STYLES: Record<NoticeVariant, { label: string; dot: React.CSSProperties }> = {
+    success: { label: 'Pronto', dot: { background: 'hsl(var(--accent))', boxShadow: '0 0 0 1px hsl(var(--foreground) / 0.18)' } },
+    warning: { label: 'Atenção', dot: { boxShadow: 'inset 0 0 0 1.5px hsl(var(--foreground))' } },
+    error: { label: 'Erro', dot: { background: 'hsl(var(--destructive))' } },
+    info: { label: 'Aviso', dot: { background: 'hsl(var(--muted-foreground))' } },
+};
 
 const deepClone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
@@ -248,37 +269,14 @@ const App: React.FC = () => {
       noticeTimersRef.current.push(timeoutId);
   }, []);
 
-  const noticeStyles = useMemo<Record<NoticeVariant, { label: string; container: string; dot: string }>>(() => ({
-      success: {
-          label: 'Success',
-          container: isDarkMode ? 'bg-emerald-500/10 border-emerald-300 text-emerald-50' : 'bg-emerald-50 border-emerald-500 text-emerald-900',
-          dot: 'bg-emerald-400'
-      },
-      warning: {
-          label: 'Warning',
-          container: isDarkMode ? 'bg-amber-500/10 border-amber-300 text-amber-50' : 'bg-amber-50 border-amber-500 text-amber-900',
-          dot: 'bg-amber-400'
-      },
-      error: {
-          label: 'Error',
-          container: isDarkMode ? 'bg-rose-500/10 border-rose-300 text-rose-50' : 'bg-rose-50 border-rose-500 text-rose-900',
-          dot: 'bg-rose-400'
-      },
-      info: {
-          label: 'Info',
-          container: isDarkMode ? 'bg-slate-900/90 border-slate-700 text-white' : 'bg-white border-black text-black',
-          dot: isDarkMode ? 'bg-slate-200' : 'bg-slate-500'
-      }
-  }), [isDarkMode]);
-
   useEffect(() => {
       try {
           localStorage.setItem('font_studio_projects', JSON.stringify(projects));
       } catch (e: any) {
           if (e?.name === 'QuotaExceededError') {
-              pushNotice('Browser storage is full. Export the project (.otf) and remove weights or glyphs to free up space.', 'error');
+              pushNotice('O armazenamento do navegador encheu. Baixe o projeto (.unbsfo) e remova estilos ou glifos para liberar espaço.', 'error');
           } else {
-              pushNotice('Could not save the project locally.', 'error');
+              pushNotice('Não foi possível salvar o projeto neste navegador.', 'error');
           }
       }
     }, [projects, pushNotice]);
@@ -346,7 +344,7 @@ const App: React.FC = () => {
       const newId = Date.now().toString();
       const newProject: Project = {
           id: newId,
-          name: "Untitled Font",
+          name: "Sem nome",
           updatedAt: new Date().toISOString(),
           metadata: INITIAL_METADATA,
           styleMap: { "Regular": generateInitialGlyphs() }
@@ -376,7 +374,7 @@ const App: React.FC = () => {
 
   const handleSaveProject = useCallback(() => {
       if (!activeProjectId) {
-          pushNotice('No active project. Create or open a project first.', 'warning');
+          pushNotice('Nenhum projeto aberto. Crie ou abra um projeto antes.', 'warning');
           return;
       }
       const syncedStyleMap = { ...styleMap, [currentStyle]: glyphs };
@@ -392,9 +390,9 @@ const App: React.FC = () => {
           }
           return p;
       }));
-      pushNotice('Project saved locally.', 'success');
+      pushNotice('Projeto salvo neste navegador.', 'success');
       if (!lastProjectFileName) {
-          pushNotice('Use "Download File" to generate a .unbsfo file when you need to export.', 'info');
+          pushNotice('Para ter uma cópia fora do navegador, baixe o arquivo .unbsfo.', 'info');
       }
   }, [activeProjectId, styleMap, currentStyle, glyphs, metadata, lastProjectFileName, pushNotice]);
 
@@ -406,8 +404,8 @@ const App: React.FC = () => {
       const project = projects.find(p => p.id === projectId);
       if (!project) return;
 
-      const projectName = project.metadata.familyName || project.name || 'this project';
-      const confirmed = window.confirm(`Delete "${projectName}"? This action cannot be undone.`);
+      const projectName = project.metadata.familyName || project.name || 'este projeto';
+      const confirmed = window.confirm(`Excluir "${projectName}"? Não dá para desfazer.`);
       if (!confirmed) return;
 
       setProjects(prev => prev.filter(p => p.id !== projectId));
@@ -424,7 +422,7 @@ const App: React.FC = () => {
           setScreen('DASHBOARD');
       }
 
-      pushNotice('Project deleted.', 'warning');
+      pushNotice('Projeto excluído.', 'warning');
   }, [projects, activeProjectId, pushNotice]);
 
   const handleGoHome = () => {
@@ -454,30 +452,30 @@ const App: React.FC = () => {
   };
 
   const handleAddStyle = (styleName: string) => {
-        if (styleMap[styleName]) { pushNotice('This weight already exists.', 'warning'); return; }
+        if (styleMap[styleName]) { pushNotice('Este estilo já existe.', 'warning'); return; }
     const newGlyphs = generateInitialGlyphs();
     setStyleMap(prev => ({ ...prev, [styleName]: newGlyphs }));
     handleSwitchStyle(styleName);
   };
 
   const handleDuplicateStyle = useCallback((newName: string) => {
-    if (styleMap[newName]) { pushNotice('This weight already exists.', 'warning'); return; }
+    if (styleMap[newName]) { pushNotice('Este estilo já existe.', 'warning'); return; }
     const clonedGlyphs = JSON.parse(JSON.stringify(glyphs)) as typeof glyphs;
     setStyleMap(prev => ({ ...prev, [newName]: clonedGlyphs }));
     setCurrentStyle(newName);
     setGlyphs(clonedGlyphs);
     setMetadata(prev => ({ ...prev, styleName: newName }));
-    pushNotice(`Weight "${newName}" created as copy of "${currentStyle}".`, 'success');
+    pushNotice(`Estilo "${newName}" criado como cópia de "${currentStyle}".`, 'success');
   }, [styleMap, glyphs, currentStyle, pushNotice]);
 
     const handleRemoveStyle = useCallback((styleName: string) => {
       const styleKeys = Object.keys(styleMap);
       if (!styleMap[styleName]) return;
       if (styleKeys.length <= 1) {
-          pushNotice('You must keep at least one weight.', 'warning');
+          pushNotice('A fonte precisa de pelo menos um estilo.', 'warning');
           return;
       }
-      const confirmed = window.confirm(`Delete the weight "${styleName}"? This action cannot be undone.`);
+      const confirmed = window.confirm(`Excluir o estilo "${styleName}"? Não dá para desfazer.`);
       if (!confirmed) return;
 
       const remainingStyles = styleKeys.filter(name => name !== styleName);
@@ -511,7 +509,7 @@ const App: React.FC = () => {
           setMetadata(prev => ({ ...prev, styleName: nextActiveStyle }));
       }
 
-      pushNotice(`Weight "${styleName}" removed.`, 'info');
+      pushNotice(`Estilo "${styleName}" removido.`, 'info');
   }, [styleMap, currentStyle, pushNotice, activeProjectId, setProjects, setGlyphs, setMetadata]);
 
   const getCasePairChar = (char: string): string | null => {
@@ -714,11 +712,11 @@ const App: React.FC = () => {
             if (importedCount > 0) {
                     setGlyphs(updatedGlyphs);
                     setShowAll(false);
-                    pushNotice(`Imported ${importedCount} glyph${importedCount === 1 ? '' : 's'}.`, 'success');
+                    pushNotice(`${importedCount} ${importedCount === 1 ? 'glifo importado' : 'glifos importados'}.`, 'success');
             } else {
-                    pushNotice('No matching glyphs found in the SVG.', 'warning');
+                    pushNotice('Nenhum glifo correspondente no SVG.', 'warning');
             }
-        } catch (error) { console.error("Import failed", error); pushNotice("Failed to parse SVG. Please verify the file.", 'error'); } finally { setIsLoading(false); }
+        } catch (error) { console.error("Import failed", error); pushNotice("Não foi possível ler o SVG. Confira o arquivo.", 'error'); } finally { setIsLoading(false); }
   };
 
   const handleDownloadProjectFile = () => {
@@ -727,7 +725,7 @@ const App: React.FC = () => {
       const baseName = `${metadata.familyName || 'font'}-${metadata.styleName || currentStyle}`.toLowerCase();
     downloadProjectFile(payload, baseName);
       setLastProjectFileName(baseName);
-      pushNotice('Project exported as file.', 'success');
+      pushNotice('Projeto baixado como arquivo.', 'success');
   };
 
   const handleImportProjectFile = async (file: File) => {
@@ -747,7 +745,7 @@ const App: React.FC = () => {
 
           const newProjectId = createProjectId();
           const derivedBaseName = extractProjectBaseName(file.name);
-          const projectName = importedMetadata.familyName?.trim() || derivedBaseName || 'Imported Font';
+          const projectName = importedMetadata.familyName?.trim() || derivedBaseName || 'Fonte importada';
 
           const projectEntry: Project = {
               id: newProjectId,
@@ -770,10 +768,10 @@ const App: React.FC = () => {
           const safeBaseName = toSafeDownloadBaseName(derivedBaseName || projectName);
           setLastProjectFileName(safeBaseName);
 
-          pushNotice('Project loaded from file.', 'success');
+          pushNotice('Projeto aberto do arquivo.', 'success');
       } catch (error) {
           console.error('Failed to load project file', error);
-          const message = error instanceof Error ? error.message : 'Failed to open project file.';
+          const message = error instanceof Error ? error.message : 'Não foi possível abrir o arquivo do projeto.';
           pushNotice(message, 'error');
       }
   };
@@ -781,10 +779,10 @@ const App: React.FC = () => {
   const handleExportSvgSheet = useCallback(() => {
       try {
           exportGlyphSvgSheet(metadata, glyphs);
-          pushNotice('SVG sheet exported successfully.', 'success');
+          pushNotice('Folha SVG baixada.', 'success');
       } catch (error) {
           console.error('Failed to export SVG sheet', error);
-          const message = error instanceof Error ? error.message : 'Failed to export SVG sheet.';
+          const message = error instanceof Error ? error.message : 'Não foi possível exportar a folha SVG.';
           pushNotice(message, 'error');
       }
   }, [metadata, glyphs, pushNotice]);
@@ -793,17 +791,17 @@ const App: React.FC = () => {
       try {
           const emptyGlyphs = generateInitialGlyphs();
           exportGlyphSvgSheet(metadata, emptyGlyphs, { emptyTemplate: true });
-          pushNotice('Empty SVG sheet exported.', 'success');
+          pushNotice('Folha SVG vazia baixada.', 'success');
       } catch (error) {
           console.error('Failed to export empty SVG sheet', error);
-          const message = error instanceof Error ? error.message : 'Failed to export empty SVG sheet.';
+          const message = error instanceof Error ? error.message : 'Não foi possível exportar a folha SVG vazia.';
           pushNotice(message, 'error');
       }
   }, [metadata, pushNotice]);
 
   const handleExport = async () => {
       if (isExporting) {
-          pushNotice('An export is already in progress. Wait for the queue to finish.', 'warning');
+          pushNotice('Já há uma exportação em andamento. Aguarde terminar.', 'warning');
           return;
       }
 
@@ -815,7 +813,7 @@ const App: React.FC = () => {
 
       if (styles.length <= 1) {
           if (!hasDrawnGlyphs(glyphs)) {
-              pushNotice('No glyphs drawn to export.', 'warning');
+              pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
               return;
           }
           candidates.push({
@@ -827,7 +825,7 @@ const App: React.FC = () => {
           styles.forEach(([styleName, styleGlyphs]) => {
               if (!styleGlyphs) return;
               if (!hasDrawnGlyphs(styleGlyphs)) {
-                  pushNotice(`Weight "${styleName}" ignored: no glyphs drawn.`, 'warning');
+                  pushNotice(`Estilo "${styleName}" ignorado: nenhum glifo desenhado.`, 'warning');
                   return;
               }
               candidates.push({
@@ -838,7 +836,7 @@ const App: React.FC = () => {
           });
 
           if (!candidates.length) {
-              pushNotice('No weight could be exported.', 'error');
+              pushNotice('Nenhum estilo pôde ser exportado.', 'error');
               return;
           }
       }
@@ -847,8 +845,8 @@ const App: React.FC = () => {
       setExportProgress(0);
       pushNotice(
           candidates.length > 1
-              ? `Fila criada para ${candidates.length} weight${candidates.length > 1 ? 's' : ''}.`
-              : 'Export started.',
+              ? `Fila criada para ${candidates.length} ${candidates.length > 1 ? 'estilos' : 'estilo'}.`
+              : 'Exportação iniciada.',
           'info'
       );
 
@@ -862,11 +860,11 @@ const App: React.FC = () => {
                       onProgress: (p) => setExportProgress(p),
                   });
                   completed += 1;
-                  pushNotice(`Weight "${candidate.styleName}" exported.`, 'success');
+                  pushNotice(`Estilo "${candidate.styleName}" exportado.`, 'success');
               } catch (error) {
-                  const message = error instanceof FontExportError ? error.message : 'Failed to export font.';
+                  const message = error instanceof FontExportError ? error.message : 'Não foi possível exportar a fonte.';
                   failures.push(candidate.styleName);
-                  pushNotice(`Failed to export "${candidate.styleName}": ${message}`, 'error');
+                  pushNotice(`Falha ao exportar "${candidate.styleName}": ${message}`, 'error');
               }
           }
       } finally {
@@ -875,22 +873,22 @@ const App: React.FC = () => {
       }
 
       if (completed) {
-          pushNotice(`Export completed (${completed} weight${completed > 1 ? 's' : ''}).`, 'success');
+          pushNotice(`Exportação concluída (${completed} ${completed > 1 ? 'estilos' : 'estilo'}).`, 'success');
       }
       if (failures.length) {
-          pushNotice(`Could not export ${failures.join(', ')}.`, 'error');
+          pushNotice(`Não foi possível exportar ${failures.join(', ')}.`, 'error');
       }
   };
 
   const handleExportSvgFirst = async () => {
       if (isExporting) {
-          pushNotice('An export is already in progress. Wait for the queue to finish.', 'warning');
+          pushNotice('Já há uma exportação em andamento. Aguarde terminar.', 'warning');
           return;
       }
 
       const hasDrawnGlyphs = glyphs.some(g => (g.pathData || '').trim().length > 0);
       if (!hasDrawnGlyphs) {
-          pushNotice('No glyphs drawn to export.', 'warning');
+          pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
           return;
       }
 
@@ -922,10 +920,10 @@ const App: React.FC = () => {
           const blob = new Blob([buffer], { type: 'font/otf' });
           downloadBlob(blob, fileName);
           setExportProgress(1);
-          pushNotice('SVG-first export generated (outline + SVG stub layer).', 'success');
+          pushNotice('Exportação SVG-first gerada (contorno e camada SVG).', 'success');
       } catch (error) {
           console.error('SVG-first export failed', error);
-          const message = error instanceof Error ? error.message : 'Failed to export SVG-first font.';
+          const message = error instanceof Error ? error.message : 'Não foi possível exportar a fonte SVG-first.';
           pushNotice(message, 'error');
       } finally {
           setIsExporting(false);
@@ -935,7 +933,7 @@ const App: React.FC = () => {
 
   const handleExportFontEditor = async (kerningPairs?: KerningPair[]) => {
       if (isExporting) {
-          pushNotice('An export is already in progress. Please wait.', 'warning');
+          pushNotice('Já há uma exportação em andamento. Aguarde.', 'warning');
           return;
       }
 
@@ -955,7 +953,7 @@ const App: React.FC = () => {
       });
 
       if (!candidates.length) {
-          pushNotice('No glyphs drawn to export.', 'warning');
+          pushNotice('Nenhum glifo desenhado para exportar.', 'warning');
           return;
       }
 
@@ -974,12 +972,12 @@ const App: React.FC = () => {
                       : await downloadFontEditorFont(candidate.meta, candidate.glyphList);
                   completed += 1;
                   setExportProgress(completed / totalStyles);
-                  pushNotice(`Weight "${candidate.styleName}" exported: ${result.fileName} (${result.glyphCount} glyphs).`, 'success');
+                  pushNotice(`Estilo "${candidate.styleName}" exportado: ${result.fileName} (${result.glyphCount} glifos).`, 'success');
               } catch (err) {
                   console.error('Export failed', candidate.styleName, err);
                   failures.push(candidate.styleName);
-                  const message = err instanceof Error ? err.message : 'Failed to export font.';
-                  pushNotice(`Failed to export "${candidate.styleName}": ${message}`, 'error');
+                  const message = err instanceof Error ? err.message : 'Não foi possível exportar a fonte.';
+                  pushNotice(`Falha ao exportar "${candidate.styleName}": ${message}`, 'error');
               }
           }
       } finally {
@@ -988,16 +986,16 @@ const App: React.FC = () => {
       }
 
       if (completed && totalStyles > 1) {
-          pushNotice(`Family "${metadata.familyName || 'Untitled'}" exported (${completed}/${totalStyles} weights).`, 'success');
+          pushNotice(`Família "${metadata.familyName || 'Sem nome'}" exportada (${completed} de ${totalStyles} estilos).`, 'success');
       }
       if (failures.length) {
-          pushNotice(`Could not export: ${failures.join(', ')}.`, 'error');
+          pushNotice(`Não foi possível exportar: ${failures.join(', ')}.`, 'error');
       }
   };
-  const handleAutoFit = () => { if (window.confirm("Reset metrics?")) setGlyphs(prev => prev.map(g => !g.pathData ? g : { ...g, scale: 1, leftSideBearing: 50, baselineOffset: 100 })); };
+  const handleAutoFit = () => { if (window.confirm("Redefinir escala, margem esquerda e linha de base de todos os glifos?")) setGlyphs(prev => prev.map(g => !g.pathData ? g : { ...g, scale: 1, leftSideBearing: 50, baselineOffset: 100 })); };
   
   const handleResetAll = () => { 
-      if (window.confirm("Clear ALL glyphs? This cannot be undone.")) { 
+      if (window.confirm("Limpar todos os glifos deste estilo? Não dá para desfazer.")) { 
           const empty = generateInitialGlyphs(); 
           setStyleMap(prev => ({ ...prev, [currentStyle]: empty })); 
           setGlyphs(empty); 
@@ -1025,7 +1023,7 @@ const App: React.FC = () => {
   const handleMoveGlyph = (fromChar: string, toChar: string) => {
       let target = toChar;
       if (GLYPH_NAME_MAP[toChar.toLowerCase()]) target = GLYPH_NAME_MAP[toChar.toLowerCase()];
-      if (!glyphs.some(g => g.char === target)) { pushNotice('Invalid destination to move the glyph.', 'error'); return; }
+      if (!glyphs.some(g => g.char === target)) { pushNotice('Destino inválido para mover o glifo.', 'error'); return; }
       performSwap(fromChar, target);
   };
 
@@ -1118,7 +1116,7 @@ const App: React.FC = () => {
   const handlePasteGlyph = async (char: string) => {
       if (char === ' ') return;
       let text = "";
-      try { text = await navigator.clipboard.readText(); } catch (err) { const manualPaste = window.prompt("Paste SVG:"); if (manualPaste) text = manualPaste; }
+      try { text = await navigator.clipboard.readText(); } catch (err) { const manualPaste = window.prompt("Cole o SVG:"); if (manualPaste) text = manualPaste; }
       if (!text) return;
       
       let svgContent = text;
@@ -1135,7 +1133,7 @@ const App: React.FC = () => {
               handleUpdateGlyph(char, data);
           }
       } else {
-          pushNotice('Could not parse the copied SVG.', 'error');
+          pushNotice('Não foi possível ler o SVG copiado.', 'error');
       }
   };
 
@@ -1156,7 +1154,7 @@ const App: React.FC = () => {
           anchorOverrides: oldGlyph.anchorOverrides,
       });
       setPasteConfirmModal(null);
-      pushNotice('SVG updated keeping previous settings.', 'success');
+      pushNotice('Desenho trocado, ajustes mantidos.', 'success');
   };
 
   const handlePasteConfirmResetSettings = () => {
@@ -1165,7 +1163,7 @@ const App: React.FC = () => {
       // Usar todas as novas configurações do SVG importado
       handleUpdateGlyph(char, newData);
       setPasteConfirmModal(null);
-      pushNotice('SVG updated with new settings.', 'success');
+      pushNotice('Desenho trocado com os ajustes do SVG.', 'success');
   };
 
   const handleContextMenu = (e: React.MouseEvent, char: string) => {
@@ -1264,7 +1262,7 @@ const App: React.FC = () => {
   };
 
   const handleBulkClear = () => {
-      if (window.confirm(`Clear ${selectedChars.size} slots?`)) {
+      if (window.confirm(`Limpar ${selectedChars.size} glifos?`)) {
           setGlyphs(prev => prev.map(g => {
               if (selectedChars.has(g.char)) {
                   return {
@@ -1298,11 +1296,11 @@ const App: React.FC = () => {
       }
       const [targetChar] = Array.from(trimmedChar) as string[];
       if (!targetChar) {
-          setNewSymbolError('Invalid character.');
+          setNewSymbolError('Caractere inválido.');
           return;
       }
       if (glyphs.some(g => g.char === targetChar)) {
-          setNewSymbolError('This symbol already exists.');
+          setNewSymbolError('Este caractere já existe.');
           return;
       }
       const displayName = newSymbolName.trim() || undefined;
@@ -1328,7 +1326,7 @@ const App: React.FC = () => {
       setNewSymbolName('');
       setNewSymbolError(null);
       handleCloseCustomSlotModal();
-      pushNotice(`Symbol ${targetChar} created.`, 'success');
+      pushNotice(`Glifo ${targetChar} criado.`, 'success');
   }, [newSymbolChar, newSymbolName, glyphs, currentStyle, pushNotice, handleCloseCustomSlotModal]);
 
   // Funções de troca de modo
@@ -1342,436 +1340,415 @@ const App: React.FC = () => {
 
   const visibleGlyphs = useMemo(() => showAll ? glyphs : glyphs.filter(g => (g.pathData && g.pathData.length > 0) || g.char === ' '), [glyphs, showAll]);
   const categorizedGlyphs = useMemo(() => {
-      const cats: Record<string, GlyphData[]> = { 'Uppercase': [], 'Lowercase': [], 'Numbers': [], 'Punctuation & Symbols': [], 'Accented & Other': [] };
+      const cats: Record<string, GlyphData[]> = { [CATEGORY_UPPER]: [], [CATEGORY_LOWER]: [], [CATEGORY_NUMBERS]: [], [CATEGORY_SYMBOLS]: [], [CATEGORY_OTHER]: [] };
       visibleGlyphs.forEach(g => {
           const code = g.unicode;
-          if (code >= 65 && code <= 90) cats['Uppercase'].push(g);
-          else if (code >= 97 && code <= 122) cats['Lowercase'].push(g);
-          else if (code >= 48 && code <= 57) cats['Numbers'].push(g);
-          else if ((code >= 33 && code <= 47) || (code >= 58 && code <= 64) || (code >= 91 && code <= 96) || (code >= 123 && code <= 126) || code === 32) cats['Punctuation & Symbols'].push(g);
-          else cats['Accented & Other'].push(g);
+          if (code >= 65 && code <= 90) cats[CATEGORY_UPPER].push(g);
+          else if (code >= 97 && code <= 122) cats[CATEGORY_LOWER].push(g);
+          else if (code >= 48 && code <= 57) cats[CATEGORY_NUMBERS].push(g);
+          else if ((code >= 33 && code <= 47) || (code >= 58 && code <= 64) || (code >= 91 && code <= 96) || (code >= 123 && code <= 126) || code === 32) cats[CATEGORY_SYMBOLS].push(g);
+          else cats[CATEGORY_OTHER].push(g);
       });
-      return Object.entries(cats).filter(([_, list]) => list.length > 0);
+      return Object.entries(cats).filter(([, list]) => list.length > 0);
   }, [visibleGlyphs]);
+  const drawnCount = useMemo(() => glyphs.filter(g => g.pathData && g.pathData.trim().length > 0).length, [glyphs]);
 
-        if (screen === 'DASHBOARD') {
-            return <Dashboard onCreateProject={handleCreateProject} onOpenProject={handleOpenProject} onImportProjectFile={handleImportProjectFile} onDeleteProject={handleDeleteProject} projects={projects} isDarkMode={isDarkMode} />;
-    }
+  const toggleTheme = () => setIsDarkMode(prev => !prev);
 
-    if (screen === 'MODE_SELECT') {
-        return <ModeSelector onSelectMode={(mode) => { setEditorMode(mode); setScreen('EDITOR'); }} isDarkMode={isDarkMode} />;
-    }
-
-    // Modo Compact - Interface simplificada
-    if (editorMode === 'COMPACT') {
-        return (
-            <NoticeContext.Provider value={{ pushNotice }}>
-                <CompactEditor
-                    glyphs={glyphs}
-                    metadata={metadata}
-                    onUpdateGlyph={handleUpdateGlyph}
-                    onUpdateMetadata={setMetadata}
-                    isDarkMode={isDarkMode}
-                    onSwitchToAdvanced={handleSwitchToAdvanced}
-                    onGoHome={handleGoHome}
-                    onSaveProject={handleSaveProject}
-                    onExportFont={handleExportFontEditor}
-                    onImportSheet={handleImportSheet}
-                    onToggleTheme={() => setIsDarkMode(!isDarkMode)}
-                />
-            </NoticeContext.Provider>
-        );
-    }
-
-    const workspaceLabelClass = `text-[9px] font-black uppercase tracking-[0.32em] ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`;
-    const viewSegmentBase = 'px-4 py-1 rounded-full text-[9px] font-bold uppercase tracking-[0.18em] transition-colors';
-    const viewSegmentActive = isDarkMode ? 'bg-white text-black' : 'bg-black text-white';
-    const viewSegmentIdle = isDarkMode ? 'text-slate-400 hover:text-white' : 'text-neutral-500 hover:text-black';
-    const zoomSliderClass = `w-full h-1 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-slate-800 accent-white' : 'bg-neutral-200 accent-black'}`;
-    const visibilityButtonBase = 'px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-[0.22em] transition-colors';
-    const visibilityButtonState = showAll
-        ? (isDarkMode ? 'bg-white text-black border-white hover:bg-neutral-200' : 'bg-black text-white border-black hover:bg-neutral-800')
-        : (isDarkMode ? 'border-white text-white hover:bg-white hover:text-black' : 'border-black text-black hover:bg-black hover:text-white');
-    const topToolButtonBase = `w-10 h-10 rounded-full border flex items-center justify-center transition-colors ${isDarkMode ? 'bg-slate-900/70 border-slate-800 text-slate-200 hover:border-white hover:text-white' : 'bg-white border-neutral-300 text-neutral-600 hover:border-black hover:text-black'}`;
-    const topToolDanger = isDarkMode ? 'border-red-500 text-red-400 hover:bg-red-500/10' : 'border-red-500 text-red-600 hover:bg-red-50';
-    const topToolHighlight = isDarkMode ? '!bg-white !text-black border-white' : '!bg-black !text-white border-black';
-    const toggleTrackBase = `w-11 h-5 rounded-full relative transition-colors border ${isDarkMode ? 'border-white bg-slate-800' : 'border-black bg-white'}`;
-    const toggleThumbBase = 'absolute top-0.5 w-3 h-3 rounded-full transition-transform';
-    const headerRowClass = 'flex items-center gap-6 flex-nowrap overflow-x-auto py-2';
-    const controlGroupClass = 'flex flex-col items-center gap-1.5 shrink-0';
-    const workspaceControls = (
-        <div className={`w-full sticky top-0 z-40 border-b ${isDarkMode ? 'bg-slate-950 text-white border-slate-800' : 'bg-white text-black border-[#232323]/15'}`}>
-            <div className="max-w-6xl mx-auto w-full px-4">
-                <div className={`${headerRowClass}`}>
-                    <div className={`${controlGroupClass} min-w-[150px]`}>
-                        <span className={workspaceLabelClass}>Workspace</span>
-                        <div className={`flex rounded-full border p-1 ${isDarkMode ? 'bg-slate-900/70 border-slate-800' : 'bg-neutral-100 border-neutral-300'}`}>
-                            <button
-                                type="button"
-                                onClick={() => setViewMode('GRID')}
-                                className={`${viewSegmentBase} ${viewMode === 'GRID' ? viewSegmentActive : viewSegmentIdle}`}
-                            >
-                                Grid
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setViewMode('TEST')}
-                                className={`${viewSegmentBase} ${viewMode === 'TEST' ? viewSegmentActive : viewSegmentIdle}`}
-                            >
-                                Teste
-                            </button>
-                        </div>
-                    </div>
-                    <div className={`${controlGroupClass} min-w-[170px]`}>
-                        <span className={workspaceLabelClass}>Zoom {Math.round(zoom * 100)}%</span>
-                        <input
-                            type="range"
-                            min="0.5"
-                            max="2"
-                            step="0.1"
-                            value={zoom}
-                            onChange={(e) => setZoom(parseFloat(e.target.value))}
-                            className={zoomSliderClass}
-                        />
-                    </div>
-                    <div className={`${controlGroupClass} min-w-[150px]`}>
-                        <span className={workspaceLabelClass}>Filled Only</span>
-                        <button
-                            type="button"
-                            onClick={() => setShowAll(!showAll)}
-                            aria-pressed={!showAll}
-                            className={`${visibilityButtonBase} ${visibilityButtonState}`}
-                        >
-                            {showAll ? 'All Glyphs' : 'Filled Only'}
-                        </button>
-                    </div>
-                    <div className="flex flex-col gap-1.5 shrink-0 min-w-[300px]">
-                        <span className={workspaceLabelClass}>Ferramentas</span>
-                        <div className="flex items-center gap-3 flex-nowrap">
-                            <label className={`flex items-center gap-3 px-3 py-1.5 rounded-full border ${isDarkMode ? 'border-white/20 bg-slate-900/70' : 'border-neutral-300 bg-white'}`}>
-                                <div className={`${toggleTrackBase} ${metadata.isUnicase ? (isDarkMode ? '!bg-white' : '!bg-black') : ''}`}>
-                                    <input
-                                        type="checkbox"
-                                        className="hidden"
-                                        checked={metadata.isUnicase}
-                                        onChange={(e) => setMetadata({ ...metadata, isUnicase: e.target.checked })}
-                                    />
-                                    <div className={`${toggleThumbBase} ${metadata.isUnicase ? 'left-6 ' + (isDarkMode ? 'bg-black' : 'bg-white') : 'left-0.5 ' + (isDarkMode ? 'bg-white' : 'bg-black')}`}></div>
-                                </div>
-                                <span className={`text-[10px] uppercase font-bold tracking-[0.2em] ${isDarkMode ? 'text-slate-200' : 'text-neutral-600'}`}>Unicase</span>
-                            </label>
-                            <button
-                                type="button"
-                                onClick={handleAutoFit}
-                                className={topToolButtonBase}
-                                title="Metrics"
-                            >
-                                <span className="sr-only">Metrics</span>
-                                <svg
-                                    className="w-4 h-4"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.6"
-                                    strokeLinecap="round"
-                                >
-                                    <path d="M5 7h14" />
-                                    <path d="M9 7v10" />
-                                    <path d="M15 11v6" />
-                                    <path d="M5 17h14" />
-                                </svg>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsSpacingManagerOpen(true)}
-                                className={topToolButtonBase}
-                                title="Spacing"
-                            >
-                                <span className="sr-only">Spacing</span>
-                                <svg
-                                    className="w-4 h-4"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.6"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M7 8l-3 4 3 4" />
-                                    <path d="M17 8l3 4-3 4" />
-                                    <path d="M4 12h16" />
-                                </svg>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setIsPasteMode(!isPasteMode)}
-                                className={`${topToolButtonBase} ${isPasteMode ? topToolHighlight : ''}`}
-                                title="Paste"
-                                aria-pressed={isPasteMode}
-                            >
-                                <span className="sr-only">Paste</span>
-                                <svg
-                                    className="w-4 h-4"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.6"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M8 3h8" />
-                                    <path d="M9 6h6" />
-                                    <path d="M7 4.5V7a2 2 0 01-2 2H5v9a2 2 0 002 2h10a2 2 0 002-2V9h-.01a2 2 0 01-1.99-2V4.5" />
-                                </svg>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={handleResetAll}
-                                className={`${topToolButtonBase} ${topToolDanger}`}
-                                title="Reset"
-                            >
-                                <span className="sr-only">Reset</span>
-                                <svg
-                                    className="w-4 h-4"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="1.6"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                >
-                                    <path d="M4 4v6h6" />
-                                    <path d="M20 20v-6h-6" />
-                                    <path d="M5 15a7 7 0 0012 2.5L20 14" />
-                                    <path d="M19 9a7 7 0 00-12-2.5L4 10" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    const workspace = (
-        <div className="flex-1 flex flex-col overflow-hidden">
-            {workspaceControls}
-            <main className="flex-1 flex overflow-hidden relative">
-        {viewMode === 'GRID' ? (
-          <div ref={containerRef} className={`flex-1 overflow-y-auto p-8 custom-scrollbar relative select-none ${isDarkMode ? 'bg-[radial-gradient(#707070_1px,transparent_1px)]' : 'bg-[radial-gradient(#e5e5e5_1px,transparent_1px)]'} [background-size:20px_20px]`} onMouseDown={handleGridMouseDown} onMouseMove={handleGridMouseMove} onMouseUp={handleGridMouseUp} onMouseLeave={handleGridMouseUp}>
-            {isSelecting && selectionBox && <div className="absolute bg-accent/15 border border-accent z-50 pointer-events-none" style={{ left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY) }} />}
-            {isLoading && <div className={`fixed inset-0 z-50 flex items-center justify-center ${isDarkMode ? 'bg-black/80' : 'bg-white/80'}`}><div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDarkMode ? 'border-white' : 'border-black'}`}></div></div>}
-            <div className="pb-20 space-y-12">
-              {categorizedGlyphs.map(([category, catGlyphs]) => (
-                <div key={category}>
-                   <h3 className={`text-2xl font-black uppercase tracking-tighter border-b-2 pb-2 mb-6 sticky top-0 z-50 ${isDarkMode ? 'text-white border-white bg-slate-950' : 'text-black border-black bg-white'}`}>{category}</h3>
-                   <div className="grid gap-6 transition-all duration-300" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${100 * zoom}px, 1fr))` }}>
-                        {catGlyphs.map(glyph => (
-                            <div key={glyph.char} data-glyph-char={glyph.char} onClick={(e) => handleCardClick(glyph.char, e)}>
-                                <GlyphCard glyph={glyph} onEdit={handleEditClick} onUpdate={handleUpdateGlyph} onUpdateMembers={handleUpdateMembers} onDragStart={handleDragStart} onDrop={handleDrop} isPasteMode={isPasteMode} onPaste={handlePasteGlyph} onMoveGlyph={handleMoveGlyph} onContextMenu={(e) => handleContextMenu(e, glyph.char)} onClear={() => handleClearSlot(glyph.char)} isSelected={selectedChars.has(glyph.char)} isDarkMode={isDarkMode} />
-                            </div>
-                        ))}
-                        {category === 'Punctuation & Symbols' && (
-                            <div className="relative w-full">
-                                <div className="pt-[100%]" aria-hidden="true" />
-                                <div className={`absolute inset-0 rounded-2xl border-2 border-dashed overflow-hidden ${isDarkMode ? 'bg-slate-950/80 border-slate-700 text-white' : 'bg-white border-neutral-300 text-black'}`}>
-                                    <div className={`absolute inset-0 opacity-30 pointer-events-none ${isDarkMode ? 'bg-[radial-gradient(#707070_1px,transparent_1px)]' : 'bg-[radial-gradient(#d4d4d4_1px,transparent_1px)]'} [background-size:16px_16px]`} aria-hidden="true"></div>
-                                    <button
-                                        type="button"
-                                        onClick={handleOpenCustomSlotModal}
-                                        className={`relative z-10 w-full h-full flex flex-col items-center justify-center gap-2 text-center font-black uppercase tracking-[0.4em] text-sm ${isDarkMode ? 'text-white hover:text-emerald-300' : 'text-black hover:text-emerald-600'}`}
-                                        aria-label="Add new slot"
-                                    >
-                                        <span className="text-4xl tracking-normal">+</span>
-                                        <span>Slot</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-              ))}
-              {!showAll && visibleGlyphs.length > 0 && <div className="flex justify-center mt-12"><button onClick={() => setShowAll(true)} className={`px-8 py-4 border-2 border-dashed rounded-xl font-bold uppercase tracking-widest ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white hover:bg-slate-800' : 'bg-white border-black text-black hover:bg-neutral-50'}`}>Show All Empty Slots</button></div>}
-            </div>
-          </div>
-        ) : <TestMode glyphs={glyphs} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateGlyph={handleUpdateGlyph} onEditGlyph={handleEditClick} isDarkMode={isDarkMode} onOpenKerningPanel={handleOpenKerningForGlyph} />}
-      </main>
-    {selectedChars.size > 0 && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-black text-white rounded-full px-6 py-3 flex items-center gap-4 animate-in slide-in-from-bottom-4"><span className="text-sm font-bold">{selectedChars.size} selected</span><button onClick={handleBulkClear} className="text-white hover:text-red-300 text-sm font-bold flex items-center gap-2 underline decoration-red-500">Clear Selected</button><button onClick={() => setSelectedChars(new Set())} className="text-neutral-400 hover:text-white ml-2 text-xl">&times;</button></div>}
-    {contextMenu && <div className={`fixed z-50 border rounded-lg py-1 w-48 flex flex-col ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white' : 'bg-white border-black text-black'}`} style={{ top: contextMenu.y, left: contextMenu.x }}><div className={`px-3 py-1 text-xs font-bold border-b mb-1 ${isDarkMode ? 'text-slate-400 border-slate-700' : 'text-neutral-500 border-neutral-200'}`}>Glyph: {contextMenu.char === ' ' ? 'SPACE' : contextMenu.char}</div><button onClick={() => handlePasteGlyph(contextMenu.char)} className={`text-left px-3 py-2 text-sm font-medium ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-neutral-100'}`}>Paste SVG</button><button onClick={handleCopySVG} className={`text-left px-3 py-2 text-sm font-medium ${isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-neutral-100'}`}>Copy SVG</button><div className={`h-px my-1 ${isDarkMode ? 'bg-slate-700' : 'bg-neutral-200'}`} /><button onClick={handleResetSlotMetrics} className={`text-left px-3 py-2 text-sm font-medium ${isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-neutral-600 hover:bg-neutral-100'}`}>Reset Metrics</button><div className={`h-px my-1 ${isDarkMode ? 'bg-slate-700' : 'bg-neutral-200'}`} /><button onClick={() => handleClearSlot()} className={`text-left px-3 py-2 text-sm text-red-600 font-medium ${isDarkMode ? 'hover:bg-red-900/30' : 'hover:bg-red-50'}`}>Clear Slot</button></div>}
-      {isCustomSlotModalOpen && (
-          <div
-              className={`fixed inset-0 z-[70] flex items-center justify-center px-4 ${isDarkMode ? 'bg-black/70' : 'bg-white/70'}`}
-              onClick={handleCloseCustomSlotModal}
-          >
-              <div
-                  className={`w-full max-w-md rounded-3xl border ${isDarkMode ? 'bg-slate-950 border-white/10 text-white' : 'bg-white border-black/10 text-black'}`}
-                  onClick={(e) => e.stopPropagation()}
-                  role="dialog"
-                  aria-modal="true"
-              >
-                  <div className={`flex items-center justify-between px-6 py-4 border-b ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
-                      <div>
-                          <p className="text-base font-black uppercase tracking-tight">Add new slot</p>
-                          <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Set a character and an optional name before creating.</p>
+  const noticeStack = notices.length > 0 && (
+      <div className="fixed top-4 right-4 left-4 sm:left-auto z-[9999] flex flex-col items-end gap-2 pointer-events-none" role="status" aria-live="polite">
+          {notices.map(notice => {
+              const style = NOTICE_STYLES[notice.variant];
+              return (
+                  <div key={notice.id} className="material-popover fade-in-up w-full sm:w-80 px-4 py-3 pointer-events-auto">
+                      <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-pill shrink-0" style={style.dot} aria-hidden="true" />
+                          <span className="label">{style.label}</span>
                       </div>
-                      <button
-                          type="button"
-                          onClick={handleCloseCustomSlotModal}
-                          className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
-                          aria-label="Close"
-                      >
-                          ×
-                      </button>
+                      <p className="text-[14px] text-foreground mt-1.5 leading-snug">{notice.message}</p>
                   </div>
-                  <form className="px-6 py-6 flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); handleAddCustomSymbol(); }}>
-                      <label className="text-xs font-semibold flex flex-col gap-1">
-                          <span className={isDarkMode ? 'text-slate-300' : 'text-neutral-600'}>Character</span>
-                          <input
-                              type="text"
-                              maxLength={2}
-                              value={newSymbolChar}
-                              onChange={(e) => { setNewSymbolChar(e.target.value); setNewSymbolError(null); }}
-                              placeholder="e.g. ∞"
-                              className={`rounded-xl px-3 py-2 text-center text-lg font-black outline-none border transition ${isDarkMode ? 'bg-slate-900 border-slate-800 focus:border-white' : 'bg-neutral-50 border-neutral-300 focus:border-black'}`}
-                          />
-                      </label>
-                      <label className="text-xs font-semibold flex flex-col gap-1">
-                          <span className={isDarkMode ? 'text-slate-300' : 'text-neutral-600'}>Name (optional)</span>
-                          <input
-                              type="text"
-                              value={newSymbolName}
-                              onChange={(e) => setNewSymbolName(e.target.value)}
-                              placeholder="e.g. infinity"
-                              className={`rounded-xl px-3 py-2 text-sm outline-none border transition ${isDarkMode ? 'bg-slate-900 border-slate-800 focus:border-white' : 'bg-neutral-50 border-neutral-300 focus:border-black'}`}
-                          />
-                      </label>
-                      {newSymbolError && <p className="text-xs text-red-500">{newSymbolError}</p>}
-                      <div className="flex items-center justify-end gap-3 pt-2">
-                          <button
-                              type="button"
-                              onClick={handleCloseCustomSlotModal}
-                              className={`px-4 py-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.2em] border ${isDarkMode ? 'border-white/30 text-white hover:bg-white/10' : 'border-neutral-300 text-black hover:bg-neutral-100'}`}
-                          >
-                              Cancel
-                          </button>
-                          <button
-                              type="submit"
-                              className={`px-4 py-2 rounded-full text-[11px] font-black uppercase tracking-[0.3em] ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}
-                          >
-                              Add
-                          </button>
-                      </div>
-                  </form>
-              </div>
-          </div>
-      )}
-      {pasteConfirmModal && (
-          <div
-              className={`fixed inset-0 z-[70] flex items-center justify-center px-4 ${isDarkMode ? 'bg-black/70' : 'bg-white/70'}`}
-              onClick={() => setPasteConfirmModal(null)}
-          >
-              <div
-                  className={`w-full max-w-lg rounded-3xl border ${isDarkMode ? 'bg-slate-950 border-white/10 text-white' : 'bg-white border-black/10 text-black'}`}
-                  onClick={(e) => e.stopPropagation()}
-                  role="dialog"
-                  aria-modal="true"
-              >
-                  <div className={`flex items-center justify-between px-6 py-4 border-b ${isDarkMode ? 'border-white/10' : 'border-black/10'}`}>
-                      <div>
-                          <p className="text-base font-black uppercase tracking-tight">Update Glyph "{pasteConfirmModal.char}"</p>
-                          <p className={`text-xs ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>This slot already has an SVG. How would you like to update?</p>
-                      </div>
-                      <button
-                          type="button"
-                          onClick={() => setPasteConfirmModal(null)}
-                          className={`w-9 h-9 rounded-full border flex items-center justify-center text-lg font-black ${isDarkMode ? 'border-white/20 hover:bg-white/10' : 'border-neutral-300 hover:bg-neutral-100'}`}
-                          aria-label="Close"
-                      >
-                          ×
-                      </button>
-                  </div>
-                  <div className="px-6 py-6 flex flex-col gap-4">
-                      <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                          <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Current settings</p>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div><span className={isDarkMode ? 'text-slate-500' : 'text-neutral-400'}>Scale:</span> <span className="font-semibold">{pasteConfirmModal.oldGlyph.scale?.toFixed(2) ?? '1.00'}</span></div>
-                              <div><span className={isDarkMode ? 'text-slate-500' : 'text-neutral-400'}>Baseline:</span> <span className="font-semibold">{pasteConfirmModal.oldGlyph.baselineOffset ?? 0}</span></div>
-                              <div><span className={isDarkMode ? 'text-slate-500' : 'text-neutral-400'}>Advance:</span> <span className="font-semibold">{pasteConfirmModal.oldGlyph.advanceWidth ?? 600}</span></div>
-                              <div><span className={isDarkMode ? 'text-slate-500' : 'text-neutral-400'}>LSB:</span> <span className="font-semibold">{pasteConfirmModal.oldGlyph.leftSideBearing ?? 50}</span></div>
-                          </div>
-                      </div>
-                      <div className="flex flex-col gap-3">
-                          <button
-                              onClick={handlePasteConfirmKeepSettings}
-                              className={`w-full p-4 rounded-xl border text-left transition ${isDarkMode ? 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20' : 'border-emerald-500 bg-emerald-50 hover:bg-emerald-100'}`}
-                          >
-                              <p className="font-black text-sm uppercase tracking-wide text-emerald-600">Keep Settings</p>
-                              <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Updates only the SVG drawing, keeping scale, baseline, advance width and other settings.</p>
-                          </button>
-                          <button
-                              onClick={handlePasteConfirmResetSettings}
-                              className={`w-full p-4 rounded-xl border text-left transition ${isDarkMode ? 'border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20' : 'border-blue-500 bg-blue-50 hover:bg-blue-100'}`}
-                          >
-                              <p className="font-black text-sm uppercase tracking-wide text-blue-600">Reset Settings</p>
-                              <p className={`text-xs mt-1 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>Applies the new settings calculated from the SVG, resetting scale, baseline and metrics.</p>
-                          </button>
-                      </div>
-                      <button
-                          onClick={() => setPasteConfirmModal(null)}
-                          className={`w-full py-3 rounded-full text-[11px] font-semibold uppercase tracking-[0.2em] border ${isDarkMode ? 'border-white/30 text-white hover:bg-white/10' : 'border-neutral-300 text-black hover:bg-neutral-100'}`}
-                      >
-                          Cancel
-                      </button>
-                  </div>
-              </div>
-          </div>
-      )}
-    {selectedGlyph && <EditorModal glyph={selectedGlyph} allGlyphs={glyphs} isOpen={isEditorOpen} onClose={handleCloseEditor} onSave={handleUpdateGlyph} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateMembers={handleUpdateMembers} onBuildDerivatives={handleBuildDerivatives} isDarkMode={isDarkMode} onOpenKerningPanel={handleOpenKerningForGlyph} onApplyAutoPosition={applyAutoPositionToAll} />}
-    <SpacingManager isOpen={isSpacingManagerOpen} onClose={() => setIsSpacingManagerOpen(false)} glyphs={glyphs} onUpdateGlyphs={setGlyphs} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateMembers={handleUpdateMembers} isDarkMode={isDarkMode} focusGlyphChar={kerningFocusChar} onConsumeKerningFocus={() => setKerningFocusChar(null)} />
-    <FontPreview glyphs={glyphs} metadata={metadata} isDarkMode={isDarkMode} isOpen={isFontPreviewOpen} onClose={() => setIsFontPreviewOpen(false)} />
-    <GlyphDiagnostics glyphs={glyphs} metadata={metadata} isDarkMode={isDarkMode} isOpen={isDiagnosticsOpen} onClose={() => setIsDiagnosticsOpen(false)} onUpdateGlyph={handleUpdateGlyph} onEditGlyph={handleEditByChar} />
-            {notices.length > 0 && (
-                <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-3">
-                    {notices.map(notice => {
-                            const style = noticeStyles[notice.variant];
-                            return (
-                                    <div
-                                        key={notice.id}
-                                        className={`w-72 border-2 rounded-2xl px-4 py-3 ${style.container}`}
-                                    >
-                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em]">
-                                                <span className={`w-2 h-2 rounded-full ${style.dot}`}></span>
-                                                <span>{style.label}</span>
-                                        </div>
-                                        <p className="text-sm font-semibold mt-1 leading-snug">{notice.message}</p>
-                                    </div>
-                            );
-                    })}
-                </div>
-            )}
-        </div>
+              );
+          })}
+      </div>
   );
 
-    const themeClasses = isDarkMode ? 'bg-slate-950 text-white' : 'bg-white text-black';
+  /** Raiz de todas as telas: tokens do sistema, e a classe `dark` quando o tema escuro está ligado. */
+  const shell = (content: React.ReactNode, extra?: React.HTMLAttributes<HTMLDivElement>) => (
+      <NoticeContext.Provider value={{ pushNotice }}>
+          <div
+              {...extra}
+              className={cx(isDarkMode && 'dark', 'flex-1 flex flex-col min-h-0 min-w-0 bg-background text-foreground transition-colors duration-slow ease-out')}
+          >
+              {content}
+              {noticeStack}
+          </div>
+      </NoticeContext.Provider>
+  );
 
-  return (
-        <NoticeContext.Provider value={{ pushNotice }}>
-            <div className={`font-sans transition-colors duration-300 ${themeClasses} flex-1 flex gap-0 min-h-0`} onContextMenu={(e) => e.preventDefault()}>
-                    <Toolbar 
-                        metadata={metadata} setMetadata={setMetadata} onExport={handleExport} onExportSvgFirst={handleExportSvgFirst} onExportFontEditor={handleExportFontEditor} onExportSvgSheet={handleExportSvgSheet} onExportEmptySvgSheet={handleExportEmptySvgSheet} isExporting={isExporting} exportProgress={exportProgress} onImportSheet={handleImportSheet}
-                        availableStyles={Object.keys(styleMap)} currentStyle={currentStyle} onChangeStyle={handleSwitchStyle}
-                        onAddStyle={handleAddStyle} onRemoveStyle={handleRemoveStyle} onDuplicateStyle={handleDuplicateStyle} onGoHome={handleGoHome}
-                        onSaveProject={handleSaveProject} onDownloadProjectFile={handleDownloadProjectFile} onImportProjectFile={handleImportProjectFile}
-                        isDarkMode={isDarkMode} onToggleTheme={() => setIsDarkMode(!isDarkMode)}
-                        onSwitchToCompact={handleSwitchToCompact}
-                        onOpenFontPreview={() => setIsFontPreviewOpen(true)}
-                        onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
-                    />
-                    <div className="flex-1 flex flex-col">
-                        {workspace}
-                    </div>
-            </div>
-        </NoticeContext.Provider>
+  if (screen === 'DASHBOARD') {
+      return shell(
+          <Dashboard
+              onCreateProject={handleCreateProject}
+              onOpenProject={handleOpenProject}
+              onImportProjectFile={handleImportProjectFile}
+              onDeleteProject={handleDeleteProject}
+              projects={projects}
+              isDarkMode={isDarkMode}
+              onToggleTheme={toggleTheme}
+          />
+      );
+  }
+
+  if (screen === 'MODE_SELECT') {
+      return shell(
+          <ModeSelector
+              onSelectMode={(mode) => { setEditorMode(mode); setScreen('EDITOR'); }}
+              isDarkMode={isDarkMode}
+              familyName={metadata.familyName}
+              onBack={handleGoHome}
+          />
+      );
+  }
+
+  // Modo compacto: interface simplificada
+  if (editorMode === 'COMPACT') {
+      return shell(
+          <CompactEditor
+              glyphs={glyphs}
+              metadata={metadata}
+              onUpdateGlyph={handleUpdateGlyph}
+              onUpdateMetadata={setMetadata}
+              isDarkMode={isDarkMode}
+              onSwitchToAdvanced={handleSwitchToAdvanced}
+              onGoHome={handleGoHome}
+              onSaveProject={handleSaveProject}
+              onExportFont={handleExportFontEditor}
+              onImportSheet={handleImportSheet}
+              onToggleTheme={toggleTheme}
+          />
+      );
+  }
+
+  const titleActions = (
+      <>
+          <IconButton label="Projetos" variant="surface" onClick={handleGoHome}>
+              <Home aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Modo compacto" variant="surface" onClick={handleSwitchToCompact}>
+              <PanelsTopLeft aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Espaçamento e kerning" variant="surface" onClick={() => setIsSpacingManagerOpen(true)}>
+              <MoveHorizontal aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Pré-visualização" variant="surface" onClick={() => setIsFontPreviewOpen(true)}>
+              <Eye aria-hidden="true" />
+          </IconButton>
+          <IconButton label="Diagnóstico" variant="surface" onClick={() => setIsDiagnosticsOpen(true)}>
+              <ScanSearch aria-hidden="true" />
+          </IconButton>
+          <IconButton label={isDarkMode ? 'Usar tema claro' : 'Usar tema escuro'} variant="surface" onClick={toggleTheme}>
+              {isDarkMode ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+          </IconButton>
+          <button
+              type="button"
+              onClick={() => handleExportFontEditor()}
+              disabled={isExporting}
+              aria-busy={isExporting}
+              className="ctl ctl-tinted ctl-lg"
+          >
+              {isExporting ? <Spinner /> : <Download className="w-4 h-4" aria-hidden="true" />}
+              {isExporting ? 'Exportando…' : 'Exportar fonte'}
+          </button>
+      </>
+  );
+
+  const gridControls = (
+      <div className="material-card p-4 flex flex-wrap items-center gap-x-6 gap-y-3 shrink-0">
+          <Segmented<'FILLED' | 'ALL'>
+              ariaLabel="Glifos visíveis"
+              value={showAll ? 'ALL' : 'FILLED'}
+              onChange={(v) => setShowAll(v === 'ALL')}
+              items={[
+                  { value: 'FILLED', label: 'Desenhados' },
+                  { value: 'ALL', label: 'Todos' },
+              ]}
+          />
+          <label className="flex items-center gap-3 min-w-[180px]">
+              <span className="text-[12px] text-muted-foreground">Zoom</span>
+              <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  value={zoom}
+                  onChange={(e) => setZoom(parseFloat(e.target.value))}
+                  className="tool-slider flex-1 w-28"
+                  aria-label="Zoom da grade"
+              />
+              <span className="text-[12px] text-foreground tabular w-10 text-right">{Math.round(zoom * 100)}%</span>
+          </label>
+          <Switch
+              label="Unicase"
+              checked={metadata.isUnicase}
+              onChange={(checked) => setMetadata({ ...metadata, isUnicase: checked })}
+              className="gap-3"
+          />
+          <div className="flex items-center gap-1.5 ml-auto">
+              <span className="text-[12px] text-muted-foreground tabular mr-2 hidden sm:inline">{drawnCount} de {glyphs.length} desenhados</span>
+              <IconButton label="Modo colar: clique num glifo para colar o SVG" active={isPasteMode} onClick={() => setIsPasteMode(!isPasteMode)}>
+                  <ClipboardPaste aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Redefinir métricas" onClick={handleAutoFit}>
+                  <Ruler aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Novo glifo" onClick={handleOpenCustomSlotModal}>
+                  <Plus aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Limpar todos os glifos" variant="danger" onClick={handleResetAll}>
+                  <Eraser aria-hidden="true" />
+              </IconButton>
+          </div>
+      </div>
+  );
+
+  const onlySpaceVisible = !showAll && visibleGlyphs.every(g => g.char === ' ');
+
+  const glyphGrid = (
+      <div className="flex-1 lg:min-h-0 flex flex-col gap-5">
+          {gridControls}
+          <div
+              ref={containerRef}
+              className="lg:flex-1 lg:min-h-0 lg:overflow-y-auto relative select-none -mx-1 px-1"
+              onMouseDown={handleGridMouseDown}
+              onMouseMove={handleGridMouseMove}
+              onMouseUp={handleGridMouseUp}
+              onMouseLeave={handleGridMouseUp}
+          >
+              {isSelecting && selectionBox && (
+                  <div
+                      className="absolute bg-foreground/5 shadow-[inset_0_0_0_1px_hsl(var(--foreground))] rounded-xs z-50 pointer-events-none"
+                      style={{ left: Math.min(selectionBox.startX, selectionBox.currentX), top: Math.min(selectionBox.startY, selectionBox.currentY), width: Math.abs(selectionBox.currentX - selectionBox.startX), height: Math.abs(selectionBox.currentY - selectionBox.startY) }}
+                  />
+              )}
+              {onlySpaceVisible && (
+                  <div className="material-card mb-5 flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex flex-col gap-1">
+                          <span className="text-[16px] text-foreground">Nenhum glifo desenhado ainda</span>
+                          <span className="text-[14px] text-muted-foreground">Importe uma folha SVG pela coluna ao lado ou mostre todos os glifos para desenhar um a um.</span>
+                      </div>
+                      <button type="button" onClick={() => setShowAll(true)} className="ctl ctl-filled ctl-lg">Mostrar todos</button>
+                  </div>
+              )}
+              <div className="pb-10 flex flex-col gap-8">
+                  {categorizedGlyphs.map(([category, catGlyphs]) => (
+                      <section key={category} aria-label={category}>
+                          <header className="sticky top-0 z-40 bg-background flex items-baseline gap-3 pb-3 pt-1">
+                              <h2 className="text-[20px] font-normal leading-[1.2] tracking-[-0.01em] text-foreground">{category}</h2>
+                              <span className="text-[13px] text-muted-foreground tabular">{catGlyphs.length}</span>
+                          </header>
+                          <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(auto-fill, minmax(${Math.round(100 * zoom)}px, 1fr))` }}>
+                              {catGlyphs.map(glyph => (
+                                  <div key={glyph.char} data-glyph-char={glyph.char} onClick={(e) => handleCardClick(glyph.char, e)}>
+                                      <GlyphCard glyph={glyph} onEdit={handleEditClick} onUpdate={handleUpdateGlyph} onUpdateMembers={handleUpdateMembers} onDragStart={handleDragStart} onDrop={handleDrop} isPasteMode={isPasteMode} onPaste={handlePasteGlyph} onMoveGlyph={handleMoveGlyph} onContextMenu={(e) => handleContextMenu(e, glyph.char)} onClear={() => handleClearSlot(glyph.char)} isSelected={selectedChars.has(glyph.char)} isDarkMode={isDarkMode} />
+                                  </div>
+                              ))}
+                              {category === CATEGORY_SYMBOLS && (
+                                  <button
+                                      type="button"
+                                      onClick={handleOpenCustomSlotModal}
+                                      className="aspect-square rounded-lg bg-fill hover:bg-fill-2 text-muted-foreground hover:text-foreground flex flex-col items-center justify-center gap-1.5 transition-colors duration-fast ease-out"
+                                  >
+                                      <Plus className="w-5 h-5" aria-hidden="true" />
+                                      <span className="text-[12px]">Novo glifo</span>
+                                  </button>
+                              )}
+                          </div>
+                      </section>
+                  ))}
+                  {!showAll && !onlySpaceVisible && (
+                      <div className="flex justify-center">
+                          <button type="button" onClick={() => setShowAll(true)} className="ctl ctl-outline ctl-lg">Mostrar glifos vazios</button>
+                      </div>
+                  )}
+              </div>
+          </div>
+      </div>
+  );
+
+  return shell(
+      <>
+          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto lg:overflow-hidden">
+              <div className="px-5 md:px-10 pt-6 md:pt-8 shrink-0">
+                  <TitleRow
+                      title={metadata.familyName || 'Sem nome'}
+                      crumb={`Modo avançado · ${currentStyle}`}
+                      actions={titleActions}
+                      tabs={
+                          <TextTabs<ViewMode>
+                              ariaLabel="Área de trabalho"
+                              value={viewMode}
+                              onChange={setViewMode}
+                              items={[
+                                  { value: 'GRID', label: 'Glifos' },
+                                  { value: 'TEST', label: 'Teste' },
+                              ]}
+                          />
+                      }
+                  />
+              </div>
+              <div className="shrink-0 lg:shrink lg:flex-1 lg:min-h-0 flex flex-col lg:flex-row gap-5 px-5 md:px-10 pt-6 pb-6">
+                  <Toolbar
+                      metadata={metadata} setMetadata={setMetadata} onExport={handleExport} onExportSvgFirst={handleExportSvgFirst} onExportFontEditor={handleExportFontEditor} onExportSvgSheet={handleExportSvgSheet} onExportEmptySvgSheet={handleExportEmptySvgSheet} isExporting={isExporting} exportProgress={exportProgress} onImportSheet={handleImportSheet}
+                      availableStyles={Object.keys(styleMap)} currentStyle={currentStyle} onChangeStyle={handleSwitchStyle}
+                      onAddStyle={handleAddStyle} onRemoveStyle={handleRemoveStyle} onDuplicateStyle={handleDuplicateStyle} onGoHome={handleGoHome}
+                      onSaveProject={handleSaveProject} onDownloadProjectFile={handleDownloadProjectFile} onImportProjectFile={handleImportProjectFile}
+                      isDarkMode={isDarkMode} onToggleTheme={toggleTheme}
+                      onSwitchToCompact={handleSwitchToCompact}
+                      onOpenFontPreview={() => setIsFontPreviewOpen(true)}
+                      onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
+                  />
+                  <div className="flex-1 min-w-0 lg:min-h-0 flex flex-col">
+                      {viewMode === 'GRID'
+                          ? glyphGrid
+                          : <TestMode glyphs={glyphs} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateGlyph={handleUpdateGlyph} onEditGlyph={handleEditClick} isDarkMode={isDarkMode} onOpenKerningPanel={handleOpenKerningForGlyph} />}
+                  </div>
+              </div>
+          </div>
+
+          {isLoading && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70" role="status" aria-label="Importando">
+                  <Spinner className="w-8 h-8 text-foreground" />
+              </div>
+          )}
+
+          {selectedChars.size > 0 && (
+              <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground rounded-xl h-12 pl-5 pr-1.5 flex items-center gap-2 shadow-floating fade-in-up">
+                  <span className="text-[14px] tabular whitespace-nowrap">{selectedChars.size} {selectedChars.size === 1 ? 'selecionado' : 'selecionados'}</span>
+                  <button type="button" onClick={handleBulkClear} className="ctl text-primary-foreground hover:bg-primary-foreground/10 ml-2">
+                      <Eraser className="w-3.5 h-3.5" aria-hidden="true" />
+                      Limpar
+                  </button>
+                  <button
+                      type="button"
+                      onClick={() => setSelectedChars(new Set())}
+                      aria-label="Desfazer seleção"
+                      className="ctl ctl-icon text-primary-foreground hover:bg-primary-foreground/10"
+                  >
+                      <X className="w-4 h-4" aria-hidden="true" />
+                  </button>
+              </div>
+          )}
+
+          {contextMenu && (
+              <div
+                  className="fixed z-50 material-popover p-1 w-56 flex flex-col"
+                  style={{ top: contextMenu.y, left: contextMenu.x }}
+                  role="menu"
+                  aria-label={`Glifo ${contextMenu.char === ' ' ? 'espaço' : contextMenu.char}`}
+              >
+                  <div className="px-2.5 pt-1.5 pb-2 mb-1 hairline-b flex items-center justify-between">
+                      <span className="label">Glifo</span>
+                      <span className="text-[14px] text-foreground">{contextMenu.char === ' ' ? 'Espaço' : contextMenu.char}</span>
+                  </div>
+                  <button type="button" role="menuitem" onClick={() => handlePasteGlyph(contextMenu.char)} className="row">
+                      <ClipboardPaste className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />Colar SVG
+                  </button>
+                  <button type="button" role="menuitem" onClick={handleCopySVG} className="row">
+                      <Copy className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />Copiar SVG
+                  </button>
+                  <button type="button" role="menuitem" onClick={handleResetSlotMetrics} className="row">
+                      <Ruler className="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />Redefinir métricas
+                  </button>
+                  <div className="h-px my-1 bg-separator" />
+                  <button type="button" role="menuitem" onClick={() => handleClearSlot()} className="row text-destructive">
+                      <Eraser className="w-3.5 h-3.5" aria-hidden="true" />Limpar glifo
+                  </button>
+              </div>
+          )}
+
+          <Sheet
+              open={isCustomSlotModalOpen}
+              onClose={handleCloseCustomSlotModal}
+              title="Novo glifo"
+              description="Escolha o caractere e, se quiser, um nome."
+              size="max-w-md"
+          >
+              <form className="flex flex-col gap-4" onSubmit={(e) => { e.preventDefault(); handleAddCustomSymbol(); }}>
+                  <Field label="Caractere">
+                      <input
+                          type="text"
+                          maxLength={2}
+                          value={newSymbolChar}
+                          onChange={(e) => { setNewSymbolChar(e.target.value); setNewSymbolError(null); }}
+                          placeholder="Ex.: ∞"
+                          className="field h-12 text-center text-[24px]"
+                          autoFocus
+                      />
+                  </Field>
+                  <Field label="Nome (opcional)">
+                      <input
+                          type="text"
+                          value={newSymbolName}
+                          onChange={(e) => setNewSymbolName(e.target.value)}
+                          placeholder="Ex.: infinity"
+                          className="field h-10"
+                      />
+                  </Field>
+                  {newSymbolError && <p className="text-[13px] text-destructive">{newSymbolError}</p>}
+                  <div className="flex items-center justify-end gap-2 pt-2">
+                      <button type="button" onClick={handleCloseCustomSlotModal} className="ctl ctl-outline ctl-lg">Cancelar</button>
+                      <button type="submit" className="ctl ctl-filled ctl-lg">Adicionar</button>
+                  </div>
+              </form>
+          </Sheet>
+
+          <Sheet
+              open={Boolean(pasteConfirmModal)}
+              onClose={() => setPasteConfirmModal(null)}
+              title={pasteConfirmModal ? `Atualizar "${pasteConfirmModal.char}"` : ''}
+              description="Este glifo já tem um desenho. Como quer atualizar?"
+              size="max-w-lg"
+              footer={<button type="button" onClick={() => setPasteConfirmModal(null)} className="ctl ctl-outline ctl-lg">Cancelar</button>}
+          >
+              {pasteConfirmModal && (
+                  <div className="flex flex-col gap-5">
+                      <div className="card-quiet p-4">
+                          <span className="label">Ajustes atuais</span>
+                          <div className="grid grid-cols-2 gap-x-6 mt-2">
+                              <ValueRow label="Escala" value={pasteConfirmModal.oldGlyph.scale?.toFixed(2) ?? '1.00'} />
+                              <ValueRow label="Linha de base" value={pasteConfirmModal.oldGlyph.baselineOffset ?? 0} />
+                              <ValueRow label="Largura" value={pasteConfirmModal.oldGlyph.advanceWidth ?? 600} last />
+                              <ValueRow label="Margem esquerda" value={pasteConfirmModal.oldGlyph.leftSideBearing ?? 50} last />
+                          </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                          <button
+                              type="button"
+                              onClick={handlePasteConfirmKeepSettings}
+                              className="w-full text-left rounded-lg p-4 bg-card shadow-hairline hover:shadow-hairline-strong transition-shadow duration-fast ease-out"
+                          >
+                              <span className="block text-[16px] text-foreground">Manter ajustes</span>
+                              <span className="block text-[13px] text-muted-foreground mt-1">Troca só o desenho e mantém escala, linha de base, largura e o resto.</span>
+                          </button>
+                          <button
+                              type="button"
+                              onClick={handlePasteConfirmResetSettings}
+                              className="w-full text-left rounded-lg p-4 bg-card shadow-hairline hover:shadow-hairline-strong transition-shadow duration-fast ease-out"
+                          >
+                              <span className="block text-[16px] text-foreground">Usar ajustes do SVG</span>
+                              <span className="block text-[13px] text-muted-foreground mt-1">Recalcula escala, linha de base e métricas a partir do arquivo colado.</span>
+                          </button>
+                      </div>
+                  </div>
+              )}
+          </Sheet>
+
+          {selectedGlyph && <EditorModal glyph={selectedGlyph} allGlyphs={glyphs} isOpen={isEditorOpen} onClose={handleCloseEditor} onSave={handleUpdateGlyph} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateMembers={handleUpdateMembers} onBuildDerivatives={handleBuildDerivatives} isDarkMode={isDarkMode} onOpenKerningPanel={handleOpenKerningForGlyph} onApplyAutoPosition={applyAutoPositionToAll} />}
+          <SpacingManager isOpen={isSpacingManagerOpen} onClose={() => setIsSpacingManagerOpen(false)} glyphs={glyphs} onUpdateGlyphs={setGlyphs} metadata={metadata} onUpdateMetadata={setMetadata} onUpdateMembers={handleUpdateMembers} isDarkMode={isDarkMode} focusGlyphChar={kerningFocusChar} onConsumeKerningFocus={() => setKerningFocusChar(null)} />
+          <FontPreview glyphs={glyphs} metadata={metadata} isDarkMode={isDarkMode} isOpen={isFontPreviewOpen} onClose={() => setIsFontPreviewOpen(false)} />
+          <GlyphDiagnostics glyphs={glyphs} metadata={metadata} isDarkMode={isDarkMode} isOpen={isDiagnosticsOpen} onClose={() => setIsDiagnosticsOpen(false)} onUpdateGlyph={handleUpdateGlyph} onEditGlyph={handleEditByChar} />
+      </>,
+      { onContextMenu: (e) => e.preventDefault() }
   );
 };
 export default App;

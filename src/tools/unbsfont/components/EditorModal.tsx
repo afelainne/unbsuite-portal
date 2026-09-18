@@ -5,6 +5,21 @@ import { computeGlyphSequenceLayout, GlyphSequenceLayout } from '../services/lay
 import { resolveKerningValue } from '../services/kerningService';
 import { useNotice } from '../contexts/NoticeContext';
 import { centerGlyphInBox } from '../services/professionalKerningService';
+import {
+  AlignHorizontalJustifyCenter,
+  ArrowLeftToLine,
+  ArrowRight,
+  ChevronDown,
+  Ellipsis,
+  Minus,
+  MoveHorizontal,
+  Plus,
+  Redo2,
+  Undo2,
+  X
+} from 'lucide-react';
+import { Field, IconButton, Segmented } from './ui';
+import { cx } from './cx';
 
 interface EditorModalProps {
   glyph: GlyphData;
@@ -28,12 +43,12 @@ const PREVIEW_FONT_SIZE_PT = 64;
 type AlignGuide = 'ASCENDER' | 'BASELINE' | 'DESCENDER' | 'GHOST_TOP' | 'GHOST_CENTER' | 'GHOST_BOTTOM';
 
 const ALIGN_GUIDES: { key: AlignGuide; label: string; snap: 'top' | 'center' | 'bottom' }[] = [
-    { key: 'ASCENDER', label: 'Asc', snap: 'top' },
-    { key: 'BASELINE', label: 'Base', snap: 'bottom' },
-    { key: 'DESCENDER', label: 'Desc', snap: 'bottom' },
-    { key: 'GHOST_TOP', label: 'Ghost ↑', snap: 'top' },
-    { key: 'GHOST_CENTER', label: 'Ghost ·', snap: 'center' },
-    { key: 'GHOST_BOTTOM', label: 'Ghost ↓', snap: 'bottom' }
+    { key: 'ASCENDER', label: 'Ascendente', snap: 'top' },
+    { key: 'BASELINE', label: 'Linha de base', snap: 'bottom' },
+    { key: 'DESCENDER', label: 'Descendente', snap: 'bottom' },
+    { key: 'GHOST_TOP', label: 'Topo do fantasma', snap: 'top' },
+    { key: 'GHOST_CENTER', label: 'Centro do fantasma', snap: 'center' },
+    { key: 'GHOST_BOTTOM', label: 'Base do fantasma', snap: 'bottom' }
 ];
 
 type KerningPreviewState = {
@@ -45,7 +60,7 @@ type KerningPreviewState = {
 const formatGapValue = (value: number) => (value >= 0 ? `+${value}` : `${value}`);
 
 const describeKerningToken = (token: string) => {
-    if (token === ' ') return 'SPACE';
+    if (token === ' ') return 'espaço';
     if (!token || !token.trim()) return '∅';
     return token;
 };
@@ -433,7 +448,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
       if (combos.length === 0) return null;
 
       if (!glyphMap.has(kerningPartner)) {
-          return { combos, error: 'Partner glyph not found in this style.' };
+          return { combos, error: 'O glifo parceiro não existe neste estilo.' };
       }
 
       const layout = computeGlyphSequenceLayout({
@@ -572,26 +587,26 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
     const quickBuilderCards = [
         {
             id: 'left',
-            heading: `${glyph.char} on the left`,
+            heading: `${glyph.char} à esquerda`,
             caption: `${glyph.char}${leftKerningPartner || '·'}`,
             partner: leftKerningPartner,
             setPartner: setLeftKerningPartner,
             value: leftKerningValue,
             setValue: setLeftKerningValue,
             direction: 'LEFT' as const,
-            description: 'Applies when this glyph precedes the partner.',
+            description: 'Vale quando este glifo vem antes do parceiro.',
             pairKey: leftKerningPartner ? `${glyph.char}${leftKerningPartner}` : null,
         },
         {
             id: 'right',
-            heading: `${glyph.char} on the right`,
+            heading: `${glyph.char} à direita`,
             caption: `${rightKerningPartner || '·'}${glyph.char}`,
             partner: rightKerningPartner,
             setPartner: setRightKerningPartner,
             value: rightKerningValue,
             setValue: setRightKerningValue,
             direction: 'RIGHT' as const,
-            description: 'Applies when the partner comes first.',
+            description: 'Vale quando o parceiro vem antes.',
             pairKey: rightKerningPartner ? `${rightKerningPartner}${glyph.char}` : null,
         }
     ];
@@ -610,7 +625,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
   const handleAddManualComponent = () => {
       if (!manualComponentChar || !allGlyphs) return;
       const targetG = allGlyphs.find(g => g.char === manualComponentChar);
-    if (!targetG || !targetG.pathData) { pushNotice('Character not found or empty.', 'error'); return; }
+    if (!targetG || !targetG.pathData) { pushNotice('Caractere não encontrado ou vazio.', 'error'); return; }
       const newData = { ...data, components: [...data.components, { char: manualComponentChar, dx: 0, dy: 0, scale: 1 }] };
       setData(newData);
       pushToHistory(newData);
@@ -667,7 +682,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
   // Centralizar glifo baseado no centro real do vetor
   const handleCenterGlyph = () => {
       if (!data.pathData) {
-          pushNotice('This glyph has no path to center.', 'warning');
+          pushNotice('Este glifo não tem contorno para centralizar.', 'warning');
           return;
       }
       const centered = centerGlyphInBox(data, 50); // 50u de margem
@@ -678,7 +693,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
       };
       setData(newData);
       pushToHistory(newData);
-      pushNotice(`Glyph centralizado: LSB=${centered.leftSideBearing}, Width=${centered.advanceWidth}`, 'success');
+      pushNotice(`Glifo centralizado: margem esquerda ${centered.leftSideBearing}, largura ${centered.advanceWidth}.`, 'success');
   };
   
   const handleBuildDerivativesClick = () => {
@@ -709,7 +724,7 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
   };
 
   const handleStrokeExpand = () => {
-      if (confirm("This will permanently convert the stroke to a filled path. Continue?")) {
+      if (confirm("Isto converte o traço em contorno preenchido, sem volta. Continuar?")) {
           const newPath = expandStrokeToPath(data.pathData, strokeWidth);
           const newData = { ...data, pathData: newPath };
           setData(newData);
@@ -739,19 +754,10 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
     const visualCapHeightY = visualBaselineY - capHeight;
     const dynamicOriginX = data.leftSideBearing;
   
-  const GUIDE_COLOR_BASELINE = "#ef4444"; 
-  const GUIDE_COLOR_METRIC = isDarkMode ? "#64748b" : "#94a3b8"; 
-  const GUIDE_COLOR_WIDTH = "#3b82f6"; 
-  const GUIDE_COLOR_XHEIGHT = "#22c55e";
-  const GUIDE_COLOR_CAPHEIGHT = "#8b5cf6";
-  const LABEL_COLOR = isDarkMode ? "fill-slate-400" : "fill-slate-500";
-
-    const themeBg = isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-black';
-  const panelBg = isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-neutral-200';
-  const textMain = isDarkMode ? 'text-white' : 'text-black';
-  const textSub = isDarkMode ? 'text-slate-500' : 'text-neutral-500';
-  const inputBg = isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-neutral-300 text-black';
-  const btnSec = isDarkMode ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 text-white' : 'bg-white border-neutral-300 hover:border-black text-neutral-500 hover:text-black';
+  // Canvas em tinta e cinzas. As guias usam `currentColor` (o token de texto,
+  // que vira no modo escuro); só os preenchimentos passados por prop precisam
+  // de uma cor literal.
+  const INK = isDarkMode ? '#F2F2F0' : '#000000';
     const anchorRangeX = { min: -500, max: (metadata.unitsPerEm ?? 1000) + 500 };
     const anchorRangeY = { min: (metadata.descender ?? -200) - 500, max: (metadata.ascender ?? 800) + 500 };
 
@@ -852,98 +858,113 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
         });
     }, [onUpdateMetadata]);
 
+    const isMoreTab = activeTab === 'COMPS' || activeTab === 'STROKE';
+    const unicodeLabel = Number.isFinite(glyph.unicode)
+        ? `U+${glyph.unicode.toString(16).toUpperCase().padStart(4, '0')}`
+        : '';
+
+    const renderHorizontalGuide = (
+        y: number,
+        guide: 'ASCENDER' | 'BASELINE' | 'DESCENDER' | 'X_HEIGHT' | 'CAP_HEIGHT',
+        label: string,
+        opts: { opacity: number; width: number; dash?: string; labelAbove?: boolean }
+    ) => (
+        <g key={guide}>
+            <line x1="-500" y1={y} x2="1500" y2={y} stroke="currentColor" strokeOpacity={opts.opacity} strokeWidth={opts.width} strokeDasharray={opts.dash} />
+            <line x1="-500" y1={y} x2="1500" y2={y} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide(guide)} />
+            <text x={-480} y={opts.labelAbove ? y - 12 : y + 30} fontSize={22} fill="currentColor" fillOpacity={0.55} className="select-none">{label}</text>
+        </g>
+    );
+
     return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4">
-      {/* Utility to hide input spinners */}
+    <div
+        className="fixed inset-0 z-[60] bg-background text-foreground flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Editar o glifo ${glyph.char}`}
+    >
+      {/* Esconde as setas dos campos numéricos */}
       <style>{`
-        .no-spinner::-webkit-inner-spin-button, 
-        .no-spinner::-webkit-outer-spin-button { 
-          -webkit-appearance: none; 
-          margin: 0; 
+        .no-spinner::-webkit-inner-spin-button,
+        .no-spinner::-webkit-outer-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
         }
         .no-spinner {
           -moz-appearance: textfield;
         }
       `}</style>
-      
-    <div className={`border rounded-xl w-full max-w-7xl h-[85vh] flex overflow-hidden ${themeBg}`}>
-        
-        {/* Left: Preview Canvas */}
-        <div className={`flex-1 relative overflow-hidden flex items-center justify-center p-10 [background-size:20px_20px] ${isDarkMode ? 'bg-slate-950 bg-[radial-gradient(#707070_1px,transparent_1px)]' : 'bg-neutral-50 bg-[radial-gradient(#d4d4d4_1px,transparent_1px)]'}`}>
+
+      {/* Fila de título */}
+      <header className="shrink-0 px-5 md:px-8 pt-5 pb-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+          <div className="flex items-center gap-4 min-w-0">
+              <span className="text-[40px] font-normal leading-none text-foreground">{glyph.char}</span>
+              <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-[14px] text-foreground truncate">{glyph.name}</span>
+                  {unicodeLabel && <span className="text-[14px] text-muted-foreground tabular">{unicodeLabel}</span>}
+              </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+              <IconButton label="Desfazer (Ctrl+Z)" variant="surface" onClick={handleUndo} disabled={historyIndex <= 0}>
+                  <Undo2 className="w-4 h-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Refazer (Ctrl+Y)" variant="surface" onClick={handleRedo} disabled={historyIndex >= history.length - 1}>
+                  <Redo2 className="w-4 h-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Centralizar pelo centro real do desenho" variant="surface" onClick={handleCenterGlyph}>
+                  <AlignHorizontalJustifyCenter className="w-4 h-4" aria-hidden="true" />
+              </IconButton>
+              <IconButton label="Redefinir a margem esquerda" variant="surface" onClick={handleAutoCenter}>
+                  <ArrowLeftToLine className="w-4 h-4" aria-hidden="true" />
+              </IconButton>
+              {onOpenKerningPanel && (
+                  <IconButton label="Abrir o painel de kerning" variant="surface" onClick={handleOpenKerningPanelClick}>
+                      <MoveHorizontal className="w-4 h-4" aria-hidden="true" />
+                  </IconButton>
+              )}
+              <button type="button" onClick={handleSave} className="ctl ctl-filled ctl-lg">Salvar</button>
+              <IconButton label="Fechar" variant="surface" onClick={handleCloseWithAutoSave}>
+                  <X className="w-4 h-4" aria-hidden="true" />
+              </IconButton>
+          </div>
+      </header>
+
+      <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden flex flex-col lg:flex-row gap-5 px-5 md:px-8 pb-5">
+
+        {/* Canvas */}
+        <div className="relative flex-1 min-w-0 min-h-[360px] lg:min-h-0 bg-canvas rounded-xl overflow-hidden">
            <div
                 ref={canvasRef}
-                className={`relative w-full h-full border select-none ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-neutral-200'}`}
+                className="absolute inset-4 md:inset-8 select-none text-foreground"
             >
                <svg
                     viewBox="-500 -400 2000 1800"
-                    className={`w-full h-full fill-current overflow-visible pointer-events-none ${textMain}`}
+                    className="w-full h-full fill-current overflow-visible pointer-events-none"
                     preserveAspectRatio="xMidYMid meet"
                >
-                 
-                      {/* ═══ TYPOGRAPHIC ZONES (Glyphs App style) ═══ */}
-                      {/* Ascender zone: above capHeight to ascender (blue) */}
-                      <rect x="-500" y={visualAscenderY} width="2000" 
-                            height={visualCapHeightY - visualAscenderY} 
-                            fill={isDarkMode ? "rgba(139, 92, 246, 0.08)" : "rgba(139, 92, 246, 0.05)"} className="pointer-events-none" />
-                      {/* Cap Height to x-Height zone (light purple/blue) */}
+                      {/* Zonas tipográficas, em cinzas */}
+                      <rect x="-500" y={visualAscenderY} width="2000"
+                            height={visualCapHeightY - visualAscenderY}
+                            fill="currentColor" fillOpacity={0.03} className="pointer-events-none" />
                       <rect x="-500" y={visualCapHeightY} width="2000"
                             height={visualXHeightY - visualCapHeightY}
-                            fill={isDarkMode ? "rgba(59, 130, 246, 0.06)" : "rgba(59, 130, 246, 0.04)"} className="pointer-events-none" />
-                      {/* x-Height zone: baseline to x-Height (green) */}
+                            fill="currentColor" fillOpacity={0.015} className="pointer-events-none" />
                       <rect x="-500" y={visualXHeightY} width="2000"
                             height={visualBaselineY - visualXHeightY}
-                            fill={isDarkMode ? "rgba(34, 197, 94, 0.08)" : "rgba(34, 197, 94, 0.05)"} className="pointer-events-none" />
-                      {/* Descender zone: below baseline (red) */}
+                            fill="currentColor" fillOpacity={0.045} className="pointer-events-none" />
                       <rect x="-500" y={visualBaselineY} width="2000"
                             height={visualDescenderY - visualBaselineY}
-                            fill={isDarkMode ? "rgba(239, 68, 68, 0.08)" : "rgba(239, 68, 68, 0.05)"} className="pointer-events-none" />
+                            fill="currentColor" fillOpacity={0.025} className="pointer-events-none" />
 
-                      {/* Origin line */}
-                      <line x1={dynamicOriginX} y1="-200" x2={dynamicOriginX} y2="1500" stroke={GUIDE_COLOR_METRIC} strokeWidth="3" strokeDasharray="6,6" />
-                      <g transform={`translate(${dynamicOriginX - 15}, -240)`}>
-                          <rect x="0" y="0" width="60" height="20" className={`${isDarkMode ? 'fill-slate-800' : 'fill-neutral-200'}`} rx="3" />
-                          <text x="30" y="14" textAnchor="middle" className={`text-[10px] font-mono font-bold ${LABEL_COLOR}`}>X=0</text>
-                      </g>
+                      {/* Origem */}
+                      <line x1={dynamicOriginX} y1="-200" x2={dynamicOriginX} y2="1500" stroke="currentColor" strokeOpacity={0.35} strokeWidth="3" strokeDasharray="6,6" />
+                      <text x={dynamicOriginX} y={-220} textAnchor="middle" fontSize={22} fill="currentColor" fillOpacity={0.55} className="select-none">x = 0</text>
 
-                 {/* Ascender */}
-                 <line x1="-500" y1={visualAscenderY} x2="1500" y2={visualAscenderY} stroke={GUIDE_COLOR_METRIC} strokeWidth="3" strokeDasharray="4,4" className="pointer-events-auto" />
-                 <line x1="-500" y1={visualAscenderY} x2="1500" y2={visualAscenderY} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('ASCENDER')} />
-                 <g transform={`translate(-480, ${visualAscenderY + 6})`}>
-                    <rect x="0" y="-12" width="70" height="16" className={`${isDarkMode ? 'fill-slate-800' : 'fill-neutral-200'}`} rx="2" />
-                    <text x="5" y="0" className={`text-xs font-bold font-mono tracking-widest select-none ${LABEL_COLOR}`}>ASCENDER</text>
-                 </g>
-
-                 {/* Cap Height */}
-                 <line x1="-500" y1={visualCapHeightY} x2="1500" y2={visualCapHeightY} stroke={GUIDE_COLOR_CAPHEIGHT} strokeWidth="2" strokeDasharray="6,4" strokeOpacity="0.6" className="pointer-events-auto" />
-                 <line x1="-500" y1={visualCapHeightY} x2="1500" y2={visualCapHeightY} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('CAP_HEIGHT')} />
-                 <g transform={`translate(-480, ${visualCapHeightY + 6})`}>
-                    <rect x="0" y="-12" width="80" height="16" fill={isDarkMode ? "#1e1b4b" : "#ede9fe"} rx="2" />
-                    <text x="5" y="0" className="text-xs font-bold font-mono tracking-widest select-none" fill={GUIDE_COLOR_CAPHEIGHT}>CAP HEIGHT</text>
-                 </g>
-
-                 {/* x-Height */}
-                 <line x1="-500" y1={visualXHeightY} x2="1500" y2={visualXHeightY} stroke={GUIDE_COLOR_XHEIGHT} strokeWidth="2" strokeDasharray="6,4" strokeOpacity="0.6" className="pointer-events-auto" />
-                 <line x1="-500" y1={visualXHeightY} x2="1500" y2={visualXHeightY} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('X_HEIGHT')} />
-                 <g transform={`translate(-480, ${visualXHeightY + 6})`}>
-                    <rect x="0" y="-12" width="70" height="16" fill={isDarkMode ? "#052e16" : "#dcfce7"} rx="2" />
-                    <text x="5" y="0" className="text-xs font-bold font-mono tracking-widest select-none" fill={GUIDE_COLOR_XHEIGHT}>x-HEIGHT</text>
-                 </g>
-
-                 {/* Baseline */}
-                 <line x1="-500" y1={visualBaselineY} x2="1500" y2={visualBaselineY} stroke={GUIDE_COLOR_BASELINE} strokeWidth="4" strokeOpacity="0.8" className="pointer-events-auto" />
-                 <line x1="-500" y1={visualBaselineY} x2="1500" y2={visualBaselineY} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('BASELINE')} />
-                 <g transform={`translate(-480, ${visualBaselineY - 6})`}>
-                    <rect x="0" y="-12" width="70" height="16" className={`${isDarkMode ? 'fill-slate-800' : 'fill-neutral-200'}`} rx="2" />
-                    <text x="5" y="0" className={`text-xs font-bold font-mono tracking-widest select-none ${LABEL_COLOR}`}>BASELINE</text>
-                 </g>
-                 
-                 {/* Descender */}
-                 <line x1="-500" y1={visualDescenderY} x2="1500" y2={visualDescenderY} stroke={GUIDE_COLOR_METRIC} strokeWidth="3" strokeDasharray="4,4" className="pointer-events-auto" />
-                 <line x1="-500" y1={visualDescenderY} x2="1500" y2={visualDescenderY} stroke="transparent" strokeWidth="40" className="cursor-row-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('DESCENDER')} />
-                 <g transform={`translate(-480, ${visualDescenderY - 6})`}>
-                    <rect x="0" y="-12" width="75" height="16" className={`${isDarkMode ? 'fill-slate-800' : 'fill-neutral-200'}`} rx="2" />
-                    <text x="5" y="0" className={`text-xs font-bold font-mono tracking-widest select-none ${LABEL_COLOR}`}>DESCENDER</text>
-                 </g>
+                 {renderHorizontalGuide(visualAscenderY, 'ASCENDER', 'Ascendente', { opacity: 0.35, width: 3, dash: '4,4' })}
+                 {renderHorizontalGuide(visualCapHeightY, 'CAP_HEIGHT', 'Altura das maiúsculas', { opacity: 0.5, width: 2, dash: '6,4' })}
+                 {renderHorizontalGuide(visualXHeightY, 'X_HEIGHT', 'Altura-x', { opacity: 0.5, width: 2, dash: '6,4' })}
+                 {renderHorizontalGuide(visualBaselineY, 'BASELINE', 'Linha de base', { opacity: 0.85, width: 4, labelAbove: true })}
+                 {renderHorizontalGuide(visualDescenderY, 'DESCENDER', 'Descendente', { opacity: 0.35, width: 3, dash: '4,4', labelAbove: true })}
 
                  {activeTab === 'METRICS' && contextGlyph && (
                      <g transform={contextTransform} className="opacity-10 pointer-events-none">
@@ -958,32 +979,32 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                          className="pointer-events-none"
                          opacity={0.2}
                      >
-                         {renderGlyphLayers(ghost.glyph, isDarkMode ? '#cbd5f5' : '#94a3b8')}
+                         {renderGlyphLayers(ghost.glyph, INK)}
                      </g>
                  ))}
 
                  {activeTab === 'ACCENTS' && (
                      <g transform={`translate(${currentAnchor.x}, ${currentAnchor.y})`} className="cursor-move pointer-events-auto" onMouseDown={() => setDraggingGuide('ANCHOR')}>
-                         <line x1="-60" y1="0" x2="60" y2="0" stroke={editingDerivative ? "#eab308" : "#ef4444"} strokeWidth="6" />
-                         <line x1="0" y1="-60" x2="0" y2="60" stroke={editingDerivative ? "#eab308" : "#ef4444"} strokeWidth="6" />
-                         <circle r="40" fill="transparent" stroke={editingDerivative ? "rgba(234, 179, 8, 0.3)" : "rgba(239, 68, 68, 0.2)"} strokeWidth="4" />
+                         <line x1="-60" y1="0" x2="60" y2="0" stroke="currentColor" strokeOpacity={editingDerivative ? 1 : 0.7} strokeWidth="6" />
+                         <line x1="0" y1="-60" x2="0" y2="60" stroke="currentColor" strokeOpacity={editingDerivative ? 1 : 0.7} strokeWidth="6" />
+                         <circle r="40" fill="transparent" stroke="currentColor" strokeOpacity={editingDerivative ? 0.35 : 0.2} strokeWidth="4" />
                      </g>
                  )}
 
-                 {/* Main Glyph Rendering */}
+                 {/* Glifo */}
                  <g transform={`translate(${data.leftSideBearing}, ${data.baselineOffset}) scale(${data.scale})`}>
-                    <path d={previewPath} className={activeTab === 'STROKE' ? 'fill-blue-600' : ''} />
+                    <path d={previewPath} className={activeTab === 'STROKE' ? 'opacity-70' : undefined} />
                     {data.components.map((comp, idx) => {
                         const compG = allGlyphs?.find(g => g.char === comp.char);
                         if (!compG || !compG.pathData) return null;
                         const isDragging = draggingComponentIndex === idx;
                         return (
-                            <g key={idx} transform={`translate(${comp.dx}, ${comp.dy}) scale(${comp.scale})`} 
-                                className={`fill-blue-600 ${activeTab === 'COMPS' ? 'cursor-move pointer-events-auto hover:fill-blue-500' : 'pointer-events-none'} ${isDragging ? 'fill-blue-400 opacity-90' : 'opacity-40'}`}
+                            <g key={idx} transform={`translate(${comp.dx}, ${comp.dy}) scale(${comp.scale})`}
+                                className={`fill-current transition-opacity duration-fast ease-out ${activeTab === 'COMPS' ? 'cursor-move pointer-events-auto hover:opacity-60' : 'pointer-events-none'} ${isDragging ? 'opacity-90' : 'opacity-40'}`}
                                 onMouseDown={(e) => handleComponentMouseDown(e, idx)}>
                                 <path d={compG.pathData} />
                                 {activeTab === 'COMPS' && (
-                                    <rect x={0} y={0} width="1000" height="1000" fill="transparent" stroke={isDragging ? (isDarkMode ? "white" : "black") : "transparent"} strokeWidth="10" strokeDasharray="20,20" />
+                                    <rect x={0} y={0} width="1000" height="1000" fill="transparent" stroke={isDragging ? 'currentColor' : 'transparent'} strokeWidth="10" strokeDasharray="20,20" />
                                 )}
                             </g>
                         )
@@ -1006,14 +1027,13 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                         const anchorLocalY = (pos.y - data.baselineOffset) / baseScale;
                         const dx = anchorLocalX - (accentCenterX * accentComponentScale);
                         const dy = anchorLocalY - (accentCenterY * accentComponentScale);
-                        const fillColor = editingDerivative === char ? "#ca8a04" : "#dc2626";
-                        const accentShape = renderGlyphLayers(accentGlyph, fillColor);
+                        const accentShape = renderGlyphLayers(accentGlyph, INK);
                         if (!accentShape) return null;
                         return (
                             <g
                                 key={char}
                                 transform={`translate(${dx}, ${dy}) scale(${accentComponentScale})`}
-                                className={`${editingDerivative === char ? "opacity-100" : "opacity-60"} cursor-move pointer-events-auto`}
+                                className={`${editingDerivative === char ? "opacity-100" : "opacity-50"} cursor-move pointer-events-auto`}
                                 onMouseDown={(event) => handleAccentDragStart(event, char)}
                             >
                                 {accentShape}
@@ -1021,104 +1041,96 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                         );
                     })}
                  </g>
-                 
-                 {/* CAIXA VISUAL DO ADVANCE WIDTH - Retângulo que mostra a área do glifo */}
-                 <rect 
-                     x={0} 
-                     y={visualDescenderY} 
-                     width={data.advanceWidth} 
-                     height={visualAscenderY - visualDescenderY}
-                     fill="none"
-                     stroke={isDarkMode ? 'rgba(59, 130, 246, 0.4)' : 'rgba(59, 130, 246, 0.3)'}
+
+                 {/* Caixa da largura de avanço */}
+                 <rect
+                     x={0}
+                     y={Math.min(visualAscenderY, visualDescenderY)}
+                     width={Math.max(0, data.advanceWidth)}
+                     height={Math.abs(visualAscenderY - visualDescenderY)}
+                     fill="currentColor"
+                     fillOpacity={0.02}
+                     stroke="currentColor"
+                     strokeOpacity={0.3}
                      strokeWidth="4"
                      strokeDasharray="12,6"
                      className="pointer-events-none"
                  />
-                 {/* Preenchimento semi-transparente para visualização */}
-                 <rect 
-                     x={0} 
-                     y={visualDescenderY} 
-                     width={data.advanceWidth} 
-                     height={visualAscenderY - visualDescenderY}
-                     fill={isDarkMode ? 'rgba(59, 130, 246, 0.05)' : 'rgba(59, 130, 246, 0.03)'}
-                     className="pointer-events-none"
-                 />
-                 {/* Indicador de centro do advance width */}
-                 <line 
-                     x1={data.advanceWidth / 2} 
-                     y1={visualDescenderY + 20} 
-                     x2={data.advanceWidth / 2} 
+                 {/* Centro da largura de avanço */}
+                 <line
+                     x1={data.advanceWidth / 2}
+                     y1={visualDescenderY + 20}
+                     x2={data.advanceWidth / 2}
                      y2={visualAscenderY - 20}
-                     stroke={isDarkMode ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}
+                     stroke="currentColor"
+                     strokeOpacity={0.2}
                      strokeWidth="2"
                      strokeDasharray="4,8"
                      className="pointer-events-none"
                  />
-                 {/* Label do centro */}
-                 <g transform={`translate(${data.advanceWidth / 2}, ${visualDescenderY + 40})`}>
-                     <text 
-                         x="0" 
-                         y="0" 
-                         textAnchor="middle" 
-                         className={`text-[9px] font-mono pointer-events-none ${isDarkMode ? 'fill-blue-400' : 'fill-blue-500'}`}
-                         opacity="0.6"
-                     >
-                         CENTER
-                     </text>
-                 </g>
-                 
-                 <line x1={data.advanceWidth} y1="-200" x2={data.advanceWidth} y2="1500" stroke={GUIDE_COLOR_WIDTH} strokeWidth="3" strokeDasharray="8,8" />
+                 <text
+                     x={data.advanceWidth / 2}
+                     y={visualDescenderY + 44}
+                     textAnchor="middle"
+                     fontSize={18}
+                     fill="currentColor"
+                     fillOpacity={0.45}
+                     className="pointer-events-none select-none"
+                 >
+                     Centro
+                 </text>
+
+                 <line x1={data.advanceWidth} y1="-200" x2={data.advanceWidth} y2="1500" stroke="currentColor" strokeOpacity={0.6} strokeWidth="3" strokeDasharray="8,8" />
                  <line x1={data.advanceWidth} y1="-200" x2={data.advanceWidth} y2="1500" stroke="transparent" strokeWidth="40" className="cursor-col-resize pointer-events-auto" onMouseDown={() => setDraggingGuide('WIDTH')}>
-                    <title>Drag to change Width</title>
+                    <title>Arraste para mudar a largura de avanço</title>
                  </line>
-                 <g transform={`translate(${data.advanceWidth + 10}, 50)`}>
-                    <rect x="0" y="-12" width="50" height="16" className={`${isDarkMode ? 'fill-slate-800' : 'fill-neutral-200'}`} rx="2" />
-                    <text x="5" y="0" className={`text-xs font-bold font-mono tracking-widest select-none ${LABEL_COLOR}`}>WIDTH</text>
-                 </g>
+                 <text x={data.advanceWidth + 14} y={56} fontSize={22} fill="currentColor" fillOpacity={0.55} className="select-none">Largura</text>
                </svg>
            </div>
         </div>
 
-        {/* Right: Controls - Compact */}
-        <div className={`w-80 border-l flex flex-col shrink-0 ${panelBg}`}>
-          <div className={`p-3 border-b flex flex-col gap-2 ${isDarkMode ? 'border-slate-800' : 'border-neutral-200'}`}>
-             <div className="flex justify-between items-center">
-                <h2 className={`text-base font-bold flex items-baseline gap-2 ${textMain} truncate`}>Edit '{glyph.char}' <span className={`text-[11px] font-normal ${textSub} truncate`}>({glyph.name})</span></h2>
-                <div className="flex gap-1 items-center">
-                    <button onClick={handleUndo} disabled={historyIndex <= 0} className={`w-7 h-7 rounded border text-xs ${btnSec} disabled:opacity-40`} title="Undo (Ctrl+Z)">↶</button>
-                    <button onClick={handleRedo} disabled={historyIndex >= history.length - 1} className={`w-7 h-7 rounded border text-xs ${btnSec} disabled:opacity-40`} title="Redo (Ctrl+Y)">↷</button>
-                    <button onClick={handleCenterGlyph} className={`text-[10px] px-2 h-7 rounded border ${isDarkMode ? 'bg-emerald-900/50 border-emerald-700 text-emerald-300 hover:bg-emerald-800' : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'}`} title="Centers the glyph based on the real vector center">⚖ Center</button>
-                </div>
-             </div>
-             {/* TABS — 3 principais + menu More */}
-             <div className={`flex gap-1 p-1 rounded-lg relative ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
-                 {([
-                     { key: 'METRICS', label: 'Glyph' },
-                     { key: 'KERNING', label: 'Kerning' },
-                     { key: 'ACCENTS', label: 'Accents' },
-                 ] as const).map(tab => (
-                     <button
-                         key={tab.key}
-                         onClick={() => { setActiveTab(tab.key); setMoreTabsOpen(false); }}
-                         className={`flex-1 text-[10px] py-1.5 px-1 rounded font-bold uppercase tracking-wider transition-colors text-center ${activeTab === tab.key ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : (isDarkMode ? 'text-slate-400 hover:text-white' : 'text-neutral-500 hover:text-black')}`}
-                     >
-                         {tab.label}
-                     </button>
-                 ))}
-                 <button
+        {/* Painel lateral */}
+        <aside className="material-card p-0 gap-0 lg:w-80 shrink-0 flex flex-col lg:min-h-0 overflow-visible lg:overflow-hidden">
+          <div className="shrink-0 p-5 pb-4 hairline-b">
+             <div className="relative flex items-center gap-2">
+                 <div role="tablist" aria-label="Seções do editor" className="segmented flex-1 min-w-0">
+                     {([
+                         { key: 'METRICS', label: 'Glifo' },
+                         { key: 'KERNING', label: 'Kerning' },
+                         { key: 'ACCENTS', label: 'Acentos' },
+                     ] as const).map(tab => (
+                         <button
+                             key={tab.key}
+                             type="button"
+                             role="tab"
+                             aria-selected={activeTab === tab.key}
+                             onClick={() => { setActiveTab(tab.key); setMoreTabsOpen(false); }}
+                             className={cx('segmented-item flex-1', activeTab === tab.key && 'is-active')}
+                         >
+                             {tab.label}
+                         </button>
+                     ))}
+                 </div>
+                 <IconButton
+                     label="Mais seções"
+                     variant="quiet"
+                     active={isMoreTab}
+                     aria-expanded={moreTabsOpen}
                      onClick={() => setMoreTabsOpen(o => !o)}
-                     className={`w-9 text-[12px] py-1.5 rounded font-black transition-colors ${(activeTab === 'COMPS' || activeTab === 'STROKE') ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : (isDarkMode ? 'text-slate-400 hover:text-white' : 'text-neutral-500 hover:text-black')}`}
-                     title="Mais"
-                 >⋯</button>
+                 >
+                     <Ellipsis className="w-4 h-4" aria-hidden="true" />
+                 </IconButton>
                  {moreTabsOpen && (
-                     <div className={`absolute right-0 top-full mt-1 z-10 w-36 rounded-lg border shadow-lg p-1 ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-200'}`}>
+                     <div role="menu" className="material-popover absolute right-0 top-full mt-2 z-10 w-44 p-1 flex flex-col gap-0.5">
                          {(['COMPS', 'STROKE'] as const).map(t => (
                              <button
                                  key={t}
+                                 type="button"
+                                 role="menuitem"
                                  onClick={() => { setActiveTab(t); setMoreTabsOpen(false); }}
-                                 className={`w-full text-left px-3 py-1.5 rounded text-[11px] font-bold uppercase tracking-wider ${activeTab === t ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white') : (isDarkMode ? 'text-slate-300 hover:bg-slate-800' : 'text-neutral-700 hover:bg-neutral-100')}`}
+                                 className={cx('row', activeTab === t && 'is-active')}
                              >
-                                 {t === 'COMPS' ? 'Components' : 'Stroke'}
+                                 {t === 'COMPS' ? 'Componentes' : 'Traço'}
                              </button>
                          ))}
                      </div>
@@ -1130,222 +1142,169 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
                      ))}
                  </datalist>
           </div>
-          
-          <div className={`flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar ${textMain}`}>
+
+          <div className="flex-1 min-h-0 lg:overflow-y-auto p-5 flex flex-col gap-5">
             {activeTab === 'METRICS' && (
                 <>
-                {/* Geometry — moved up as primary glyph control */}
-                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Glyph Geometry</label>
-                    <div className="space-y-3">
-                        {/* Scale */}
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Scale</label>
-                            <input type="range" min="0.1" max="3" step="0.01" value={data.scale} onMouseUp={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" step="0.01" value={data.scale} onBlur={handleInputCommit} onChange={(e) => handleChange('scale', parseFloat(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Width</label>
-                            <input type="range" min="0" max="2000" step="10" value={data.advanceWidth} onMouseUp={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.advanceWidth} onBlur={handleInputCommit} onChange={(e) => handleChange('advanceWidth', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>X Off</label>
-                            <input type="range" min="-500" max="500" value={data.leftSideBearing} onMouseUp={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.leftSideBearing} onBlur={handleInputCommit} onChange={(e) => handleChange('leftSideBearing', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label className={`text-[10px] font-bold w-10 ${textSub}`}>Y Off</label>
-                            <input type="range" min="-500" max="500" value={data.baselineOffset} onMouseUp={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                            <input type="number" value={data.baselineOffset} onBlur={handleInputCommit} onChange={(e) => handleChange('baselineOffset', parseInt(e.target.value))} className={`w-14 h-7 text-sm rounded text-center font-bold outline-none border no-spinner ${inputBg}`} />
-                        </div>
-                    </div>
-                </div>
+                <PanelGroup label="Geometria do glifo" first>
+                    <SliderNumber label="Escala" value={data.scale} min={0.1} max={3} step={0.01} numberStep={0.01}
+                        onValue={(raw) => handleChange('scale', parseFloat(raw))} onCommit={handleInputCommit} />
+                    <SliderNumber label="Largura de avanço" value={data.advanceWidth} min={0} max={2000} step={10}
+                        onValue={(raw) => handleChange('advanceWidth', parseInt(raw))} onCommit={handleInputCommit} />
+                    <SliderNumber label="Margem esquerda" value={data.leftSideBearing} min={-500} max={500}
+                        onValue={(raw) => handleChange('leftSideBearing', parseInt(raw))} onCommit={handleInputCommit} />
+                    <SliderNumber label="Deslocamento vertical" value={data.baselineOffset} min={-500} max={500}
+                        onValue={(raw) => handleChange('baselineOffset', parseInt(raw))} onCommit={handleInputCommit} />
+                </PanelGroup>
 
-                {/* Global Vertical Limits — collapsed by default with warning */}
-                <details className={`rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <summary className={`px-2 py-2 cursor-pointer text-[9px] font-black uppercase tracking-wider opacity-80 flex items-center justify-between gap-2 list-none`}>
-                        <span>⚠ Global Font Metrics</span>
-                        <span className={`text-[9px] font-normal normal-case tracking-normal ${textSub}`}>affects all glyphs</span>
+                {/* Métricas da fonte inteira: fechadas por padrão */}
+                <details className="group hairline-t pt-5">
+                    <summary className="flex items-center justify-between gap-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <span className="label">Métricas globais</span>
+                        <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                            Afeta todos os glifos
+                            <ChevronDown className="w-4 h-4 transition-transform duration-fast ease-out group-open:rotate-180" aria-hidden="true" />
+                        </span>
                     </summary>
-                    <div className="p-2 pt-0 space-y-2">
-                        {/* Ascender */}
-                        <div>
-                             <div className="flex justify-between items-center mb-1">
-                                 <label className={`text-[10px] font-bold ${textSub}`}>Ascender</label>
-                                 <div className="flex items-center gap-1">
-                                    <button onClick={() => onUpdateMetadata({...metadata, ascender: metadata.ascender - 10})} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>-</button>
-                                    <input type="number" value={metadata.ascender} onChange={(e) => onUpdateMetadata({...metadata, ascender: parseInt(e.target.value)})} className={`w-16 h-7 rounded text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
-                                    <button onClick={() => onUpdateMetadata({...metadata, ascender: metadata.ascender + 10})} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>+</button>
-                                 </div>
-                             </div>
-                             <input type="range" min="0" max="1500" value={metadata.ascender} onChange={(e) => onUpdateMetadata({...metadata, ascender: parseInt(e.target.value)})} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                        </div>
-                        {/* Cap Height */}
-                        <div>
-                             <div className="flex justify-between items-center mb-1">
-                                 <label className={`text-[10px] font-bold ${textSub}`} style={{color: GUIDE_COLOR_CAPHEIGHT}}>Cap Height</label>
-                                 <div className="flex items-center gap-1">
-                                    <button onClick={() => onUpdateMetadata(prev => ({...prev, capHeight: (prev.capHeight ?? 720) - 10}))} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>-</button>
-                                    <input type="number" value={capHeight} onChange={(e) => onUpdateMetadata(prev => ({...prev, capHeight: parseInt(e.target.value)}))} className={`w-16 h-7 rounded text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
-                                    <button onClick={() => onUpdateMetadata(prev => ({...prev, capHeight: (prev.capHeight ?? 720) + 10}))} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>+</button>
-                                 </div>
-                             </div>
-                             <input type="range" min="0" max="1200" value={capHeight} onChange={(e) => onUpdateMetadata(prev => ({...prev, capHeight: parseInt(e.target.value)}))} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} style={{accentColor: GUIDE_COLOR_CAPHEIGHT}} />
-                        </div>
-                        {/* x-Height */}
-                        <div>
-                             <div className="flex justify-between items-center mb-1">
-                                 <label className={`text-[10px] font-bold ${textSub}`} style={{color: GUIDE_COLOR_XHEIGHT}}>x-Height</label>
-                                 <div className="flex items-center gap-1">
-                                    <button onClick={() => onUpdateMetadata(prev => ({...prev, xHeight: (prev.xHeight ?? 520) - 10}))} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>-</button>
-                                    <input type="number" value={xHeight} onChange={(e) => onUpdateMetadata(prev => ({...prev, xHeight: parseInt(e.target.value)}))} className={`w-16 h-7 rounded text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
-                                    <button onClick={() => onUpdateMetadata(prev => ({...prev, xHeight: (prev.xHeight ?? 520) + 10}))} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>+</button>
-                                 </div>
-                             </div>
-                             <input type="range" min="0" max="1000" value={xHeight} onChange={(e) => onUpdateMetadata(prev => ({...prev, xHeight: parseInt(e.target.value)}))} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} style={{accentColor: GUIDE_COLOR_XHEIGHT}} />
-                        </div>
-                        {/* Descender */}
-                        <div>
-                             <div className="flex justify-between items-center mb-1">
-                                 <label className={`text-[10px] font-bold ${textSub}`}>Descender</label>
-                                 <div className="flex items-center gap-1">
-                                    <button onClick={() => onUpdateMetadata({...metadata, descender: metadata.descender - 10})} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>-</button>
-                                    <input type="number" value={metadata.descender} onChange={(e) => onUpdateMetadata({...metadata, descender: parseInt(e.target.value)})} className={`w-16 h-7 rounded text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
-                                    <button onClick={() => onUpdateMetadata({...metadata, descender: metadata.descender + 10})} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>+</button>
-                                 </div>
-                             </div>
-                             <input type="range" min="-500" max="0" value={metadata.descender} onChange={(e) => onUpdateMetadata({...metadata, descender: parseInt(e.target.value)})} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                        </div>
-
-                        {/* Baseline Shift */}
-                        <div>
-                             <div className="flex justify-between items-center mb-1">
-                                 <label className={`text-[10px] font-bold ${textSub}`}>Baseline Shift</label>
-                                 <div className="flex items-center gap-1">
-                                    <button onClick={() => onUpdateMetadata({...metadata, baselineShift: (baselineShift - 10)})} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>-</button>
-                                    <input type="number" value={baselineShift} onChange={(e) => onUpdateMetadata({...metadata, baselineShift: parseInt(e.target.value)})} className={`w-16 h-7 rounded text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
-                                    <button onClick={() => onUpdateMetadata({...metadata, baselineShift: (baselineShift + 10)})} className={`w-6 h-7 flex items-center justify-center rounded border text-xs ${btnSec}`}>+</button>
-                                 </div>
-                             </div>
-                             <input type="range" min="-400" max="400" value={baselineShift} onChange={(e) => onUpdateMetadata({...metadata, baselineShift: parseInt(e.target.value)})} className={`w-full h-1.5 rounded-lg cursor-pointer block mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`} />
-                        </div>
+                    <div className="pt-4 flex flex-col gap-4">
+                        <SliderNumber label="Ascendente" value={metadata.ascender} min={0} max={1500}
+                            onValue={(raw) => onUpdateMetadata({...metadata, ascender: parseInt(raw)})}
+                            onDecrement={() => onUpdateMetadata({...metadata, ascender: metadata.ascender - 10})}
+                            onIncrement={() => onUpdateMetadata({...metadata, ascender: metadata.ascender + 10})} />
+                        <SliderNumber label="Altura das maiúsculas" value={capHeight} min={0} max={1200}
+                            onValue={(raw) => onUpdateMetadata(prev => ({...prev, capHeight: parseInt(raw)}))}
+                            onDecrement={() => onUpdateMetadata(prev => ({...prev, capHeight: (prev.capHeight ?? 720) - 10}))}
+                            onIncrement={() => onUpdateMetadata(prev => ({...prev, capHeight: (prev.capHeight ?? 720) + 10}))} />
+                        <SliderNumber label="Altura-x" value={xHeight} min={0} max={1000}
+                            onValue={(raw) => onUpdateMetadata(prev => ({...prev, xHeight: parseInt(raw)}))}
+                            onDecrement={() => onUpdateMetadata(prev => ({...prev, xHeight: (prev.xHeight ?? 520) - 10}))}
+                            onIncrement={() => onUpdateMetadata(prev => ({...prev, xHeight: (prev.xHeight ?? 520) + 10}))} />
+                        <SliderNumber label="Descendente" value={metadata.descender} min={-500} max={0}
+                            onValue={(raw) => onUpdateMetadata({...metadata, descender: parseInt(raw)})}
+                            onDecrement={() => onUpdateMetadata({...metadata, descender: metadata.descender - 10})}
+                            onIncrement={() => onUpdateMetadata({...metadata, descender: metadata.descender + 10})} />
+                        <SliderNumber label="Deslocamento da linha de base" value={baselineShift} min={-400} max={400}
+                            onValue={(raw) => onUpdateMetadata({...metadata, baselineShift: parseInt(raw)})}
+                            onDecrement={() => onUpdateMetadata({...metadata, baselineShift: (baselineShift - 10)})}
+                            onIncrement={() => onUpdateMetadata({...metadata, baselineShift: (baselineShift + 10)})} />
                     </div>
                 </details>
 
-                {/* Auto Position */}
-                <div className={`p-2 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <label className={`text-[9px] font-black uppercase tracking-wider block mb-2 opacity-70`}>Auto Position</label>
-                    <div className="space-y-2">
-                        {metadata.autoPosition ? (
-                            <div className={`text-[10px] p-2 rounded border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-neutral-200'}`}>
-                                <p className={`font-bold ${textSub}`}>Reference: <span className={textMain}>'{metadata.autoPosition.sourceChar}'</span></p>
-                                <div className={`grid grid-cols-3 gap-1 mt-1 text-[9px] font-mono ${textSub}`}>
-                                    <span>H: {metadata.autoPosition.targetVisualHeight.toFixed(0)}</span>
-                                    <span>Y: {metadata.autoPosition.baselineOffset}</span>
-                                    <span>LSB: {metadata.autoPosition.leftSideBearing}</span>
-                                </div>
+                <PanelGroup label="Posição automática">
+                    {metadata.autoPosition ? (
+                        <div className="rounded-md bg-muted p-3 flex flex-col gap-3">
+                            <p className="text-[13px] text-muted-foreground">
+                                Referência: <span className="text-foreground">{metadata.autoPosition.sourceChar}</span>
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                                <MiniValue caption="Altura" value={metadata.autoPosition.targetVisualHeight.toFixed(0)} />
+                                <MiniValue caption="Vertical" value={metadata.autoPosition.baselineOffset} />
+                                <MiniValue caption="Margem esq." value={metadata.autoPosition.leftSideBearing} />
                             </div>
-                        ) : (
-                            <p className={`text-[10px] italic ${textSub}`}>No reference defined.</p>
-                        )}
-                        <div className="flex items-center gap-2">
-                            <input 
-                                type="checkbox" 
-                                checked={data.manualPosition ?? false}
-                                onChange={(e) => {
-                                    const newData = { ...data, manualPosition: e.target.checked };
+                        </div>
+                    ) : (
+                        <p className="text-[13px] text-muted-foreground">Nenhuma referência definida.</p>
+                    )}
+                    <label className="flex items-center gap-2.5 text-[14px] text-foreground cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={data.manualPosition ?? false}
+                            onChange={(e) => {
+                                const newData = { ...data, manualPosition: e.target.checked };
+                                setData(newData);
+                                pushToHistory(newData);
+                            }}
+                            className="ctl-check"
+                        />
+                        Posição manual (ignora a automática)
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const bbox = measurePath(data.pathData);
+                                const visualHeight = bbox && bbox.height > 0 ? bbox.height * data.scale : data.scale * 700;
+                                const autoPos = {
+                                    targetVisualHeight: visualHeight,
+                                    baselineOffset: data.baselineOffset,
+                                    leftSideBearing: data.leftSideBearing,
+                                    sourceChar: glyph.char,
+                                    sourceScale: data.scale,
+                                };
+                                onUpdateMetadata(prev => ({ ...prev, autoPosition: autoPos }));
+                                if (onApplyAutoPosition) onApplyAutoPosition(autoPos);
+                                pushNotice(`Posição automática definida a partir de '${glyph.char}'.`, 'success');
+                            }}
+                            className="ctl ctl-outline ctl-sm flex-1"
+                        >
+                            Usar como referência
+                        </button>
+                        {metadata.autoPosition && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!metadata.autoPosition) return;
+                                    const bbox = measurePath(data.pathData);
+                                    const newScale = bbox && bbox.height > 0
+                                        ? metadata.autoPosition.targetVisualHeight / bbox.height
+                                        : metadata.autoPosition.sourceScale;
+                                    const newData = {
+                                        ...data,
+                                        scale: newScale,
+                                        baselineOffset: metadata.autoPosition.baselineOffset,
+                                        leftSideBearing: metadata.autoPosition.leftSideBearing,
+                                        manualPosition: false,
+                                    };
                                     setData(newData);
                                     pushToHistory(newData);
                                 }}
-                                className="rounded w-3 h-3 accent-black"
-                            />
-                            <label className={`text-[10px] font-bold ${textSub}`}>Manual position (ignores auto)</label>
-                        </div>
-                        <div className="flex gap-1">
-                            <button
-                                onClick={() => {
-                                    const bbox = measurePath(data.pathData);
-                                    const visualHeight = bbox && bbox.height > 0 ? bbox.height * data.scale : data.scale * 700;
-                                    const autoPos = {
-                                        targetVisualHeight: visualHeight,
-                                        baselineOffset: data.baselineOffset,
-                                        leftSideBearing: data.leftSideBearing,
-                                        sourceChar: glyph.char,
-                                        sourceScale: data.scale,
-                                    };
-                                    onUpdateMetadata(prev => ({ ...prev, autoPosition: autoPos }));
-                                    if (onApplyAutoPosition) onApplyAutoPosition(autoPos);
-                                    pushNotice(`Auto Position definida a partir de '${glyph.char}'.`, 'success');
-                                }}
-                                className={`flex-1 text-[9px] py-1.5 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'bg-white text-black border-white hover:bg-neutral-200' : 'bg-black text-white border-black hover:bg-neutral-800'}`}
+                                disabled={!data.manualPosition}
+                                className="ctl ctl-gray ctl-sm flex-1"
                             >
-                                Use as reference
+                                Voltar para a automática
                             </button>
-                            {metadata.autoPosition && (
-                                <button
-                                    onClick={() => {
-                                        if (!metadata.autoPosition) return;
-                                        const bbox = measurePath(data.pathData);
-                                        const newScale = bbox && bbox.height > 0 
-                                            ? metadata.autoPosition.targetVisualHeight / bbox.height 
-                                            : metadata.autoPosition.sourceScale;
-                                        const newData = {
-                                            ...data,
-                                            scale: newScale,
-                                            baselineOffset: metadata.autoPosition.baselineOffset,
-                                            leftSideBearing: metadata.autoPosition.leftSideBearing,
-                                            manualPosition: false,
-                                        };
-                                        setData(newData);
-                                        pushToHistory(newData);
-                                    }}
-                                    disabled={!data.manualPosition}
-                                    className={`flex-1 text-[9px] py-1.5 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700' : 'bg-white border-neutral-300 text-black hover:border-black'} disabled:opacity-40 disabled:cursor-not-allowed`}
-                                >
-                                    Resetar para auto
-                                </button>
-                            )}
-                        </div>
+                        )}
                     </div>
-                </div>
+                </PanelGroup>
 
-                {/* Alignment Guides — secundário, colapsado */}
-                <details className={`rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                    <summary className={`px-2 py-2 cursor-pointer text-[9px] font-black uppercase tracking-wider opacity-80 list-none flex items-center justify-between`}>
-                        <span>Alinhamento por guia</span>
-                        <span className={`text-[9px] font-normal normal-case tracking-normal ${textSub}`}>opcional</span>
+                {/* Alinhamento por guia: secundário, fechado por padrão */}
+                <details className="group hairline-t pt-5">
+                    <summary className="flex items-center justify-between gap-2 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                        <span className="label">Alinhamento por guia</span>
+                        <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                            Opcional
+                            <ChevronDown className="w-4 h-4 transition-transform duration-fast ease-out group-open:rotate-180" aria-hidden="true" />
+                        </span>
                     </summary>
-                    <div className="p-2 pt-0 space-y-2">
-                        <div className="grid grid-cols-3 gap-1">
-                            {(['glyph', 'anchor'] as const).map(target => (
-                                <button
-                                    key={target}
-                                    onClick={() => setAlignmentTarget(target)}
-                                    className={`text-[9px] py-1.5 rounded border font-bold uppercase tracking-wide ${alignmentTarget === target ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black') : `${textSub} ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-300'}`}`}
-                                >
-                                    {target}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-3 gap-1">
+                    <div className="pt-4 flex flex-col gap-3">
+                        <Segmented<'glyph' | 'anchor' | 'context'>
+                            ariaLabel="O que alinhar"
+                            value={alignmentTarget}
+                            onChange={setAlignmentTarget}
+                            items={[
+                                { value: 'glyph', label: 'Glifo' },
+                                { value: 'anchor', label: 'Âncora' },
+                            ]}
+                        />
+                        <div className="grid grid-cols-3 gap-1.5">
                             {ALIGN_GUIDES.map(guide => {
                                 const disabled = getGuideLineY(guide.key) === null;
                                 return (
                                     <button
                                         key={guide.key}
+                                        type="button"
                                         disabled={disabled}
                                         onClick={() => handleAlignToGuide(guide.key)}
-                                        className={`text-[10px] py-1.5 rounded border font-bold uppercase tracking-wide ${disabled ? 'opacity-40 cursor-not-allowed' : ''} ${isDarkMode ? 'bg-slate-900 border-slate-700 text-white hover:border-white' : 'bg-white border-neutral-300 text-black hover:border-black'}`}
+                                        className="ctl ctl-outline ctl-sm px-1"
                                     >
                                         {guide.label}
                                     </button>
                                 );
                             })}
                         </div>
-                        <p className={`text-[10px] leading-tight ${textSub}`}>
-                            {alignmentTarget === 'glyph' && 'Snaps the glyph (top/center/bottom) to the chosen guide.'}
-                            {alignmentTarget === 'anchor' && 'Positions the anchor directly on the guide.'}
+                        <p className="text-[12px] text-muted-foreground">
+                            {alignmentTarget === 'glyph' && 'Encaixa o glifo (topo, centro ou base) na guia escolhida.'}
+                            {alignmentTarget === 'anchor' && 'Coloca a âncora direto sobre a guia.'}
                         </p>
                     </div>
                 </details>
@@ -1353,324 +1312,375 @@ const EditorModal: React.FC<EditorModalProps> = ({ glyph, allGlyphs, isOpen, onC
             )}
 
             {activeTab === 'KERNING' && (
-                <div className="space-y-3">
-                    {/* 1. Diagnostics compacto — 4 pills horizontais */}
-                    <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-neutral-50 border-neutral-200'}`}>
-                        <label className={`text-[9px] font-black uppercase tracking-wider opacity-70 block mb-2`}>Diagnostics</label>
-                        <div className="grid grid-cols-4 gap-1.5">
-                            {[
-                                { label: 'LSB', value: `${data.leftSideBearing}` },
-                                { label: 'RSB', value: `${computedRightSideBearing}` },
-                                { label: 'Adv', value: `${data.advanceWidth}` },
-                                { label: 'Bias', value: kerningBiasValue >= 0 ? `+${kerningBiasValue}` : `${kerningBiasValue}` },
-                            ].map(m => (
-                                <div key={m.label} className={`rounded border px-2 py-1.5 text-center ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-white border-neutral-200'}`}>
-                                    <p className={`text-[9px] font-bold uppercase tracking-wider ${textSub}`}>{m.label}</p>
-                                    <p className="text-sm font-black leading-tight">{m.value}</p>
-                                </div>
-                            ))}
+                <>
+                    <PanelGroup label="Diagnóstico" first>
+                        <div className="grid grid-cols-4 gap-2">
+                            <MiniValue caption="Margem esq." value={data.leftSideBearing} large />
+                            <MiniValue caption="Margem dir." value={computedRightSideBearing} large />
+                            <MiniValue caption="Avanço" value={data.advanceWidth} large />
+                            <MiniValue caption="Viés" value={kerningBiasValue >= 0 ? `+${kerningBiasValue}` : `${kerningBiasValue}`} large />
                         </div>
-                        <div className="mt-2">
-                            <div className="flex justify-between items-center mb-1">
-                                <label className={`text-[9px] font-bold uppercase tracking-wider ${textSub}`}>Kerning Bias (classe)</label>
-                                <span className={`text-[10px] font-mono font-bold`}>{kerningBiasValue >= 0 ? `+${kerningBiasValue}` : kerningBiasValue}</span>
-                            </div>
+                        <Field label="Viés de kerning (classe)" value={kerningBiasValue >= 0 ? `+${kerningBiasValue}` : kerningBiasValue}>
                             <input
                                 type="range" min={-20} max={20} step={1}
                                 value={kerningBiasValue}
                                 onChange={(e) => handleChange('kerningBias', parseInt(e.target.value))}
                                 onMouseUp={handleInputCommit}
                                 onTouchEnd={handleInputCommit}
-                                className={`w-full h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`}
+                                className="tool-slider w-full"
                             />
-                        </div>
-                    </div>
+                        </Field>
+                    </PanelGroup>
 
-                    {/* 2. Pair Visualizer unificado */}
-                    <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-200'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Visualizador de Par</label>
-                            <button
-                                onClick={handleOpenKerningPanelClick}
-                                className={`text-[9px] px-2 py-1 rounded border font-bold uppercase tracking-wide ${isDarkMode ? 'text-slate-400 border-slate-700 hover:text-white' : 'text-neutral-500 border-neutral-300 hover:text-black'}`}
-                            >
-                                Painel completo →
+                    <PanelGroup
+                        label="Visualizador de par"
+                        aside={
+                            <button type="button" onClick={handleOpenKerningPanelClick} className="ctl ctl-plain ctl-sm">
+                                Painel completo
+                                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                             </button>
-                        </div>
-                        <div className="space-y-2">
-                            <input
-                                type="text" maxLength={1} list="kerning-partner-options"
-                                value={kerningPartner}
-                                onChange={(e) => setKerningPartner(e.target.value)}
-                                placeholder="Parceiro (A, V, O, T…)"
-                                className={`w-full border rounded px-3 py-1.5 text-center font-black text-lg uppercase outline-none ${inputBg}`}
-                            />
-                            <div className="flex flex-wrap gap-1">
-                                {QUICK_PARTNERS.map(c => (
-                                    <button key={c} onClick={() => setKerningPartner(c)}
-                                        className={`w-7 h-7 rounded border text-xs font-black ${kerningPartner === c ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black') : `${isDarkMode ? 'bg-slate-900 border-slate-700 text-slate-300' : 'bg-white border-neutral-300 text-neutral-700'}`}`}
-                                    >{c}</button>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-3 gap-1">
-                                {(['LEFT', 'BOTH', 'RIGHT'] as const).map(d => (
-                                    <button key={d} onClick={() => setKerningDirection(d)}
-                                        className={`text-[10px] py-1.5 rounded border font-bold uppercase tracking-wide ${kerningDirection === d ? (isDarkMode ? 'bg-white text-black border-white' : 'bg-black text-white border-black') : `${textSub} ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-300'}`}`}
-                                    >{d === 'LEFT' ? `${kerningPartner || '·'}${glyph.char}` : d === 'RIGHT' ? `${glyph.char}${kerningPartner || '·'}` : `${kerningPartner || '·'}${glyph.char}${kerningPartner || '·'}`}</button>
-                                ))}
-                            </div>
-
-                            {!kerningPartner ? (
-                                <p className={`text-[11px] italic ${textSub} text-center py-4`}>Escolha um parceiro para visualizar.</p>
-                            ) : !glyphMap.has(kerningPartner) ? (
-                                <p className={`text-[11px] italic ${textSub} text-center py-4`}>Glyph "{kerningPartner}" does not exist in this style.</p>
-                            ) : pairLayout ? (
-                                <>
-                                    <div className={`border rounded-lg p-3 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-neutral-50 border-neutral-200'}`}>
-                                        <svg viewBox={pairLayout.viewBox}
-                                            className={`w-full h-40 ${isDarkMode ? 'fill-white' : 'fill-black'}`}
-                                            preserveAspectRatio="xMidYMid meet"
-                                        >
-                                            <line
-                                                x1={pairLayout.viewStart}
-                                                y1={pairLayout.baselineY}
-                                                x2={pairLayout.viewStart + pairLayout.viewWidth}
-                                                y2={pairLayout.baselineY}
-                                                stroke={isDarkMode ? '#475569' : '#94a3b8'}
-                                                strokeWidth={4} strokeDasharray="8,8"
-                                            />
-                                            {pairLayout.gaps.map((gap, idx) => {
-                                                const color = gap.gap >= 0 ? (isDarkMode ? '#22c55e' : '#15803d') : (isDarkMode ? '#fb7185' : '#dc2626');
-                                                const mid = (gap.startX + gap.endX) / 2;
-                                                return (
-                                                    <g key={`pv-gap-${idx}`}>
-                                                        <line x1={gap.startX} x2={gap.endX} y1={pairGapY} y2={pairGapY}
-                                                            stroke={color} strokeWidth={6} strokeLinecap="round" />
-                                                        <text x={mid} y={pairGapY - 14} textAnchor="middle"
-                                                            fontFamily="monospace" fontSize={14}
-                                                            fill={isDarkMode ? '#cbd5f5' : '#475569'}
-                                                        >{formatGapValue(gap.gap)}</text>
-                                                    </g>
-                                                );
-                                            })}
-                                            {pairLayout.nodes.map((node, idx) => {
-                                                if (!node.pathData) return null;
-                                                return (
-                                                    <g key={`pv-node-${idx}`}
-                                                        transform={`translate(${node.x + node.leftSideBearing}, ${pairLayout.baselineY + node.baselineOffset}) scale(${node.scale})`}
-                                                    ><path d={node.pathData} /></g>
-                                                );
-                                            })}
-                                        </svg>
-                                    </div>
-                                    {activePairKey && (
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center justify-between">
-                                                <label className={`text-[10px] font-bold uppercase tracking-wider ${textSub}`}>
-                                                    Kerning <span className="font-mono">{activePairKey}</span>
-                                                </label>
-                                                <button onClick={() => handleInlineKerningChange(activePairKey, 0)}
-                                                    className={`text-[9px] uppercase font-bold tracking-wide ${textSub} hover:underline`}
-                                                >zerar</button>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <input type="number" value={activePairValue}
-                                                    onChange={(e) => handleInlineKerningChange(activePairKey, parseInt(e.target.value, 10) || 0)}
-                                                    className={`w-20 h-8 text-base font-bold text-center border rounded no-spinner ${inputBg}`}
-                                                />
-                                                <input type="range" min={-400} max={400} step={5}
-                                                    value={activePairValue}
-                                                    onChange={(e) => handleInlineKerningChange(activePairKey, parseInt(e.target.value, 10))}
-                                                    className={`flex-1 h-1.5 rounded-lg cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`}
-                                                />
-                                            </div>
-                                            {kerningDirection === 'BOTH' && (
-                                                <p className={`text-[9px] ${textSub}`}>Editando o par {glyph.char}→{kerningPartner}. Use LEFT para editar {kerningPartner}→{glyph.char}.</p>
-                                            )}
-                                        </div>
-                                    )}
-                                </>
-                            ) : null}
-                        </div>
-                    </div>
-
-                    {/* 3. Saved Pairs — lista única */}
-                    <div className={`p-3 rounded-lg border ${isDarkMode ? 'bg-slate-900 border-slate-700' : 'bg-white border-neutral-200'}`}>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className={`text-[9px] font-black uppercase tracking-wider opacity-70`}>Saved Pairs</label>
-                            <span className={`text-[10px] font-mono ${textSub}`}>
-                                {allSavedPairs.length} pair{allSavedPairs.length === 1 ? '' : 's'}
-                            </span>
-                        </div>
-                        {allSavedPairs.length === 0 ? (
-                            <p className={`text-[10px] italic ${textSub}`}>No saved pairs with this glyph.</p>
-                        ) : (
-                            <div className="space-y-1 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
-                                {allSavedPairs.map(({ pair, partner, value, direction }) => (
-                                    <div key={pair}
-                                        className={`flex items-center gap-2 rounded border px-2 py-1 ${isDarkMode ? 'bg-slate-950 border-slate-800' : 'bg-neutral-50 border-neutral-200'}`}
-                                    >
-                                        <span className={`w-6 text-center text-xs font-black ${value < 0 ? 'text-red-500' : 'text-green-600'}`}>
-                                            {direction === 'right' ? '→' : '←'}
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-mono truncate">
-                                                {direction === 'right'
-                                                    ? `${glyph.char} → ${describeKerningToken(partner)}`
-                                                    : `${describeKerningToken(partner)} → ${glyph.char}`}
-                                            </p>
-                                        </div>
-                                        <input type="number" value={value}
-                                            onChange={(e) => handleInlineKerningChange(pair, parseInt(e.target.value, 10) || 0)}
-                                            className={`w-16 text-sm font-bold text-center border rounded px-1 py-0.5 no-spinner ${inputBg}`}
-                                        />
-                                        <button type="button" onClick={() => handleRemoveKerningPair(pair)}
-                                            className={`w-7 h-7 rounded-full text-sm font-black border ${isDarkMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-neutral-300 text-neutral-500 hover:bg-neutral-100'}`}
-                                            title="Remove pair"
-                                        >×</button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* Other tabs maintained with new input size standards */}
-            {activeTab === 'ACCENTS' && (
-                <div className="space-y-3">
-                    <div className={`p-3 rounded-lg border ${editingDerivative ? 'bg-yellow-50 border-yellow-300 text-black' : (isDarkMode ? 'bg-red-900/20 border-red-800' : 'bg-red-50 border-red-200')}`}>
-                        <h3 className={`font-bold mb-3 text-xs flex items-center gap-2 ${editingDerivative ? 'text-yellow-700' : ''}`}>
-                            <span className="text-sm">✢</span> 
-                            {editingDerivative ? `Anchor: ${editingDerivative}` : "Global Anchor"}
-                        </h3>
-                        
-                        <div className="grid grid-cols-2 gap-3 mb-3">
-                            <div>
-                                <label className={`text-[10px] font-bold block mb-1 uppercase ${textSub}`}>X</label>
-                                <input type="number" value={currentAnchor.x} onChange={(e) => handleAnchorChange('x', parseInt(e.target.value))} className={`w-full h-8 rounded px-2 text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
-                                <input
-                                    type="range"
-                                    min={anchorRangeX.min}
-                                    max={anchorRangeX.max}
-                                    value={currentAnchor.x}
-                                    onChange={(e) => handleAnchorChange('x', parseInt(e.target.value))}
-                                    className={`w-full h-1 rounded mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`}
-                                />
-                            </div>
-                            <div>
-                                <label className={`text-[10px] font-bold block mb-1 uppercase ${textSub}`}>Y</label>
-                                <input type="number" value={currentAnchor.y} onChange={(e) => handleAnchorChange('y', parseInt(e.target.value))} className={`w-full h-8 rounded px-2 text-center text-sm font-bold outline-none border no-spinner ${inputBg}`} />
-                                <input
-                                    type="range"
-                                    min={anchorRangeY.min}
-                                    max={anchorRangeY.max}
-                                    value={currentAnchor.y}
-                                    onChange={(e) => handleAnchorChange('y', parseInt(e.target.value))}
-                                    className={`w-full h-1 rounded mt-1 ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-300 accent-black'}`}
-                                />
-                            </div>
-                        </div>
-
-                        {editingDerivative && (
-                            <button onClick={() => setEditingDerivative(null)} className={`w-full text-[10px] underline mb-2 ${textSub} hover:text-current`}>
-                                Reset to Global
-                            </button>
-                        )}
-
-                        <div className="space-y-1 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
-                            {derivatives.map(d => (
-                                <div key={d.char} className={`flex items-center gap-2 p-1.5 rounded border transition-colors ${editingDerivative === d.char ? 'bg-yellow-100 border-yellow-400 text-black' : (isDarkMode ? 'bg-slate-900 border-slate-700 hover:border-white' : 'bg-white border-neutral-200 hover:border-black')}`}>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={selectedDerivatives.has(d.char)}
-                                        onChange={() => toggleDerivative(d.char)}
-                                        className="rounded w-3 h-3 accent-black"
-                                    />
-                                    <div 
-                                        onClick={() => handleSelectDerivativeToEdit(d.char)}
-                                        className="flex-1 flex items-center justify-between cursor-pointer"
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold w-5 text-xs">{d.char}</span>
-                                            <span className="text-[9px] opacity-60">({d.accent})</span>
-                                        </div>
-                                        {anchorOverrides[d.char] && <span className="text-[8px] font-bold bg-yellow-100 text-yellow-800 px-1 rounded">CUSTOM</span>}
-                                    </div>
-                                </div>
+                        }
+                    >
+                        <input
+                            type="text" maxLength={1} list="kerning-partner-options"
+                            value={kerningPartner}
+                            onChange={(e) => setKerningPartner(e.target.value)}
+                            placeholder="Parceiro (A, V, O, T…)"
+                            aria-label="Glifo parceiro"
+                            className="field text-center text-[18px]"
+                        />
+                        <div className="flex flex-wrap gap-1.5">
+                            {QUICK_PARTNERS.map(c => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setKerningPartner(c)}
+                                    aria-pressed={kerningPartner === c}
+                                    className={cx('ctl ctl-sm ctl-icon ctl-outline', kerningPartner === c && 'ctl-active')}
+                                >{c}</button>
                             ))}
                         </div>
-                        <button onClick={handleBuildDerivativesClick} className={`w-full mt-3 py-1.5 font-bold rounded-lg transition-colors text-[10px] ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>
-                            Apply to {selectedDerivatives.size} glyphs
-                        </button>
-                        <p className={`text-[9px] mt-1 text-center ${textSub}`}>
-                            Updates each checked derivative using the coordinates above.
-                        </p>
-                    </div>
-                </div>
+                        <Segmented<'LEFT' | 'BOTH' | 'RIGHT'>
+                            ariaLabel="Lado do par"
+                            value={kerningDirection}
+                            onChange={setKerningDirection}
+                            className="w-full [&>*]:flex-1"
+                            items={[
+                                { value: 'LEFT', label: `${kerningPartner || '·'}${glyph.char}` },
+                                { value: 'BOTH', label: `${kerningPartner || '·'}${glyph.char}${kerningPartner || '·'}` },
+                                { value: 'RIGHT', label: `${glyph.char}${kerningPartner || '·'}` },
+                            ]}
+                        />
+
+                        {!kerningPartner ? (
+                            <p className="text-[13px] text-muted-foreground text-center py-4">Escolha um parceiro para visualizar.</p>
+                        ) : !glyphMap.has(kerningPartner) ? (
+                            <p className="text-[13px] text-muted-foreground text-center py-4">O glifo "{kerningPartner}" não existe neste estilo.</p>
+                        ) : pairLayout ? (
+                            <>
+                                <div className="bg-canvas rounded-lg p-3 text-foreground">
+                                    <svg viewBox={pairLayout.viewBox}
+                                        className="w-full h-40 fill-current"
+                                        preserveAspectRatio="xMidYMid meet"
+                                    >
+                                        <line
+                                            x1={pairLayout.viewStart}
+                                            y1={pairLayout.baselineY}
+                                            x2={pairLayout.viewStart + pairLayout.viewWidth}
+                                            y2={pairLayout.baselineY}
+                                            stroke="currentColor" strokeOpacity={0.3}
+                                            strokeWidth={4} strokeDasharray="8,8"
+                                        />
+                                        {pairLayout.gaps.map((gap, idx) => {
+                                            // Espaço positivo em traço cheio, negativo tracejado.
+                                            const mid = (gap.startX + gap.endX) / 2;
+                                            return (
+                                                <g key={`pv-gap-${idx}`}>
+                                                    <line x1={gap.startX} x2={gap.endX} y1={pairGapY} y2={pairGapY}
+                                                        stroke="currentColor" strokeOpacity={0.75} strokeWidth={6}
+                                                        strokeDasharray={gap.gap >= 0 ? undefined : '10,8'} />
+                                                    <text x={mid} y={pairGapY - 14} textAnchor="middle"
+                                                        fontSize={14} fill="currentColor" fillOpacity={0.6}
+                                                    >{formatGapValue(gap.gap)}</text>
+                                                </g>
+                                            );
+                                        })}
+                                        {pairLayout.nodes.map((node, idx) => {
+                                            if (!node.pathData) return null;
+                                            return (
+                                                <g key={`pv-node-${idx}`}
+                                                    transform={`translate(${node.x + node.leftSideBearing}, ${pairLayout.baselineY + node.baselineOffset}) scale(${node.scale})`}
+                                                ><path d={node.pathData} /></g>
+                                            );
+                                        })}
+                                    </svg>
+                                </div>
+                                {activePairKey && (
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-[12px] text-muted-foreground">
+                                                Kerning <span className="text-foreground tabular">{activePairKey}</span>
+                                            </span>
+                                            <button type="button" onClick={() => handleInlineKerningChange(activePairKey, 0)} className="ctl ctl-plain ctl-sm">
+                                                Zerar
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <input type="number" value={activePairValue}
+                                                onChange={(e) => handleInlineKerningChange(activePairKey, parseInt(e.target.value, 10) || 0)}
+                                                aria-label={`Kerning de ${activePairKey}`}
+                                                className="field field-sm tabular text-center w-20 no-spinner"
+                                            />
+                                            <input type="range" min={-400} max={400} step={5}
+                                                value={activePairValue}
+                                                onChange={(e) => handleInlineKerningChange(activePairKey, parseInt(e.target.value, 10))}
+                                                aria-label={`Kerning de ${activePairKey}`}
+                                                className="tool-slider flex-1"
+                                            />
+                                        </div>
+                                        {kerningDirection === 'BOTH' && (
+                                            <p className="text-[12px] text-muted-foreground">
+                                                Editando o par {glyph.char}{kerningPartner}. Escolha {kerningPartner}{glyph.char} acima para editar o outro lado.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </>
+                        ) : null}
+                    </PanelGroup>
+
+                    <PanelGroup
+                        label="Pares salvos"
+                        aside={
+                            <span className="text-[12px] text-muted-foreground tabular">
+                                {allSavedPairs.length} {allSavedPairs.length === 1 ? 'par' : 'pares'}
+                            </span>
+                        }
+                    >
+                        {allSavedPairs.length === 0 ? (
+                            <p className="text-[13px] text-muted-foreground">Nenhum par salvo com este glifo.</p>
+                        ) : (
+                            <div className="flex flex-col max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                                {allSavedPairs.map(({ pair, partner, value, direction }, idx) => (
+                                    <div key={pair} className={cx('flex items-center gap-2 min-h-10', idx < allSavedPairs.length - 1 && 'hairline-b')}>
+                                        <span className="flex-1 min-w-0 flex items-center gap-1.5 text-[14px] text-foreground truncate">
+                                            <span>{direction === 'right' ? glyph.char : describeKerningToken(partner)}</span>
+                                            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
+                                            <span>{direction === 'right' ? describeKerningToken(partner) : glyph.char}</span>
+                                        </span>
+                                        <input type="number" value={value}
+                                            onChange={(e) => handleInlineKerningChange(pair, parseInt(e.target.value, 10) || 0)}
+                                            aria-label={`Kerning de ${pair}`}
+                                            className="field field-sm tabular text-center w-16 no-spinner"
+                                        />
+                                        <IconButton label="Remover par" variant="plain" onClick={() => handleRemoveKerningPair(pair)}>
+                                            <X className="w-4 h-4" aria-hidden="true" />
+                                        </IconButton>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </PanelGroup>
+                </>
             )}
-            
+
+            {activeTab === 'ACCENTS' && (
+                <>
+                    <PanelGroup
+                        label={editingDerivative ? `Âncora de ${editingDerivative}` : 'Âncora global'}
+                        first
+                        aside={editingDerivative ? (
+                            <button type="button" onClick={() => setEditingDerivative(null)} className="ctl ctl-plain ctl-sm">
+                                Voltar à global
+                            </button>
+                        ) : undefined}
+                    >
+                        <SliderNumber label="X" value={currentAnchor.x} min={anchorRangeX.min} max={anchorRangeX.max}
+                            onValue={(raw) => handleAnchorChange('x', parseInt(raw))} />
+                        <SliderNumber label="Y" value={currentAnchor.y} min={anchorRangeY.min} max={anchorRangeY.max}
+                            onValue={(raw) => handleAnchorChange('y', parseInt(raw))} />
+                    </PanelGroup>
+
+                    <PanelGroup label="Derivados">
+                        {derivatives.length === 0 ? (
+                            <p className="text-[13px] text-muted-foreground">Nenhum glifo acentuado usa este como base.</p>
+                        ) : (
+                            <div className="flex flex-col gap-0.5 max-h-[240px] overflow-y-auto pr-1 custom-scrollbar">
+                                {derivatives.map(d => {
+                                    const isEditing = editingDerivative === d.char;
+                                    return (
+                                        <div key={d.char} className={cx('row gap-3', isEditing && 'is-active')}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedDerivatives.has(d.char)}
+                                                onChange={() => toggleDerivative(d.char)}
+                                                aria-label={`Incluir ${d.char}`}
+                                                className="ctl-check"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleSelectDerivativeToEdit(d.char)}
+                                                aria-pressed={isEditing}
+                                                className="flex-1 min-w-0 flex items-center justify-between gap-2 text-left min-h-8"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <span className="w-5 text-[14px]">{d.char}</span>
+                                                    <span className="text-[12px] opacity-60">{d.accent}</span>
+                                                </span>
+                                                {anchorOverrides[d.char] && <span className="chip chip-outline">Ajustada</span>}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        <button type="button" onClick={handleBuildDerivativesClick} className="ctl ctl-filled w-full">
+                            Aplicar a {selectedDerivatives.size} {selectedDerivatives.size === 1 ? 'glifo' : 'glifos'}
+                        </button>
+                        <p className="text-[12px] text-muted-foreground">
+                            Atualiza cada derivado marcado com as coordenadas acima.
+                        </p>
+                    </PanelGroup>
+                </>
+            )}
+
             {activeTab === 'COMPS' && (
-                <div className="space-y-3">
+                <PanelGroup label="Componentes" first>
                      <div className="flex gap-2">
-                         <input 
-                            type="text" 
+                         <input
+                            type="text"
                             value={manualComponentChar}
                             onChange={(e) => setManualComponentChar(e.target.value)}
-                            placeholder="Add char..."
-                            className={`flex-1 border rounded px-2 py-1.5 text-xs outline-none ${inputBg}`}
+                            placeholder="Caractere…"
+                            aria-label="Caractere do componente"
+                            className="field flex-1 min-w-0"
                         />
-                        <button onClick={handleAddManualComponent} className={`px-3 rounded font-bold text-xs ${isDarkMode ? 'bg-white text-black' : 'bg-black text-white'}`}>Add</button>
+                        <button type="button" onClick={handleAddManualComponent} className="ctl ctl-outline">Adicionar</button>
                      </div>
-                     <div className="space-y-2">
-                         {data.components.length === 0 && <div className={`${textSub} text-[10px] italic text-center py-4`}>No components linked.</div>}
+                     <div className="flex flex-col gap-2">
+                         {data.components.length === 0 && <p className="text-[13px] text-muted-foreground text-center py-4">Nenhum componente ligado.</p>}
                          {data.components.map((comp, i) => (
-                             <div key={i} className={`p-2 rounded border text-xs ${draggingComponentIndex === i ? 'border-blue-500 ring-1 ring-blue-500' : (isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-neutral-50 border-neutral-200')}`}>
-                                 <div className="flex justify-between items-center mb-1">
-                                     <span className="font-bold">{comp.char}</span>
-                                     <button onClick={() => handleRemoveComponent(i)} className="text-red-500 hover:text-current font-bold">✕</button>
+                             <div key={i} className={cx('rounded-md bg-muted p-3 flex flex-col gap-2', draggingComponentIndex === i && 'ring-1 ring-foreground')}>
+                                 <div className="flex justify-between items-center">
+                                     <span className="text-[14px] text-foreground">{comp.char}</span>
+                                     <IconButton label="Remover componente" variant="danger" onClick={() => handleRemoveComponent(i)}>
+                                         <X className="w-4 h-4" aria-hidden="true" />
+                                     </IconButton>
                                  </div>
                                  <div className="grid grid-cols-3 gap-2">
-                                     <input type="number" value={comp.dx} onBlur={handleInputCommit} onChange={(e) => handleUpdateComponent(i, 'dx', parseInt(e.target.value))} className={`w-full h-7 rounded px-1 text-xs border no-spinner ${inputBg}`} />
-                                     <input type="number" value={comp.dy} onBlur={handleInputCommit} onChange={(e) => handleUpdateComponent(i, 'dy', parseInt(e.target.value))} className={`w-full h-7 rounded px-1 text-xs border no-spinner ${inputBg}`} />
-                                     <input type="number" step="0.1" value={comp.scale} onBlur={handleInputCommit} onChange={(e) => handleUpdateComponent(i, 'scale', parseFloat(e.target.value))} className={`w-full h-7 rounded px-1 text-xs border no-spinner ${inputBg}`} />
+                                     <Field label="X">
+                                         <input type="number" value={comp.dx} onBlur={handleInputCommit} onChange={(e) => handleUpdateComponent(i, 'dx', parseInt(e.target.value))} className="field field-sm tabular w-full no-spinner" />
+                                     </Field>
+                                     <Field label="Y">
+                                         <input type="number" value={comp.dy} onBlur={handleInputCommit} onChange={(e) => handleUpdateComponent(i, 'dy', parseInt(e.target.value))} className="field field-sm tabular w-full no-spinner" />
+                                     </Field>
+                                     <Field label="Escala">
+                                         <input type="number" step="0.1" value={comp.scale} onBlur={handleInputCommit} onChange={(e) => handleUpdateComponent(i, 'scale', parseFloat(e.target.value))} className="field field-sm tabular w-full no-spinner" />
+                                     </Field>
                                  </div>
                              </div>
                          ))}
                      </div>
-                </div>
+                </PanelGroup>
             )}
 
             {activeTab === 'STROKE' && (
-                <div className="space-y-3">
-                    <div>
-                        <div className="flex justify-between text-[10px] font-bold mb-2">
-                            <span>Stroke Width</span>
-                            <span className="font-mono">{strokeWidth}px</span>
-                        </div>
-                        <input 
-                            type="range" min="1" max="100" 
-                            value={strokeWidth} 
+                <PanelGroup label="Traço" first>
+                    <Field label="Espessura do traço" value={`${strokeWidth}px`}>
+                        <input
+                            type="range" min="1" max="100"
+                            value={strokeWidth}
                             onChange={(e) => setStrokeWidth(parseInt(e.target.value))}
-                            className={`w-full h-1.5 rounded-lg appearance-none cursor-pointer ${isDarkMode ? 'bg-slate-700 accent-white' : 'bg-neutral-200 accent-black'}`}
+                            className="tool-slider w-full"
                         />
-                    </div>
-                    <button onClick={handleStrokeExpand} className={`w-full py-2 font-bold rounded text-xs transition-colors ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>
-                        Expand Stroke
+                    </Field>
+                    <button type="button" onClick={handleStrokeExpand} className="ctl ctl-outline w-full">
+                        Expandir traço
                     </button>
-                </div>
+                </PanelGroup>
             )}
-            
+
           </div>
-          <div className={`p-3 border-t flex gap-2 ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-neutral-200'}`}>
-             <button onClick={handleAutoCenter} className={`text-[10px] px-3 rounded-lg border ${btnSec}`} title="Reset Left Side Bearing">Reset LSB</button>
-             <button onClick={handleCloseWithAutoSave} className={`px-3 py-2 rounded-lg border text-xs font-bold ${btnSec}`}>Close</button>
-             <button onClick={handleSave} className={`flex-[2] py-2 rounded-lg font-black uppercase tracking-wider transition-colors text-xs ${isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'}`}>Save & Close</button>
-          </div>
-        </div>
+        </aside>
       </div>
     </div>
   );
 };
+
+/* ------------------------------------------------ peças locais do painel */
+
+/** Grupo do painel: rótulo micro, conteúdo, fio acima quando não é o primeiro. */
+const PanelGroup: React.FC<{ label: React.ReactNode; aside?: React.ReactNode; first?: boolean; children: React.ReactNode }> = ({ label, aside, first, children }) => (
+    <section className={cx('flex flex-col gap-4', !first && 'hairline-t pt-5')}>
+        <header className="flex items-center justify-between gap-2 min-h-7">
+            <span className="label">{label}</span>
+            {aside}
+        </header>
+        {children}
+    </section>
+);
+
+/** Número pequeno sobre a legenda cinza. */
+const MiniValue: React.FC<{ caption: string; value: React.ReactNode; large?: boolean }> = ({ caption, value, large }) => (
+    <div className="flex flex-col gap-0.5 min-w-0">
+        <span className={cx('font-normal tabular text-foreground leading-tight', large ? 'text-[20px]' : 'text-[14px]')}>{value}</span>
+        <span className="text-[11px] text-muted-foreground truncate">{caption}</span>
+    </div>
+);
+
+interface SliderNumberProps {
+    label: string;
+    value: number;
+    min: number;
+    max: number;
+    step?: number;
+    numberStep?: number;
+    onValue: (raw: string) => void;
+    /** Grava no histórico: ao soltar o slider e ao sair do campo. */
+    onCommit?: () => void;
+    onDecrement?: () => void;
+    onIncrement?: () => void;
+}
+
+/** Rótulo e campo numérico na mesma linha, slider embaixo; passos de ±10 opcionais. */
+const SliderNumber: React.FC<SliderNumberProps> = ({ label, value, min, max, step, numberStep, onValue, onCommit, onDecrement, onIncrement }) => (
+    <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+            <span className="text-[12px] text-muted-foreground truncate">{label}</span>
+            <div className="flex items-center gap-1 shrink-0">
+                {onDecrement && (
+                    <IconButton label={`Diminuir ${label.toLowerCase()}`} variant="plain" onClick={onDecrement}>
+                        <Minus className="w-4 h-4" aria-hidden="true" />
+                    </IconButton>
+                )}
+                <input
+                    type="number"
+                    step={numberStep}
+                    value={value}
+                    onBlur={onCommit}
+                    onChange={(e) => onValue(e.target.value)}
+                    aria-label={label}
+                    className="field field-sm tabular text-center w-[4.5rem] no-spinner"
+                />
+                {onIncrement && (
+                    <IconButton label={`Aumentar ${label.toLowerCase()}`} variant="plain" onClick={onIncrement}>
+                        <Plus className="w-4 h-4" aria-hidden="true" />
+                    </IconButton>
+                )}
+            </div>
+        </div>
+        <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onMouseUp={onCommit}
+            onChange={(e) => onValue(e.target.value)}
+            aria-label={label}
+            className="tool-slider w-full"
+        />
+    </div>
+);
 
 export default EditorModal;

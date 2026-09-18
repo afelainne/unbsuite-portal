@@ -1,4 +1,23 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import {
+    Check,
+    ClipboardPaste,
+    Download,
+    Eraser,
+    Home,
+    Moon,
+    MousePointerClick,
+    PenTool,
+    RefreshCw,
+    RotateCcw,
+    Save,
+    Search,
+    Sun,
+    Upload,
+    Wand2
+} from 'lucide-react';
+import { Card, Field, IconButton, Metric, Progress, Segmented, Sheet, Spinner, TitleRow, ValueRow } from './ui';
+import { cx } from './cx';
 import { GlyphData, FontMetadata, DEFAULT_TRACKING_PROFILES } from '../types';
 import { useNotice } from '../contexts/NoticeContext';
 import { extractSingleGlyphFromSVG } from '../services/importService';
@@ -150,20 +169,6 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         onUpdateMetadata(prev => ({ ...prev, kerning: newKerning }));
     }, [onUpdateMetadata]);
 
-    // Temas
-    const bgMain = isDarkMode ? 'bg-slate-950' : 'bg-white';
-    const bgPanel = isDarkMode ? 'bg-slate-900' : 'bg-neutral-50';
-    const borderCol = isDarkMode ? 'border-slate-800' : 'border-neutral-200';
-    const textMain = isDarkMode ? 'text-white' : 'text-black';
-    const textSub = isDarkMode ? 'text-slate-400' : 'text-neutral-500';
-    const inputBg = isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-neutral-300';
-    const btnPrimary = isDarkMode ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800';
-    const btnSecondary = isDarkMode ? 'bg-slate-800 border-slate-700 hover:bg-slate-700' : 'bg-white border-neutral-300 hover:bg-neutral-100';
-    const cardBg = isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-neutral-200';
-    const cardSelected = isDarkMode ? 'bg-emerald-900/30 border-emerald-500' : 'bg-emerald-50 border-emerald-500';
-    const sliderTrack = isDarkMode ? 'bg-slate-700' : 'bg-neutral-200';
-    const accentColor = isDarkMode ? 'accent-white' : 'accent-black';
-
     // Análise de qualidade do kerning
     const kerningQuality = useMemo(() => 
         analyzeKerningQuality(glyphs, kerningPairs)
@@ -216,10 +221,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         const data = extractSingleGlyphFromSVG(content);
         if (data && data.pathData) {
             onUpdateGlyph(targetChar, data);
-            pushNotice(`Glyph "${targetChar}" updated!`, 'success');
+            pushNotice(`Glifo "${targetChar}" atualizado.`, 'success');
             return true;
         } else {
-            pushNotice('No path found in the SVG.', 'error');
+            pushNotice('Nenhum traçado encontrado no SVG.', 'error');
             return false;
         }
     }, [onUpdateGlyph, pushNotice]);
@@ -244,7 +249,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         setIsDragging(false);
         
         if (!selectedChar) {
-            pushNotice('Select a glyph first.', 'warning');
+            pushNotice('Selecione um glifo primeiro.', 'warning');
             return;
         }
 
@@ -262,7 +267,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
     // Colar SVG
     const handlePaste = useCallback(async () => {
         if (!selectedChar) {
-            pushNotice('Select a glyph first.', 'warning');
+            pushNotice('Selecione um glifo primeiro.', 'warning');
             return;
         }
 
@@ -278,7 +283,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 processSvgContent(svgContent, selectedChar);
             }
         } catch (err) {
-            pushNotice('Failed to access clipboard.', 'error');
+            pushNotice('Não foi possível acessar a área de transferência.', 'error');
         }
     }, [selectedChar, processSvgContent, pushNotice]);
 
@@ -293,7 +298,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             baselineOffset: 0,
             scale: 1
         });
-        pushNotice(`Glyph "${selectedChar}" cleared.`, 'success');
+        pushNotice(`Glifo "${selectedChar}" limpo.`, 'success');
     }, [selectedChar, onUpdateGlyph, pushNotice]);
 
     // Auto-Configuração da fonte
@@ -301,7 +306,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         // Validar minimo de glyphs com path
         const glyphsWithPath = glyphs.filter(g => g.pathData && g.pathData.trim().length > 0);
         if (glyphsWithPath.length < 5) {
-            pushNotice(`Auto Config needs at least 5 drawn glyphs (found: ${glyphsWithPath.length}). Import SVGs first.`, 'warning');
+            pushNotice(`A configuração automática precisa de pelo menos 5 glifos desenhados (encontrados: ${glyphsWithPath.length}). Importe os SVGs primeiro.`, 'warning');
             return;
         }
         
@@ -342,7 +347,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             // Mostrar relatório
             const report = result.report;
             pushNotice(
-                `Auto-Config: ${report.glyphsUpdated} glyphs updated, ${report.kerningPairsGenerated} kerning pairs generated`,
+                `Configuração automática: ${report.glyphsUpdated} glifos atualizados, ${report.kerningPairsGenerated} pares de kerning gerados.`,
                 'success'
             );
             
@@ -354,7 +359,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             
             setShowAutoConfigModal(false);
         } catch (error) {
-            pushNotice(`Auto-configuration error: ${error}`, 'error');
+            pushNotice(`Erro na configuração automática: ${error}`, 'error');
         } finally {
             setIsAutoConfiguring(false);
         }
@@ -381,7 +386,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                pushNotice(`Tight: ${generatedPairs.length} pairs. Intensity: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
+                pushNotice(`Apertado: ${generatedPairs.length} pares. Intensidade de ${(suggestedIntensity * 100).toFixed(0)}%.`, 'success');
                 break;
             case 'normal':
                 suggestedIntensity = 1.0;
@@ -389,7 +394,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                pushNotice(`Normal: ${generatedPairs.length} pairs.`, 'success');
+                pushNotice(`Normal: ${generatedPairs.length} pares.`, 'success');
                 break;
             case 'loose':
                 suggestedIntensity = 0.5;
@@ -397,7 +402,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                     style: fontStyle,
                     intensity: suggestedIntensity
                 });
-                pushNotice(`Loose: ${generatedPairs.length} pairs. Intensity: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
+                pushNotice(`Solto: ${generatedPairs.length} pares. Intensidade de ${(suggestedIntensity * 100).toFixed(0)}%.`, 'success');
                 break;
             case 'auto-smart':
                 suggestedIntensity = kerningIntensity;
@@ -412,10 +417,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         style: fontStyle,
                         intensity: suggestedIntensity
                     });
-                    pushNotice(`Smart (fallback): ${generatedPairs.length} pairs.`, 'success');
+                    pushNotice(`Inteligente (alternativo): ${generatedPairs.length} pares.`, 'success');
                 } else {
                     const smartStats = getKerningStats(newKerning);
-                    pushNotice(`Smart: ${smartStats?.totalPairs || 0} pairs.`, 'success');
+                    pushNotice(`Inteligente: ${smartStats?.totalPairs || 0} pares.`, 'success');
                 }
                 break;
             case 'auto-common':
@@ -426,10 +431,10 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         style: fontStyle,
                         intensity: suggestedIntensity
                     });
-                    pushNotice(`Comum (fallback): ${generatedPairs.length} pairs.`, 'success');
+                    pushNotice(`Comum (alternativo): ${generatedPairs.length} pares.`, 'success');
                 } else {
                     const commonStats = getKerningStats(newKerning);
-                    pushNotice(`Comum: ${commonStats?.totalPairs || 0} pairs.`, 'success');
+                    pushNotice(`Comum: ${commonStats?.totalPairs || 0} pares.`, 'success');
                 }
                 break;
             case 'professional':
@@ -440,7 +445,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 });
                 {
                     const profQuality = analyzeKerningQuality(glyphs, generatedPairs);
-                    pushNotice(`Pro: ${generatedPairs.length} pairs (${profQuality.grade}).`, 'success');
+                    pushNotice(`Profissional: ${generatedPairs.length} pares (nota ${profQuality.grade}).`, 'success');
                 }
                 break;
             case 'hybrid':
@@ -451,7 +456,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                 });
                 {
                     const hybridQuality = analyzeKerningQuality(glyphs, generatedPairs);
-                    pushNotice(`Hybrid: ${generatedPairs.length} pairs (${hybridQuality.grade}).`, 'success');
+                    pushNotice(`Híbrido: ${generatedPairs.length} pares (nota ${hybridQuality.grade}).`, 'success');
                 }
                 break;
             default:
@@ -463,7 +468,7 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                         scale: suggestedIntensity,
                         overwrite: true,
                     });
-                    pushNotice(`Template "${template.name}". Intensity: ${(suggestedIntensity * 100).toFixed(0)}%`, 'success');
+                    pushNotice(`Modelo "${template.name}". Intensidade de ${(suggestedIntensity * 100).toFixed(0)}%.`, 'success');
                 }
                 break;
         }
@@ -547,25 +552,25 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             }
         });
         
-        pushNotice(`Advance Width applied to ${updatedCount} glyphs.`, 'success');
+        pushNotice(`Largura de avanço aplicada a ${updatedCount} glifos.`, 'success');
     }, [glyphs, advanceWidthMode, globalSideMargin, globalFixedWidth, globalWidthScale, onUpdateGlyph, pushNotice]);
 
     // Recalcular width apenas do glifo selecionado
     const handleRecalculateCurrentWidth = useCallback(() => {
         if (!selectedGlyph || !selectedGlyph.pathData) {
-            pushNotice('Select a glyph with a path.', 'warning');
+            pushNotice('Selecione um glifo desenhado.', 'warning');
             return;
         }
         
         const newWidth = calculateAutoAdvanceWidth(selectedGlyph, globalSideMargin);
         onUpdateGlyph(selectedGlyph.char, { advanceWidth: newWidth });
-        pushNotice(`Width of "${selectedGlyph.char}" updated to ${newWidth}.`, 'success');
+        pushNotice(`Largura de "${selectedGlyph.char}" ajustada para ${newWidth}.`, 'success');
     }, [selectedGlyph, globalSideMargin, onUpdateGlyph, pushNotice]);
 
     // Centralizar glifo atual
     const handleCenterCurrentGlyph = useCallback(() => {
         if (!selectedGlyph || !selectedGlyph.pathData) {
-            pushNotice('Select a glyph with a path.', 'warning');
+            pushNotice('Selecione um glifo desenhado.', 'warning');
             return;
         }
         
@@ -574,18 +579,18 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
             advanceWidth: centered.advanceWidth,
             leftSideBearing: centered.leftSideBearing 
         });
-        pushNotice(`Glyph "${selectedGlyph.char}" centered.`, 'success');
+        pushNotice(`Glifo "${selectedGlyph.char}" centralizado.`, 'success');
     }, [selectedGlyph, globalSideMargin, onUpdateGlyph, pushNotice]);
 
     // Centralizar todos os glifos
     const handleCenterAllGlyphs = useCallback(() => {
         const count = centerAllGlyphs(glyphs, globalSideMargin, onUpdateGlyph);
-        pushNotice(`${count} glyphs centered.`, 'success');
+        pushNotice(`${count} glifos centralizados.`, 'success');
     }, [glyphs, globalSideMargin, onUpdateGlyph, pushNotice]);
 
     // Renderizar preview de glifo
     const renderGlyphPreview = (g: GlyphData, size: number = 40) => (
-        <svg viewBox="0 0 1000 1000" style={{ width: size, height: size }} className="overflow-visible">
+        <svg viewBox="0 0 1000 1000" style={{ width: size, height: size }} className="overflow-visible" aria-hidden="true">
             {g.pathData ? (
                 <g transform={`translate(${g.leftSideBearing}, ${g.baselineOffset}) scale(${g.scale})`}>
                     <path d={g.pathData} className="fill-current" />
@@ -611,200 +616,181 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
         };
     }, [glyphs]);
 
+    const closeAutoConfig = useCallback(() => setShowAutoConfigModal(false), []);
+
     // Categorias
-    const categories: { id: GlyphCategory; label: string }[] = [
-        { id: 'all', label: 'All' },
-        { id: 'uppercase', label: 'A-Z' },
-        { id: 'lowercase', label: 'a-z' },
-        { id: 'numbers', label: '0-9' },
-        { id: 'symbols', label: 'Other' },
+    const categories: { value: GlyphCategory; label: string }[] = [
+        { value: 'all', label: 'Todos' },
+        { value: 'uppercase', label: 'A–Z' },
+        { value: 'lowercase', label: 'a–z' },
+        { value: 'numbers', label: '0–9' },
+        { value: 'symbols', label: 'Outros' },
+    ];
+
+    const widthModes: { value: AdvanceWidthMode; label: string }[] = [
+        { value: 'auto', label: 'Auto' },
+        { value: 'fixed', label: 'Fixa' },
+        { value: 'scale', label: 'Escala' },
     ];
 
     return (
-        <div className={`flex flex-col h-full w-full ${bgMain} ${textMain}`}>
-            {/* Header */}
-            <header className={`flex items-center justify-between px-6 py-3 border-b ${borderCol}`}>
-                <div className="flex items-center gap-4">
-                    <button onClick={onGoHome} className="text-[10px] font-black uppercase tracking-[0.18em] hover:opacity-70 transition-opacity">
-                        ← Projects
-                    </button>
-                    <div className={`w-px h-6 ${isDarkMode ? 'bg-slate-700' : 'bg-neutral-300'}`} />
-                    <input
-                        type="text"
-                        value={metadata.familyName}
-                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, familyName: e.target.value }))}
-                        className={`text-xl font-black uppercase tracking-tight bg-transparent border-none outline-none ${textMain}`}
-                        placeholder="Font Name"
-                    />
-                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-wider ${isDarkMode ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700'}`}>
-                        Compact
-                    </span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={onToggleTheme}
-                        className={`p-2 rounded-lg transition-colors ${btnSecondary} border`}
-                        title={isDarkMode ? 'Light Mode' : 'Dark Mode'}
-                    >
-                        {isDarkMode ? (
-                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                                <circle cx="12" cy="12" r="5" />
-                                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                            </svg>
-                        ) : (
-                            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                                <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
-                            </svg>
-                        )}
-                    </button>
-                    <button
-                        onClick={onSaveProject}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${btnSecondary}`}
-                    >
-                        Save
-                    </button>
-                    <button
-                        onClick={() => importInputRef.current?.click()}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${btnSecondary}`}
-                    >
-                        Import
-                    </button>
-                    <input
-                        ref={importInputRef}
-                        type="file"
-                        accept=".svg"
-                        className="hidden"
-                        onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                                await onImportSheet(file);
-                                e.target.value = '';
-                            }
-                        }}
-                    />
-                    <button
-                        onClick={() => setShowAutoConfigModal(true)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border flex items-center gap-2 ${isDarkMode ? 'border-amber-600 bg-amber-900/30 text-amber-300 hover:bg-amber-900/50' : 'border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100'}`}
-                        title="Auto-configure font"
-                    >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                        </svg>
-                        Auto Config
-                    </button>
-                    <button
-                        onClick={() => onExportFont(kerningPairs.length > 0 ? kerningPairs : undefined)}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider ${btnPrimary}`}
-                    >
-                        Export
-                    </button>
-                    <div className={`w-px h-8 mx-2 ${isDarkMode ? 'bg-slate-700' : 'bg-neutral-300'}`} />
-                    <button
-                        onClick={onSwitchToAdvanced}
-                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border ${btnSecondary}`}
-                    >
-                        Modo Avancado
-                    </button>
-                </div>
-            </header>
+        <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-y-auto lg:overflow-hidden">
+            <input
+                ref={importInputRef}
+                type="file"
+                accept=".svg"
+                className="hidden"
+                onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                        await onImportSheet(file);
+                        e.target.value = '';
+                    }
+                }}
+            />
+            <input
+                type="file"
+                ref={fileInputRef}
+                accept=".svg"
+                onChange={handleSvgUpload}
+                className="hidden"
+            />
 
-            <div className="flex flex-1 overflow-hidden">
-                {/* Painel Esquerdo - Glyphs */}
-                <div className={`w-64 flex flex-col border-r ${borderCol} ${bgPanel}`}>
-                    {/* Busca */}
-                    <div className="p-3">
-                        <div className="relative">
-                            <svg className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${textSub}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="M21 21l-4.35-4.35" />
-                            </svg>
-                            <input
-                                type="text"
-                                placeholder="Buscar..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className={`w-full pl-10 pr-4 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
-                            />
-                        </div>
+            <TitleRow
+                className="px-5 md:px-10 pt-6 md:pt-8 shrink-0"
+                title={metadata.familyName || 'Sem nome'}
+                crumb="Modo compacto"
+                actions={
+                    <>
+                        <IconButton label="Projetos" variant="surface" onClick={onGoHome}>
+                            <Home className="w-4 h-4" aria-hidden="true" />
+                        </IconButton>
+                        <IconButton label={isDarkMode ? 'Tema claro' : 'Tema escuro'} variant="surface" onClick={onToggleTheme}>
+                            {isDarkMode ? <Sun className="w-4 h-4" aria-hidden="true" /> : <Moon className="w-4 h-4" aria-hidden="true" />}
+                        </IconButton>
+                        <IconButton label="Salvar projeto" variant="surface" onClick={onSaveProject}>
+                            <Save className="w-4 h-4" aria-hidden="true" />
+                        </IconButton>
+                        <IconButton label="Importar folha SVG" variant="surface" onClick={() => importInputRef.current?.click()}>
+                            <Upload className="w-4 h-4" aria-hidden="true" />
+                        </IconButton>
+                        <IconButton label="Configuração automática" variant="surface" onClick={() => setShowAutoConfigModal(true)}>
+                            <Wand2 className="w-4 h-4" aria-hidden="true" />
+                        </IconButton>
+                        <button type="button" onClick={onSwitchToAdvanced} className="ctl ctl-outline ctl-lg">
+                            Modo avançado
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => onExportFont(kerningPairs.length > 0 ? kerningPairs : undefined)}
+                            className="ctl ctl-tinted ctl-lg"
+                        >
+                            <Download className="w-4 h-4" aria-hidden="true" />
+                            Exportar fonte
+                        </button>
+                    </>
+                }
+            />
+
+            <div className="px-5 md:px-10 pt-6 pb-6 flex flex-col lg:flex-row gap-5 lg:min-h-0 lg:flex-1">
+                {/* Painel esquerdo: glifos */}
+                <aside className="material-card p-5 flex flex-col gap-4 min-w-0 lg:w-72 lg:shrink-0 lg:min-h-0">
+                    <Field label="Nome da família">
+                        <input
+                            type="text"
+                            value={metadata.familyName}
+                            onChange={(e) => onUpdateMetadata(prev => ({ ...prev, familyName: e.target.value }))}
+                            className="field"
+                            placeholder="Nome da fonte"
+                        />
+                    </Field>
+
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+                        <input
+                            type="search"
+                            placeholder="Buscar glifo"
+                            aria-label="Buscar glifo"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="field pl-9"
+                        />
                     </div>
 
-                    {/* Filtros */}
-                    <div className="px-3 pb-3 flex flex-wrap gap-1">
-                        {categories.map(cat => (
-                            <button
-                                key={cat.id}
-                                onClick={() => setActiveCategory(cat.id)}
-                                className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                                    activeCategory === cat.id
-                                        ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white')
-                                        : `border ${btnSecondary}`
-                                }`}
-                            >
-                                {cat.label}
-                            </button>
-                        ))}
-                    </div>
+                    <Segmented<GlyphCategory>
+                        ariaLabel="Filtrar glifos"
+                        items={categories}
+                        value={activeCategory}
+                        onChange={setActiveCategory}
+                        className="w-full [&>button]:flex-1 [&>button]:px-1.5"
+                    />
 
-                    {/* Grid de Glyphs */}
-                    <div className="flex-1 overflow-y-auto p-3">
-                        <div className="grid grid-cols-5 gap-1">
-                            {filteredGlyphs.map(g => (
-                                <button
-                                    key={g.char}
-                                    onClick={() => setSelectedChar(g.char)}
-                                    className={`aspect-square rounded-lg border flex items-center justify-center transition-all relative ${
-                                        selectedChar === g.char ? cardSelected : `${cardBg} hover:border-current`
-                                    }`}
-                                    title={g.name}
-                                >
-                                    {renderGlyphPreview(g, 24)}
-                                    {g.pathData && (
-                                        <span className="absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                    )}
-                                </button>
-                            ))}
+                    <div className="max-h-[320px] overflow-y-auto lg:max-h-none lg:flex-1 lg:min-h-0">
+                        <div className="grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-5 gap-1.5">
+                            {filteredGlyphs.map(g => {
+                                const on = selectedChar === g.char;
+                                return (
+                                    <button
+                                        type="button"
+                                        key={g.char}
+                                        onClick={() => setSelectedChar(g.char)}
+                                        aria-pressed={on}
+                                        aria-label={`${g.name}${g.pathData ? ', desenhado' : ''}`}
+                                        title={g.name}
+                                        className={cx(
+                                            'aspect-square rounded-md flex items-center justify-center relative transition-colors duration-fast ease-out',
+                                            on ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground hover:bg-fill-2'
+                                        )}
+                                    >
+                                        {renderGlyphPreview(g, 24)}
+                                        {g.pathData && (
+                                            <span
+                                                aria-hidden="true"
+                                                className={cx('absolute bottom-1 right-1 w-1.5 h-1.5 rounded-pill', on ? 'bg-primary-foreground' : 'bg-foreground')}
+                                            />
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
                         {filteredGlyphs.length === 0 && (
-                            <p className={`text-center py-8 text-sm ${textSub}`}>No glyphs.</p>
+                            <p className="text-center py-8 text-[14px] text-muted-foreground">Nenhum glifo encontrado.</p>
                         )}
                     </div>
 
-                    {/* Progresso */}
-                    <div className={`p-3 border-t ${borderCol}`}>
-                        <div className="flex justify-between text-xs mb-1">
-                            <span className={textSub}>Progress</span>
-                            <span className="font-bold">{stats.filled}/{stats.total}</span>
-                        </div>
-                        <div className={`w-full h-2 rounded-full ${sliderTrack}`}>
-                            <div 
-                                className="h-full rounded-full bg-emerald-500 transition-all"
-                                style={{ width: `${stats.percentage}%` }}
-                            />
-                        </div>
+                    <div className="hairline-t pt-4 flex flex-col gap-2 shrink-0">
+                        <Progress value={stats.total ? stats.filled / stats.total : 0} label="Progresso do desenho" />
+                        <p className="text-[12px] text-muted-foreground tabular">
+                            {stats.filled} de {stats.total} desenhados
+                        </p>
                     </div>
-                </div>
+                </aside>
 
-                {/* Centro - Preview e Edicao */}
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    {/* Preview de Texto */}
-                    <div className={`p-4 border-b ${borderCol}`} style={{ minHeight: '280px', maxHeight: '400px', flexShrink: 0 }}>
-                        <div className="flex items-center gap-4 mb-3">
-                            <span className={`text-[10px] font-bold uppercase tracking-wider ${textSub}`}>Preview</span>
-                            <input
-                                type="range"
-                                min="24"
-                                max="120"
-                                value={fontSize}
-                                onChange={(e) => setFontSize(parseInt(e.target.value))}
-                                className={`w-24 ${accentColor}`}
-                            />
-                            <span className={`text-xs font-mono ${textSub}`}>{fontSize}px</span>
-                        </div>
-                        <div 
-                            className={`p-4 rounded-xl border flex items-center justify-center overflow-auto ${cardBg}`}
-                            style={{ minHeight: '120px', maxHeight: '280px' }}
+                {/* Centro: pré-visualização e glifo selecionado */}
+                <div className="flex flex-col gap-5 min-w-0 lg:flex-1 lg:min-h-0 lg:overflow-y-auto">
+                    <Card
+                        label="Pré-visualização"
+                        className="p-5 shrink-0"
+                        actions={
+                            <div className="flex items-center gap-3 w-44">
+                                <input
+                                    type="range"
+                                    min="24"
+                                    max="120"
+                                    value={fontSize}
+                                    onChange={(e) => setFontSize(parseInt(e.target.value))}
+                                    className="tool-slider w-full"
+                                    aria-label="Tamanho da pré-visualização"
+                                />
+                                <span className="text-[12px] text-muted-foreground tabular w-10 text-right shrink-0">{fontSize}px</span>
+                            </div>
+                        }
+                    >
+                        <div
+                            className="bg-canvas rounded-xl p-5 flex items-center justify-center overflow-auto text-foreground"
+                            style={{ minHeight: '140px', maxHeight: '280px' }}
                         >
-                        {(() => {
+                            {(() => {
                                 const upm = metadata.unitsPerEm || 1000;
                                 const ascender = metadata.ascender || 800;
                                 const descender = Math.abs(metadata.descender || -200);
@@ -813,85 +799,85 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                                 const lines = previewText.split('\n').length > 1 ? previewText.split('\n') : [previewText];
                                 return (
                                     <div style={{ overflow: 'visible' }}>
-                                    {lines.map((lineText, lineIdx) => (
-                                    <div 
-                                        key={lineIdx}
-                                        className="flex flex-wrap items-end justify-center" 
-                                        style={{ 
-                                            fontSize,
-                                            height: lineBodyHeight,
-                                            overflow: 'visible',
-                                            marginTop: lineIdx > 0 ? lineSpacingPx : 0,
-                                        }}
-                                    >
-                                {previewText.split('').map((char, idx) => {
-                                    const g = getGlyph(char);
-                                    // Fix: space width converts wordSpacing from design units to pixels
-                                    if (char === ' ') {
-                                        const upm = metadata.unitsPerEm || 1000;
-                                        const spaceWidth = wordSpacing * (fontSize / upm);
-                                        return <span key={idx} style={{ width: spaceWidth }}>&nbsp;</span>;
-                                    }
-                                    if (!g) return <span key={idx} className="opacity-20">{char}</span>;
-                                    
-                                    const upm = metadata.unitsPerEm || 1000;
-                                    const scale = fontSize / upm;
-                                    const baseWidth = g.advanceWidth * scale;
-                                    
-                                    // Kerning + contextual tracking
-                                    let spacingAdjust = 0;
-                                    if (idx > 0) {
-                                        const prevChar = previewText[idx - 1];
-                                        if (prevChar !== ' ') {
-                                            spacingAdjust += getKerning(prevChar, char) * scale;
-                                        }
-                                        const prevG = getGlyph(prevChar);
-                                        if (prevG) {
-                                            const profile = metadata.trackingProfile || DEFAULT_TRACKING_PROFILES['body-text'];
-                                            spacingAdjust += getTrackingBetweenGlyphs(prevG, g, profile, fontSize, isAllCapsWord(previewText)) * scale;
-                                        }
-                                    }
-                                    const width = baseWidth;
-                                    
-                                    // Fix: viewBox includes descender
-                                    const ascender = metadata.ascender || 800;
-                                    const descender = Math.abs(metadata.descender || -200);
-                                    const accentSpace = upm * 0.25;
-                                    const viewBoxHeight = ascender + descender + accentSpace;
-                                    const viewBoxY = -accentSpace;
-                                    
-                                    // Altura do span proporcional para mostrar acentos
-                                    const spanHeight = fontSize * (viewBoxHeight / upm);
-                                    
-                                    return (
-                                        <span 
-                                            key={idx} 
-                                            style={{ 
-                                                width: Math.max(0, width), 
-                                                height: spanHeight,
-                                                marginLeft: spacingAdjust,
-                                            }}
-                                            className="inline-block relative"
-                                        >
-                                            {g.pathData ? (
-                                                <svg 
-                                                    viewBox={`0 ${viewBoxY} ${upm} ${viewBoxHeight}`}
-                                                    className="absolute inset-0 fill-current overflow-visible"
-                                                    style={{ width: fontSize, height: spanHeight }}
-                                                    preserveAspectRatio="xMidYMax meet"
-                                                >
-                                                    <g transform={`translate(${g.leftSideBearing}, ${g.baselineOffset}) scale(${g.scale})`}>
-                                                        <path d={g.pathData} />
-                                                    </g>
-                                                </svg>
-                                            ) : (
-                                                <span className="opacity-20">{char}</span>
-                                            )}
-                                        </span>
-                                    );
-                                })}
-                            </div>
-                                    ))}
+                                        {lines.map((lineText, lineIdx) => (
+                                            <div
+                                                key={lineIdx}
+                                                className="flex flex-wrap items-end justify-center"
+                                                style={{
+                                                    fontSize,
+                                                    height: lineBodyHeight,
+                                                    overflow: 'visible',
+                                                    marginTop: lineIdx > 0 ? lineSpacingPx : 0,
+                                                }}
+                                            >
+                                                {previewText.split('').map((char, idx) => {
+                                                    const g = getGlyph(char);
+                                                    // Fix: space width converts wordSpacing from design units to pixels
+                                                    if (char === ' ') {
+                                                        const upm = metadata.unitsPerEm || 1000;
+                                                        const spaceWidth = wordSpacing * (fontSize / upm);
+                                                        return <span key={idx} style={{ width: spaceWidth }}>&nbsp;</span>;
+                                                    }
+                                                    if (!g) return <span key={idx} className="opacity-20">{char}</span>;
+
+                                                    const upm = metadata.unitsPerEm || 1000;
+                                                    const scale = fontSize / upm;
+                                                    const baseWidth = g.advanceWidth * scale;
+
+                                                    // Kerning + contextual tracking
+                                                    let spacingAdjust = 0;
+                                                    if (idx > 0) {
+                                                        const prevChar = previewText[idx - 1];
+                                                        if (prevChar !== ' ') {
+                                                            spacingAdjust += getKerning(prevChar, char) * scale;
+                                                        }
+                                                        const prevG = getGlyph(prevChar);
+                                                        if (prevG) {
+                                                            const profile = metadata.trackingProfile || DEFAULT_TRACKING_PROFILES['body-text'];
+                                                            spacingAdjust += getTrackingBetweenGlyphs(prevG, g, profile, fontSize, isAllCapsWord(previewText)) * scale;
+                                                        }
+                                                    }
+                                                    const width = baseWidth;
+
+                                                    // Fix: viewBox includes descender
+                                                    const ascender = metadata.ascender || 800;
+                                                    const descender = Math.abs(metadata.descender || -200);
+                                                    const accentSpace = upm * 0.25;
+                                                    const viewBoxHeight = ascender + descender + accentSpace;
+                                                    const viewBoxY = -accentSpace;
+
+                                                    // Altura do span proporcional para mostrar acentos
+                                                    const spanHeight = fontSize * (viewBoxHeight / upm);
+
+                                                    return (
+                                                        <span
+                                                            key={idx}
+                                                            style={{
+                                                                width: Math.max(0, width),
+                                                                height: spanHeight,
+                                                                marginLeft: spacingAdjust,
+                                                            }}
+                                                            className="inline-block relative"
+                                                        >
+                                                            {g.pathData ? (
+                                                                <svg
+                                                                    viewBox={`0 ${viewBoxY} ${upm} ${viewBoxHeight}`}
+                                                                    className="absolute inset-0 fill-current overflow-visible"
+                                                                    style={{ width: fontSize, height: spanHeight }}
+                                                                    preserveAspectRatio="xMidYMax meet"
+                                                                >
+                                                                    <g transform={`translate(${g.leftSideBearing}, ${g.baselineOffset}) scale(${g.scale})`}>
+                                                                        <path d={g.pathData} />
+                                                                    </g>
+                                                                </svg>
+                                                            ) : (
+                                                                <span className="opacity-20">{char}</span>
+                                                            )}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        ))}
                                     </div>
                                 );
                             })()}
@@ -900,808 +886,589 @@ const CompactEditor: React.FC<CompactEditorProps> = ({
                             type="text"
                             value={previewText}
                             onChange={(e) => setPreviewText(e.target.value)}
-                            placeholder="Digite para visualizar..."
-                            className={`w-full mt-3 px-4 py-2 rounded-lg border text-center text-sm outline-none ${inputBg}`}
+                            placeholder="Digite para visualizar"
+                            aria-label="Texto da pré-visualização"
+                            className="field text-center"
                         />
-                    </div>
+                    </Card>
 
-                    {/* Editor de Glyph - Area Scrollavel */}
-                    <div 
-                        className="flex-1 flex items-center justify-center p-6 overflow-auto"
+                    {/* Glifo selecionado */}
+                    <section
+                        className={cx(
+                            'material-card p-5 flex flex-col gap-5 min-w-0 shrink-0 transition-shadow duration-fast ease-out',
+                            isDragging && 'shadow-hairline-strong ring-2 ring-foreground'
+                        )}
                         onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                         onDragLeave={() => setIsDragging(false)}
                         onDrop={handleDrop}
                     >
                         {selectedGlyph ? (
-                            <div className={`w-full max-w-md p-5 rounded-2xl border transition-all ${isDragging ? 'border-emerald-500 bg-emerald-500/10' : cardBg}`}>
-                                {/* Header do Glyph */}
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-4xl font-black">{selectedGlyph.char}</span>
-                                        <div>
-                                            <p className="font-bold">{selectedGlyph.name}</p>
-                                            <p className={`text-xs font-mono ${textSub}`}>
-                                                U+{selectedGlyph.unicode.toString(16).toUpperCase().padStart(4, '0')}
-                                            </p>
+                            <div className="flex flex-col md:flex-row gap-5 min-w-0">
+                                {/* Desenho */}
+                                <div className="md:w-60 shrink-0 flex flex-col gap-3">
+                                    <div className="bg-canvas rounded-xl relative overflow-hidden text-foreground">
+                                        <div className="aspect-square flex items-center justify-center">
+                                            {renderGlyphPreview(selectedGlyph, 160)}
                                         </div>
-                                    </div>
-                                    <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-                                        selectedGlyph.pathData 
-                                            ? (isDarkMode ? 'bg-emerald-900/50 text-emerald-300' : 'bg-emerald-100 text-emerald-700')
-                                            : (isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-neutral-100 text-neutral-500')
-                                    }`}>
-                                        {selectedGlyph.pathData ? 'Desenhado' : 'Vazio'}
-                                    </span>
-                                </div>
-
-                                {/* Preview */}
-                                <div className={`rounded-xl border mb-4 relative ${
-                                    isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-neutral-100 border-neutral-200'
-                                }`}>
-                                    <div className="aspect-square flex items-center justify-center">
-                                        {renderGlyphPreview(selectedGlyph, 160)}
                                         {isDragging && (
-                                            <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/20 rounded-xl">
-                                                <p className="text-emerald-500 font-bold text-sm">Solte o SVG aqui</p>
+                                            <div className="absolute inset-0 flex items-center justify-center bg-card/80">
+                                                <p className="text-[14px] font-medium text-foreground">Solte o SVG aqui</p>
                                             </div>
                                         )}
                                     </div>
-                                    {/* Indicador visual do Advance Width */}
-                                    <div className={`h-2 rounded-b-xl relative overflow-hidden ${isDarkMode ? 'bg-slate-700' : 'bg-neutral-200'}`}>
-                                        <div 
-                                            className="h-full bg-blue-500 transition-all"
+                                    {/* Indicador visual da largura de avanço */}
+                                    <div
+                                        className="h-1 w-full rounded-pill bg-fill-2 overflow-hidden"
+                                        title={`Largura de avanço: ${selectedGlyph.advanceWidth} u`}
+                                    >
+                                        <div
+                                            className="h-full rounded-pill bg-foreground transition-[width] duration-base ease-out"
                                             style={{ width: `${Math.min((selectedGlyph.advanceWidth / (metadata.unitsPerEm || 1000)) * 100, 100)}%` }}
-                                            title={`Advance Width: ${selectedGlyph.advanceWidth}u`}
                                         />
                                     </div>
                                 </div>
 
-                                {/* Acoes */}
-                                <div className="space-y-2">
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        accept=".svg"
-                                        onChange={handleSvgUpload}
-                                        className="hidden"
-                                    />
-                                    <button
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className={`w-full py-2.5 rounded-xl font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 ${btnPrimary}`}
-                                    >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                                        </svg>
-                                        Load SVG
-                                    </button>
-                                    
-                                    <div className="grid grid-cols-3 gap-2">
+                                {/* Informações, ações e métricas */}
+                                <div className="flex-1 min-w-0 flex flex-col gap-5">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-center gap-4 min-w-0">
+                                            <span className="text-[44px] leading-none font-normal text-foreground">{selectedGlyph.char}</span>
+                                            <div className="min-w-0">
+                                                <p className="text-[16px] text-foreground truncate">{selectedGlyph.name}</p>
+                                                <p className="text-[12px] text-muted-foreground tabular">
+                                                    U+{selectedGlyph.unicode.toString(16).toUpperCase().padStart(4, '0')}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span className={cx('chip shrink-0', selectedGlyph.pathData ? 'chip-invert' : 'chip-outline')}>
+                                            {selectedGlyph.pathData ? 'Desenhado' : 'Vazio'}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
                                         <button
-                                            onClick={handlePaste}
-                                            className={`py-2 rounded-xl font-bold text-xs uppercase border ${btnSecondary}`}
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="ctl ctl-filled"
                                         >
-                                            Paste
+                                            <Upload className="w-4 h-4" aria-hidden="true" />
+                                            Carregar SVG
+                                        </button>
+                                        <button type="button" onClick={handlePaste} className="ctl ctl-outline">
+                                            <ClipboardPaste className="w-4 h-4" aria-hidden="true" />
+                                            Colar
                                         </button>
                                         <button
+                                            type="button"
                                             onClick={handleClearGlyph}
                                             disabled={!selectedGlyph.pathData}
-                                            className={`py-2 rounded-xl font-bold text-xs uppercase border ${btnSecondary} disabled:opacity-40`}
+                                            className="ctl ctl-outline"
                                         >
+                                            <Eraser className="w-4 h-4" aria-hidden="true" />
                                             Limpar
                                         </button>
-                                        <button
-                                            onClick={onSwitchToAdvanced}
-                                            className={`py-2 rounded-xl font-bold text-xs uppercase border ${btnSecondary}`}
-                                        >
+                                        <button type="button" onClick={onSwitchToAdvanced} className="ctl ctl-outline">
+                                            <PenTool className="w-4 h-4" aria-hidden="true" />
                                             Editar
                                         </button>
                                     </div>
-                                </div>
 
-                                {/* Metricas */}
-                                <div className={`mt-4 p-3 rounded-xl ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
-                                    <div className="flex justify-between items-center mb-2">
-                                        <p className={`text-[10px] font-bold uppercase tracking-wider ${textSub}`}>Metrics</p>
-                                        <button
-                                            onClick={handleRecalculateCurrentWidth}
-                                            disabled={!selectedGlyph.pathData}
-                                            className={`text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wider ${
-                                                selectedGlyph.pathData
-                                                    ? (isDarkMode ? 'bg-blue-900/50 text-blue-300 hover:bg-blue-900' : 'bg-blue-100 text-blue-700 hover:bg-blue-200')
-                                                    : 'opacity-40 cursor-not-allowed ' + (isDarkMode ? 'bg-slate-700 text-slate-500' : 'bg-neutral-200 text-neutral-400')
-                                            }`}
-                                            title="Recalcular Advance Width automaticamente"
-                                        >
-                                            Auto Width
-                                        </button>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                        <div>
-                                            <label className={`text-[10px] font-bold uppercase ${textSub}`}>Width</label>
-                                            <input
-                                                type="number"
-                                                value={selectedGlyph.advanceWidth}
-                                                onChange={(e) => onUpdateGlyph(selectedGlyph.char, { advanceWidth: parseInt(e.target.value) || 0 })}
-                                                className={`w-full mt-1 px-2 py-1.5 rounded-lg border text-center font-bold text-sm outline-none ${inputBg}`}
-                                            />
+                                    <div className="hairline-t pt-4 flex flex-col gap-3">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="label">Métricas</span>
+                                            <button
+                                                type="button"
+                                                onClick={handleRecalculateCurrentWidth}
+                                                disabled={!selectedGlyph.pathData}
+                                                className="ctl ctl-sm ctl-gray"
+                                                title="Recalcular a largura de avanço pela forma do glifo"
+                                            >
+                                                Largura automática
+                                            </button>
                                         </div>
-                                        <div>
-                                            <label className={`text-[10px] font-bold uppercase ${textSub}`}>Offset X</label>
-                                            <input
-                                                type="number"
-                                                value={selectedGlyph.leftSideBearing}
-                                                onChange={(e) => onUpdateGlyph(selectedGlyph.char, { leftSideBearing: parseInt(e.target.value) || 0 })}
-                                                className={`w-full mt-1 px-2 py-1.5 rounded-lg border text-center font-bold text-sm outline-none ${inputBg}`}
-                                            />
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <Field label="Largura">
+                                                <input
+                                                    type="number"
+                                                    value={selectedGlyph.advanceWidth}
+                                                    onChange={(e) => onUpdateGlyph(selectedGlyph.char, { advanceWidth: parseInt(e.target.value) || 0 })}
+                                                    className="field tabular"
+                                                />
+                                            </Field>
+                                            <Field label="Deslocamento X">
+                                                <input
+                                                    type="number"
+                                                    value={selectedGlyph.leftSideBearing}
+                                                    onChange={(e) => onUpdateGlyph(selectedGlyph.char, { leftSideBearing: parseInt(e.target.value) || 0 })}
+                                                    className="field tabular"
+                                                />
+                                            </Field>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         ) : (
-                            <div className={`text-center ${textSub}`}>
-                                <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                                </svg>
-                                <p className="font-bold">Select a glyph</p>
-                                <p className="text-sm mt-1">Click on the list beside</p>
+                            <div className="py-10 flex flex-col items-center text-center gap-2 text-muted-foreground">
+                                <MousePointerClick className="w-10 h-10 opacity-40 mb-2" aria-hidden="true" />
+                                <p className="text-[16px] text-foreground">{isDragging ? 'Selecione um glifo antes de soltar' : 'Selecione um glifo'}</p>
+                                <p className="text-[14px]">Escolha um na lista ao lado para carregar o desenho.</p>
                             </div>
                         )}
-                    </div>
+                    </section>
                 </div>
 
-                {/* Painel Direito - Espacamento e Kerning */}
-                <div className={`w-64 border-l flex flex-col ${borderCol} ${bgPanel}`}>
-                    <div className="p-4 space-y-5 overflow-y-auto flex-1">
-                        
-                        {/* Espacamento */}
-                        <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Espacamento</p>
-                            
-                            {/* Letter Spacing */}
-                            <div className="mb-4">
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className={`text-xs font-semibold ${textSub}`}>Entre Letras</label>
-                                    <span className="text-xs font-mono">{letterSpacing}</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="-100"
-                                    max="200"
-                                    value={letterSpacing}
-                                    onChange={(e) => setLetterSpacing(parseInt(e.target.value))}
-                                    className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                />
-                            </div>
+                {/* Painel direito: espaçamento e kerning */}
+                <aside className="flex flex-col gap-5 min-w-0 lg:w-80 lg:shrink-0 lg:min-h-0 lg:overflow-y-auto">
+                    <Card label="Espaçamento" className="p-5 shrink-0" bodyClassName="gap-4">
+                        <Field label="Entre letras" value={letterSpacing}>
+                            <input
+                                type="range"
+                                min="-100"
+                                max="200"
+                                value={letterSpacing}
+                                onChange={(e) => setLetterSpacing(parseInt(e.target.value))}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                        <Field label="Entre palavras" value={wordSpacing}>
+                            <input
+                                type="range"
+                                min="-100"
+                                max="300"
+                                value={wordSpacing}
+                                onChange={(e) => setWordSpacing(parseInt(e.target.value))}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                        <Field
+                            label="Entre linhas"
+                            value={`${lineGap} u (${Math.round((lineGap / (metadata.unitsPerEm || 1000)) * 100)}%)`}
+                        >
+                            <input
+                                type="range"
+                                min="0"
+                                max="1000"
+                                step="10"
+                                value={lineGap}
+                                onChange={(e) => onUpdateMetadata(prev => ({ ...prev, lineGap: parseInt(e.target.value) }))}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                    </Card>
 
-                            {/* Word Spacing */}
-                            <div className="mb-4">
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className={`text-xs font-semibold ${textSub}`}>Entre Palavras</label>
-                                    <span className="text-xs font-mono">{wordSpacing}</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="-100"
-                                    max="300"
-                                    value={wordSpacing}
-                                    onChange={(e) => setWordSpacing(parseInt(e.target.value))}
-                                    className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                />
-                            </div>
+                    <Card label="Kerning automático" className="p-5 shrink-0" bodyClassName="gap-4">
+                        <Field label="Predefinição">
+                            <select
+                                value={kerningPreset}
+                                onChange={(e) => applyKerningPreset(e.target.value as KerningPreset)}
+                                className="field"
+                            >
+                                <optgroup label="Básico">
+                                    <option value="none">Sem kerning</option>
+                                    <option value="tight">Apertado</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="loose">Solto</option>
+                                </optgroup>
+                                <optgroup label="Automático">
+                                    <option value="auto-smart">Inteligente (geometria)</option>
+                                    <option value="auto-common">Comum (pares)</option>
+                                </optgroup>
+                                <optgroup label="Profissional (fontes reais)">
+                                    <option value="professional">Profissional (tabelas reais)</option>
+                                    <option value="hybrid">Híbrido (tabelas e geometria)</option>
+                                </optgroup>
+                                <optgroup label="Modelos profissionais">
+                                    {KERNING_TEMPLATES.slice(0, 8).map(t => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                </optgroup>
+                            </select>
+                        </Field>
 
-                            {/* Line Gap (entrelinhas) */}
-                            <div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className={`text-xs font-semibold ${textSub}`}>Entre Linhas</label>
-                                    <span className="text-xs font-mono">{lineGap} u ({Math.round((lineGap / (metadata.unitsPerEm || 1000)) * 100)}%)</span>
+                        <Field label="Intensidade" value={`${(kerningIntensity * 100).toFixed(0)}%`}>
+                            <input
+                                type="range"
+                                min="0.3"
+                                max="2"
+                                step="0.1"
+                                value={kerningIntensity}
+                                onChange={(e) => setKerningIntensity(parseFloat(e.target.value))}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+
+                        {/* Estilo tipográfico, para os modos profissionais */}
+                        {(kerningPreset === 'professional' || kerningPreset === 'hybrid') && (
+                            <Field label="Estilo tipográfico" hint="Ajusta o kerning ao estilo da fonte.">
+                                <select
+                                    value={fontStyle}
+                                    onChange={(e) => {
+                                        const newStyle = e.target.value as FontStyle;
+                                        setFontStyle(newStyle);
+                                        // Reaplicar kerning automaticamente com novo estilo
+                                        setTimeout(() => {
+                                            if (kerningPreset === 'professional') {
+                                                const profPairs = generateProfessionalKerning(glyphs, {
+                                                    style: newStyle,
+                                                    intensity: kerningIntensity
+                                                });
+                                                setKerningPairs(profPairs);
+                                                pushNotice(`Kerning ${newStyle} aplicado: ${profPairs.length} pares.`, 'success');
+                                            } else if (kerningPreset === 'hybrid') {
+                                                const hybridPairs = generateHybridKerning(glyphs, {
+                                                    style: newStyle,
+                                                    intensity: kerningIntensity
+                                                });
+                                                setKerningPairs(hybridPairs);
+                                                pushNotice(`Kerning híbrido ${newStyle} aplicado: ${hybridPairs.length} pares.`, 'success');
+                                            }
+                                        }, 0);
+                                    }}
+                                    className="field"
+                                >
+                                    <option value="geometric-sans">Sans geométrica (Futura, Avenir)</option>
+                                    <option value="humanist-sans">Sans humanista (Frutiger, Myriad)</option>
+                                    <option value="neo-grotesque">Neogrotesca (Helvetica, Arial)</option>
+                                    <option value="serif-oldstyle">Serifa antiga (Garamond, Caslon)</option>
+                                    <option value="serif-modern">Serifa moderna (Bodoni, Didot)</option>
+                                    <option value="slab">Serifa egípcia (Rockwell, Clarendon)</option>
+                                    <option value="display">Display (decorativa)</option>
+                                    <option value="script">Script (manuscrita)</option>
+                                </select>
+                            </Field>
+                        )}
+
+                        {/* Análise de qualidade do kerning */}
+                        {kerningQuality && kerningPairs.length > 0 && (
+                            <div className="bg-muted rounded-lg p-4 flex flex-col gap-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="label">Análise de qualidade</span>
+                                    <span className="text-[28px] leading-none font-normal text-foreground" aria-label={`Nota ${kerningQuality.grade}`}>
+                                        {kerningQuality.grade}
+                                    </span>
                                 </div>
+                                <div>
+                                    <ValueRow label="Pares" value={kerningPairs.length} />
+                                    <ValueRow label="Cobertura" value={`${kerningQuality.coverage.toFixed(0)}%`} last />
+                                </div>
+                                {kerningQuality.suggestions.length > 0 && (
+                                    <p className="text-[12px] text-muted-foreground">{kerningQuality.suggestions[0]}</p>
+                                )}
+                                {kerningQuality.strongestPairs.length > 0 && (
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[12px] text-muted-foreground">Maiores ajustes</span>
+                                        <ul className="flex flex-col">
+                                            {kerningQuality.strongestPairs.slice(0, 6).map((sp, i) => (
+                                                <li key={i} className="row justify-between px-0 hover:bg-transparent">
+                                                    <span>{sp.pair}</span>
+                                                    <span className="tabular text-muted-foreground">{sp.value > 0 ? '+' : ''}{sp.value}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {Object.keys(kerning).length > 0 && (
+                            <ValueRow label="Pares ativos" value={Object.keys(kerning).length} last />
+                        )}
+
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => applyKerningPreset(kerningPreset)}
+                                className="ctl ctl-outline flex-1"
+                            >
+                                <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                                Reaplicar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleResetKerning}
+                                className="ctl ctl-danger flex-1"
+                            >
+                                <RotateCcw className="w-4 h-4" aria-hidden="true" />
+                                Zerar
+                            </button>
+                        </div>
+                    </Card>
+
+                    <Card label="Largura de avanço global" className="p-5 shrink-0" bodyClassName="gap-4">
+                        <Segmented<AdvanceWidthMode>
+                            ariaLabel="Modo da largura de avanço"
+                            items={widthModes}
+                            value={advanceWidthMode}
+                            onChange={setAdvanceWidthMode}
+                            className="w-full [&>button]:flex-1"
+                        />
+
+                        {advanceWidthMode === 'auto' && (
+                            <Field label="Margem lateral" value={`${globalSideMargin} u`} hint="Espaço extra em volta do glifo.">
                                 <input
                                     type="range"
                                     min="0"
-                                    max="1000"
-                                    step="10"
-                                    value={lineGap}
-                                    onChange={(e) => onUpdateMetadata(prev => ({ ...prev, lineGap: parseInt(e.target.value) }))}
-                                    className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
+                                    max="150"
+                                    value={globalSideMargin}
+                                    onChange={(e) => setGlobalSideMargin(parseInt(e.target.value))}
+                                    className="tool-slider w-full"
                                 />
-                            </div>
-                        </div>
+                            </Field>
+                        )}
 
-                        {/* Kerning */}
-                        <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Automatic Kerning</p>
-                            
-                            {/* Preset Selector */}
-                            <div className="mb-4">
-                                <label className={`text-xs font-semibold block mb-2 ${textSub}`}>Preset</label>
-                                <select
-                                    value={kerningPreset}
-                                    onChange={(e) => applyKerningPreset(e.target.value as KerningPreset)}
-                                    className={`w-full px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
-                                >
-                                    <optgroup label="Basico">
-                                        <option value="none">Sem kerning</option>
-                                        <option value="tight">Tight (apertado)</option>
-                                        <option value="normal">Normal</option>
-                                        <option value="loose">Loose (solto)</option>
-                                    </optgroup>
-                                    <optgroup label="Automatic">
-                                        <option value="auto-smart">Auto Smart (geometry)</option>
-                                        <option value="auto-common">Auto Common (pairs)</option>
-                                    </optgroup>
-                                    <optgroup label="🌟 Professional (Real Fonts)">
-                                        <option value="professional">🎯 Professional (Real Tables)</option>
-                                        <option value="hybrid">⚡ Hybrid (Tables + Geometry)</option>
-                                    </optgroup>
-                                    <optgroup label="Professional Templates">
-                                        {KERNING_TEMPLATES.slice(0, 8).map(t => (
-                                            <option key={t.id} value={t.id}>{t.name}</option>
-                                        ))}
-                                    </optgroup>
-                                </select>
-                            </div>
-
-                            {/* Intensity */}
-                            <div className="mb-4">
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className={`text-xs font-semibold ${textSub}`}>Intensity</label>
-                                    <span className="text-xs font-mono">{(kerningIntensity * 100).toFixed(0)}%</span>
-                                </div>
+                        {advanceWidthMode === 'fixed' && (
+                            <Field label="Largura fixa" value={`${globalFixedWidth} u`} hint="Para fontes monoespaçadas.">
                                 <input
                                     type="range"
-                                    min="0.3"
-                                    max="2"
-                                    step="0.1"
-                                    value={kerningIntensity}
-                                    onChange={(e) => setKerningIntensity(parseFloat(e.target.value))}
-                                    className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
+                                    min="300"
+                                    max="1000"
+                                    value={globalFixedWidth}
+                                    onChange={(e) => setGlobalFixedWidth(parseInt(e.target.value))}
+                                    className="tool-slider w-full"
                                 />
-                            </div>
+                            </Field>
+                        )}
 
-                            {/* Font Style Selector - Para modos profissionais */}
-                            {(kerningPreset === 'professional' || kerningPreset === 'hybrid') && (
-                                <div className="mb-4">
-                                    <label className={`text-xs font-semibold block mb-2 ${textSub}`}>Font Style</label>
-                                    <select
-                                        value={fontStyle}
-                                        onChange={(e) => {
-                                            const newStyle = e.target.value as FontStyle;
-                                            setFontStyle(newStyle);
-                                            // Reaplicar kerning automaticamente com novo estilo
-                                            setTimeout(() => {
-                                                if (kerningPreset === 'professional') {
-                                                    const profPairs = generateProfessionalKerning(glyphs, {
-                                                        style: newStyle,
-                                                        intensity: kerningIntensity
-                                                    });
-                                                    setKerningPairs(profPairs);
-                                                    pushNotice(`Kerning ${newStyle} applied: ${profPairs.length} pairs`, 'success');
-                                                } else if (kerningPreset === 'hybrid') {
-                                                    const hybridPairs = generateHybridKerning(glyphs, {
-                                                        style: newStyle,
-                                                        intensity: kerningIntensity
-                                                    });
-                                                    setKerningPairs(hybridPairs);
-                                                    pushNotice(`Hybrid kerning ${newStyle} applied: ${hybridPairs.length} pairs`, 'success');
-                                                }
-                                            }, 0);
-                                        }}
-                                        className={`w-full px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
-                                    >
-                                        <option value="geometric-sans">Geometric Sans (Futura, Avenir)</option>
-                                        <option value="humanist-sans">Humanist Sans (Frutiger, Myriad)</option>
-                                        <option value="neo-grotesque">Neo-Grotesque (Helvetica, Arial)</option>
-                                        <option value="serif-oldstyle">Old Style Serif (Garamond, Caslon)</option>
-                                        <option value="serif-modern">Modern Serif (Bodoni, Didot)</option>
-                                        <option value="slab">Slab Serif (Rockwell, Clarendon)</option>
-                                        <option value="display">Display (Decorative)</option>
-                                        <option value="script">Script (Handwritten)</option>
-                                    </select>
-                                    <p className={`text-[10px] mt-1 ${textSub}`}>Adjusts kerning for the typographic style</p>
-                                </div>
-                            )}
+                        {advanceWidthMode === 'scale' && (
+                            <Field label="Escala" value={`${globalWidthScale}%`} hint="Expande ou comprime na mesma proporção.">
+                                <input
+                                    type="range"
+                                    min="50"
+                                    max="150"
+                                    value={globalWidthScale}
+                                    onChange={(e) => setGlobalWidthScale(parseInt(e.target.value))}
+                                    className="tool-slider w-full"
+                                />
+                            </Field>
+                        )}
 
-                            {/* Kerning Quality Analysis */}
-                            {kerningQuality && kerningPairs.length > 0 && (
-                                <div className={`p-3 rounded-lg mb-4 ${
-                                    kerningQuality.grade === 'A' ? (isDarkMode ? 'bg-green-900/30 border border-green-700' : 'bg-green-50 border border-green-200') :
-                                    kerningQuality.grade === 'B' ? (isDarkMode ? 'bg-blue-900/30 border border-blue-700' : 'bg-blue-50 border border-blue-200') :
-                                    kerningQuality.grade === 'C' ? (isDarkMode ? 'bg-yellow-900/30 border border-yellow-700' : 'bg-yellow-50 border border-yellow-200') :
-                                    (isDarkMode ? 'bg-red-900/30 border border-red-700' : 'bg-red-50 border border-red-200')
-                                }`}>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <p className={`text-[10px] font-bold uppercase ${textSub}`}>Quality Analysis</p>
-                                        <span className={`text-xl font-black ${
-                                            kerningQuality.grade === 'A' ? 'text-green-500' :
-                                            kerningQuality.grade === 'B' ? 'text-blue-500' :
-                                            kerningQuality.grade === 'C' ? 'text-yellow-500' :
-                                            'text-red-500'
-                                        }`}>{kerningQuality.grade}</span>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div>
-                                            <span className={textSub}>Pairs:</span>
-                                            <span className="font-bold ml-1">{kerningPairs.length}</span>
-                                        </div>
-                                        <div>
-                                            <span className={textSub}>Coverage:</span>
-                                            <span className="font-bold ml-1">{kerningQuality.coverage.toFixed(0)}%</span>
-                                        </div>
-                                    </div>
-                                    {kerningQuality.suggestions.length > 0 && (
-                                        <div className="mt-2">
-                                            <p className={`text-[10px] ${textSub}`}>💡 {kerningQuality.suggestions[0]}</p>
-                                        </div>
-                                    )}
-                                    {kerningQuality.strongestPairs.length > 0 && (
-                                        <div className="mt-2">
-                                            <p className={`text-[10px] font-bold ${textSub}`}>Maiores ajustes:</p>
-                                            <div className="flex flex-wrap gap-1 mt-1">
-                                                {kerningQuality.strongestPairs.slice(0, 6).map((sp, i) => (
-                                                    <span key={i} className={`px-1.5 py-0.5 rounded text-[9px] font-mono ${isDarkMode ? 'bg-slate-700' : 'bg-white'}`}>
-                                                        {sp.pair} {sp.value > 0 ? '+' : ''}{sp.value}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
+                        <button type="button" onClick={handleApplyGlobalWidth} className="ctl ctl-filled w-full">
+                            Aplicar a todos
+                        </button>
+                    </Card>
 
-                            {/* Stats */}
-                            {Object.keys(kerning).length > 0 && (
-                                <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
-                                    <p className={`text-[10px] font-bold uppercase mb-1 ${textSub}`}>Ativo</p>
-                                    <p className="text-sm font-bold">{Object.keys(kerning).length} pairs</p>
-                                </div>
-                            )}
-
-                            {/* Aplicar botao */}
-                            <div className="flex gap-2 mt-3">
-                                <button
-                                    onClick={() => applyKerningPreset(kerningPreset)}
-                                    className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider border ${btnSecondary}`}
-                                >
-                                    Reapply
-                                </button>
-                                <button
-                                    onClick={handleResetKerning}
-                                    className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider border ${isDarkMode ? 'border-red-800 text-red-400 hover:bg-red-900/30' : 'border-red-200 text-red-600 hover:bg-red-50'}`}
-                                >
-                                    Reset
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Advance Width Global */}
-                        <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Advance Width Global</p>
-                            
-                            {/* Modo Selector */}
-                            <div className="mb-4">
-                                <label className={`text-xs font-semibold block mb-2 ${textSub}`}>Modo</label>
-                                <div className="grid grid-cols-3 gap-1">
-                                    {(['auto', 'fixed', 'scale'] as AdvanceWidthMode[]).map(mode => (
-                                        <button
-                                            key={mode}
-                                            onClick={() => setAdvanceWidthMode(mode)}
-                                            className={`py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                                                advanceWidthMode === mode
-                                                    ? (isDarkMode ? 'bg-white text-black' : 'bg-black text-white')
-                                                    : `border ${btnSecondary}`
-                                            }`}
-                                        >
-                                            {mode === 'auto' ? 'Auto' : mode === 'fixed' ? 'Fixed' : 'Scale'}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Slider baseado no modo */}
-                            {advanceWidthMode === 'auto' && (
-                                <div className="mb-4">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>Side Margin</label>
-                                        <span className="text-xs font-mono">{globalSideMargin}u</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="150"
-                                        value={globalSideMargin}
-                                        onChange={(e) => setGlobalSideMargin(parseInt(e.target.value))}
-                                        className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                    />
-                                    <p className={`text-[10px] mt-1 ${textSub}`}>Extra space around the glyph</p>
-                                </div>
-                            )}
-
-                            {advanceWidthMode === 'fixed' && (
-                                <div className="mb-4">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>Fixed Width</label>
-                                        <span className="text-xs font-mono">{globalFixedWidth}u</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="300"
-                                        max="1000"
-                                        value={globalFixedWidth}
-                                        onChange={(e) => setGlobalFixedWidth(parseInt(e.target.value))}
-                                        className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                    />
-                                    <p className={`text-[10px] mt-1 ${textSub}`}>Para fontes monospace</p>
-                                </div>
-                            )}
-
-                            {advanceWidthMode === 'scale' && (
-                                <div className="mb-4">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>Scale %</label>
-                                        <span className="text-xs font-mono">{globalWidthScale}%</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="50"
-                                        max="150"
-                                        value={globalWidthScale}
-                                        onChange={(e) => setGlobalWidthScale(parseInt(e.target.value))}
-                                        className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                    />
-                                    <p className={`text-[10px] mt-1 ${textSub}`}>Expands/compresses proportionally</p>
-                                </div>
-                            )}
-
-                            {/* Aplicar a todos */}
+                    <Card label="Centralização" className="p-5 shrink-0" bodyClassName="gap-4">
+                        <p className="text-[13px] text-muted-foreground">
+                            Centraliza os glifos dentro da largura de avanço.
+                        </p>
+                        <div className="flex gap-2">
                             <button
-                                onClick={handleApplyGlobalWidth}
-                                className={`w-full py-2 rounded-lg font-bold text-xs uppercase tracking-wider ${btnPrimary}`}
+                                type="button"
+                                onClick={handleCenterCurrentGlyph}
+                                disabled={!selectedGlyph?.pathData}
+                                className="ctl ctl-outline flex-1"
                             >
-                                Apply to All
+                                Glifo atual
+                            </button>
+                            <button type="button" onClick={handleCenterAllGlyphs} className="ctl ctl-outline flex-1">
+                                Todos
                             </button>
                         </div>
+                    </Card>
 
-                        {/* Centering */}
-                        <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>⚖️ Centering</p>
-                            <p className={`text-[10px] mb-3 ${textSub}`}>
-                                Automatically centers glyphs within their boxes (advance width).
-                            </p>
-                            
-                            {/* Botões de centralização */}
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleCenterCurrentGlyph}
-                                    disabled={!selectedGlyph?.pathData}
-                                    className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider border transition-colors ${
-                                        selectedGlyph?.pathData 
-                                            ? btnSecondary 
-                                            : 'opacity-50 cursor-not-allowed border-gray-300 text-gray-400'
-                                    }`}
-                                >
-                                    Current
-                                </button>
-                                <button
-                                    onClick={handleCenterAllGlyphs}
-                                    className={`flex-1 py-2 rounded-lg font-bold text-xs uppercase tracking-wider ${btnPrimary}`}
-                                >
-                                    All
-                                </button>
-                            </div>
-                        </div>
+                    <Card label="Fonte" className="p-5 shrink-0" bodyClassName="gap-4">
+                        <Field label="Estilo">
+                            <input
+                                type="text"
+                                value={metadata.styleName}
+                                onChange={(e) => onUpdateMetadata(prev => ({ ...prev, styleName: e.target.value }))}
+                                className="field"
+                            />
+                        </Field>
+                    </Card>
 
-                        {/* Metricas da Fonte */}
-                        <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Font</p>
-                            
-                            <div className="space-y-3">
-                                <div>
-                                    <label className={`text-xs font-semibold ${textSub}`}>Family</label>
-                                    <input
-                                        type="text"
-                                        value={metadata.familyName}
-                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, familyName: e.target.value }))}
-                                        className={`w-full mt-1 px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
-                                    />
-                                </div>
-                                <div>
-                                    <label className={`text-xs font-semibold ${textSub}`}>Style</label>
-                                    <input
-                                        type="text"
-                                        value={metadata.styleName}
-                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, styleName: e.target.value }))}
-                                        className={`w-full mt-1 px-3 py-2 rounded-lg border text-sm outline-none ${inputBg}`}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                    <Card label="Métricas globais" className="p-5 shrink-0" bodyClassName="gap-4">
+                        <Field label="Unidades por eme (UPM)" value={metadata.unitsPerEm}>
+                            <input
+                                type="range"
+                                min="500"
+                                max="2000"
+                                step="100"
+                                value={metadata.unitsPerEm}
+                                onChange={(e) => onUpdateMetadata(prev => ({ ...prev, unitsPerEm: parseInt(e.target.value) }))}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                        <Field label="Ascendente" value={metadata.ascender}>
+                            <input
+                                type="range"
+                                min="500"
+                                max="1000"
+                                value={metadata.ascender}
+                                onChange={(e) => onUpdateMetadata(prev => ({ ...prev, ascender: parseInt(e.target.value) }))}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                        <Field label="Descendente" value={metadata.descender}>
+                            <input
+                                type="range"
+                                min="-500"
+                                max="0"
+                                value={metadata.descender}
+                                onChange={(e) => onUpdateMetadata(prev => ({ ...prev, descender: parseInt(e.target.value) }))}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                    </Card>
 
-                        {/* Metricas Globais */}
-                        <div className={`p-4 rounded-xl border ${cardBg}`}>
-                            <p className={`text-[10px] font-bold uppercase mb-4 tracking-wider ${textSub}`}>Global Metrics</p>
-                            
-                            <div className="space-y-3">
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>UPM</label>
-                                        <span className="text-xs font-mono">{metadata.unitsPerEm}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="500"
-                                        max="2000"
-                                        step="100"
-                                        value={metadata.unitsPerEm}
-                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, unitsPerEm: parseInt(e.target.value) }))}
-                                        className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                    />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>Ascender</label>
-                                        <span className="text-xs font-mono">{metadata.ascender}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="500"
-                                        max="1000"
-                                        value={metadata.ascender}
-                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, ascender: parseInt(e.target.value) }))}
-                                        className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                    />
-                                </div>
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className={`text-xs font-semibold ${textSub}`}>Descender</label>
-                                        <span className="text-xs font-mono">{metadata.descender}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="-500"
-                                        max="0"
-                                        value={metadata.descender}
-                                        onChange={(e) => onUpdateMetadata(prev => ({ ...prev, descender: parseInt(e.target.value) }))}
-                                        className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Dicas */}
-                        <div className={`p-4 rounded-xl ${isDarkMode ? 'bg-slate-800/50' : 'bg-neutral-100'}`}>
-                            <p className={`text-xs font-bold mb-2 ${textSub}`}>Tips</p>
-                            <ul className={`text-xs space-y-1 ${textSub}`}>
-                                <li>- Drag SVGs onto the glyph</li>
-                                <li>- Paste paths with Ctrl+V</li>
-                                <li>- Use Auto Smart for intelligent kerning</li>
-                                <li>- Advanced mode for detailed editing</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+                    <Card label="Dicas" tone="quiet" className="p-5 shrink-0">
+                        <ul className="text-[13px] text-muted-foreground flex flex-col gap-1.5">
+                            <li>Arraste arquivos SVG sobre o glifo selecionado.</li>
+                            <li>Cole traçados com Colar ou Ctrl+V.</li>
+                            <li>Use o kerning inteligente para um ajuste pela geometria.</li>
+                            <li>O modo avançado permite editar cada glifo em detalhe.</li>
+                        </ul>
+                    </Card>
+                </aside>
             </div>
 
-            {/* Modal de Auto-Configuração */}
-            {showAutoConfigModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className={`${cardBg} border rounded-xl w-full max-w-xl max-h-[90vh] overflow-y-auto m-4 shadow-2xl`}>
-                        {/* Header do Modal */}
-                        <div className={`p-4 border-b ${borderCol} flex items-center justify-between`}>
-                            <div className="flex items-center gap-2">
-                                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                                </svg>
-                                <div>
-                                    <h2 className="text-lg font-bold">Auto Configuration</h2>
-                                    <p className={`text-xs ${textSub}`}>Analyzes geometry and configures spacing/kerning</p>
-                                </div>
+            {/* Folha de configuração automática */}
+            <Sheet
+                open={showAutoConfigModal}
+                onClose={closeAutoConfig}
+                title="Configuração automática"
+                description="Analisa a geometria e configura espaçamento e kerning."
+                size="max-w-xl"
+                bodyClassName="flex flex-col gap-5"
+                footer={
+                    <>
+                        <button type="button" onClick={closeAutoConfig} className="ctl ctl-outline ctl-lg">
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleAutoConfig}
+                            disabled={isAutoConfiguring}
+                            className="ctl ctl-filled ctl-lg"
+                        >
+                            {isAutoConfiguring ? <Spinner /> : <Check className="w-4 h-4" aria-hidden="true" />}
+                            {isAutoConfiguring ? 'Processando' : 'Aplicar configuração'}
+                        </button>
+                    </>
+                }
+            >
+                {showAutoConfigModal && (() => {
+                    const quality = analyzeFontQuality(glyphs, metadata);
+                    const grade = quality.score >= 90 ? 'A' : quality.score >= 80 ? 'B' : quality.score >= 70 ? 'C' : quality.score >= 60 ? 'D' : 'F';
+                    return (
+                        <div className="bg-muted rounded-lg p-4 flex flex-col gap-4">
+                            <span className="label">Análise atual</span>
+                            <div className="grid grid-cols-3 gap-4">
+                                <Metric value={`${quality.score}/100`} caption="Pontuação" size="sm" />
+                                <Metric value={glyphs.filter(g => g.pathData).length} caption="Glifos" size="sm" />
+                                <Metric value={grade} caption="Nota" size="sm" />
                             </div>
-                            <button
-                                onClick={() => setShowAutoConfigModal(false)}
-                                className={`p-2 rounded-lg hover:bg-opacity-80 ${btnSecondary} border`}
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Corpo do Modal */}
-                        <div className="p-4 space-y-4">
-                            {/* Análise atual */}
-                            {(() => {
-                                const quality = analyzeFontQuality(glyphs, metadata);
-                                return (
-                                    <div className={`p-3 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-neutral-100'}`}>
-                                        <p className={`text-xs font-bold mb-2 ${textSub}`}>Current Analysis</p>
-                                        <div className="grid grid-cols-3 gap-2 text-xs">
-                                            <div>
-                                                <span className={textSub}>Score:</span>
-                                                <span className={`ml-1 font-bold ${
-                                                    quality.score >= 80 ? 'text-emerald-500' :
-                                                    quality.score >= 60 ? 'text-yellow-500' :
-                                                    'text-red-500'
-                                                }`}>{quality.score}/100</span>
-                                            </div>
-                                            <div>
-                                                <span className={textSub}>Glyphs:</span>
-                                                <span className="ml-1 font-bold">{glyphs.filter(g => g.pathData).length}</span>
-                                            </div>
-                                            <div>
-                                                <span className={textSub}>Grade:</span>
-                                                <span className={`ml-1 font-bold ${
-                                                    quality.score >= 90 ? 'text-emerald-500' :
-                                                    quality.score >= 70 ? 'text-yellow-500' :
-                                                    'text-orange-500'
-                                                }`}>{quality.score >= 90 ? 'A' : quality.score >= 80 ? 'B' : quality.score >= 70 ? 'C' : quality.score >= 60 ? 'D' : 'F'}</span>
-                                            </div>
-                                        </div>
-                                        {quality.suggestions.length > 0 && (
-                                            <div className="mt-2 pt-2 border-t border-current border-opacity-10">
-                                                <p className={`text-xs ${textSub} mb-1`}>Suggestions:</p>
-                                                <ul className={`text-xs ${textSub} space-y-0.5`}>
-                                                    {quality.suggestions.slice(0, 3).map((s, i) => (
-                                                        <li key={i}>• {s}</li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Opções */}
-                            <div className="space-y-3">
-                                <p className={`text-xs font-bold uppercase tracking-wider ${textSub}`}>O que configurar?</p>
-                                
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={autoConfigOptions.normalizeHeights}
-                                        onChange={(e) => setAutoConfigOptions({...autoConfigOptions, normalizeHeights: e.target.checked})}
-                                        className={`w-5 h-5 rounded ${accentColor}`}
-                                    />
-                                    <div>
-                                        <span className="text-sm font-medium">Normalize Heights</span>
-                                        <p className={`text-xs ${textSub}`}>Adjusts scale for consistent height ({autoConfigOptions.targetHeight}px)</p>
-                                    </div>
-                                </label>
-
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={autoConfigOptions.autoSpacing}
-                                        onChange={(e) => setAutoConfigOptions({...autoConfigOptions, autoSpacing: e.target.checked})}
-                                        className={`w-5 h-5 rounded ${accentColor}`}
-                                    />
-                                    <div>
-                                        <span className="text-sm font-medium">Automatic Spacing</span>
-                                        <p className={`text-xs ${textSub}`}>Calculates advance width, LSB and RSB based on geometry</p>
-                                    </div>
-                                </label>
-
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={autoConfigOptions.autoKerning}
-                                        onChange={(e) => setAutoConfigOptions({...autoConfigOptions, autoKerning: e.target.checked})}
-                                        className={`w-5 h-5 rounded ${accentColor}`}
-                                    />
-                                    <div>
-                                        <span className="text-sm font-medium">Automatic Kerning</span>
-                                        <p className={`text-xs ${textSub}`}>Generates kerning pairs based on shape analysis</p>
-                                    </div>
-                                </label>
-
-                                <label className="flex items-center gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={autoConfigOptions.optimizeMetrics}
-                                        onChange={(e) => setAutoConfigOptions({...autoConfigOptions, optimizeMetrics: e.target.checked})}
-                                        className={`w-5 h-5 rounded ${accentColor}`}
-                                    />
-                                    <div>
-                                        <span className="text-sm font-medium">Optimize Global Metrics</span>
-                                        <p className={`text-xs ${textSub}`}>Adjusts ascender/descender based on glyphs</p>
-                                    </div>
-                                </label>
-                            </div>
-
-                            {/* Configurações avançadas */}
-                            <details className={`p-3 rounded-lg border ${borderCol}`}>
-                                <summary className={`text-xs font-bold uppercase tracking-wider cursor-pointer ${textSub}`}>
-                                    Advanced Settings
-                                </summary>
-                                <div className="mt-3 space-y-3">
-                                    <div>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className={`text-xs font-semibold ${textSub}`}>Kerning Intensity</label>
-                                            <span className="text-xs font-mono">{(autoConfigOptions.kerningIntensity * 100).toFixed(0)}%</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="0.3"
-                                            max="2"
-                                            step="0.1"
-                                            value={autoConfigOptions.kerningIntensity}
-                                            onChange={(e) => setAutoConfigOptions({...autoConfigOptions, kerningIntensity: parseFloat(e.target.value)})}
-                                            className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className={`text-xs font-semibold ${textSub}`}>Target Height</label>
-                                            <span className="text-xs font-mono">{autoConfigOptions.targetHeight}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="500"
-                                            max="900"
-                                            step="50"
-                                            value={autoConfigOptions.targetHeight}
-                                            onChange={(e) => setAutoConfigOptions({...autoConfigOptions, targetHeight: parseInt(e.target.value)})}
-                                            className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <label className={`text-xs font-semibold ${textSub}`}>Side Margin</label>
-                                            <span className="text-xs font-mono">{autoConfigOptions.sideMargin}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="20"
-                                            max="150"
-                                            step="10"
-                                            value={autoConfigOptions.sideMargin}
-                                            onChange={(e) => setAutoConfigOptions({...autoConfigOptions, sideMargin: parseInt(e.target.value)})}
-                                            className={`w-full h-2 rounded-full appearance-none cursor-pointer ${sliderTrack} ${accentColor}`}
-                                        />
-                                    </div>
+                            {quality.suggestions.length > 0 && (
+                                <div className="hairline-t pt-3 flex flex-col gap-1">
+                                    <span className="text-[12px] text-muted-foreground">Sugestões</span>
+                                    <ul className="text-[13px] text-muted-foreground flex flex-col gap-1 list-disc pl-4">
+                                        {quality.suggestions.slice(0, 3).map((s, i) => (
+                                            <li key={i}>{s}</li>
+                                        ))}
+                                    </ul>
                                 </div>
-                            </details>
+                            )}
                         </div>
+                    );
+                })()}
 
-                        {/* Footer do Modal */}
-                        <div className={`p-4 border-t ${borderCol} flex justify-end gap-2`}>
-                            <button
-                                onClick={() => setShowAutoConfigModal(false)}
-                                className={`px-4 py-2 rounded-lg text-sm font-bold border ${btnSecondary}`}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleAutoConfig}
-                                disabled={isAutoConfiguring}
-                                className={`px-6 py-2 rounded-lg text-sm font-bold ${
-                                    isDarkMode 
-                                        ? 'bg-amber-600 text-white hover:bg-amber-500' 
-                                        : 'bg-amber-500 text-white hover:bg-amber-600'
-                                } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            >
-                                {isAutoConfiguring ? (
-                                    <span className="flex items-center gap-2">
-                                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                        </svg>
-                                        Processing...
-                                    </span>
-                                ) : (
-                                    <span className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                                            <path d="M20 6L9 17l-5-5" />
-                                        </svg>
-                                        Apply Auto Config
-                                    </span>
-                                )}
-                            </button>
-                        </div>
-                    </div>
+                <div className="flex flex-col gap-3">
+                    <span className="label">O que configurar</span>
+
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={autoConfigOptions.normalizeHeights}
+                            onChange={(e) => setAutoConfigOptions({...autoConfigOptions, normalizeHeights: e.target.checked})}
+                            className="ctl-check mt-0.5"
+                        />
+                        <span>
+                            <span className="block text-[14px] text-foreground">Normalizar alturas</span>
+                            <span className="block text-[12px] text-muted-foreground">Ajusta a escala para uma altura constante ({autoConfigOptions.targetHeight} u).</span>
+                        </span>
+                    </label>
+
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={autoConfigOptions.autoSpacing}
+                            onChange={(e) => setAutoConfigOptions({...autoConfigOptions, autoSpacing: e.target.checked})}
+                            className="ctl-check mt-0.5"
+                        />
+                        <span>
+                            <span className="block text-[14px] text-foreground">Espaçamento automático</span>
+                            <span className="block text-[12px] text-muted-foreground">Calcula largura de avanço, LSB e RSB pela geometria.</span>
+                        </span>
+                    </label>
+
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={autoConfigOptions.autoKerning}
+                            onChange={(e) => setAutoConfigOptions({...autoConfigOptions, autoKerning: e.target.checked})}
+                            className="ctl-check mt-0.5"
+                        />
+                        <span>
+                            <span className="block text-[14px] text-foreground">Kerning automático</span>
+                            <span className="block text-[12px] text-muted-foreground">Gera pares de kerning pela análise das formas.</span>
+                        </span>
+                    </label>
+
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={autoConfigOptions.optimizeMetrics}
+                            onChange={(e) => setAutoConfigOptions({...autoConfigOptions, optimizeMetrics: e.target.checked})}
+                            className="ctl-check mt-0.5"
+                        />
+                        <span>
+                            <span className="block text-[14px] text-foreground">Otimizar métricas globais</span>
+                            <span className="block text-[12px] text-muted-foreground">Ajusta ascendente e descendente pelos glifos.</span>
+                        </span>
+                    </label>
                 </div>
-            )}
+
+                <details className="card-quiet p-4 group">
+                    <summary className="text-[14px] text-foreground cursor-pointer select-none">
+                        Configurações avançadas
+                    </summary>
+                    <div className="mt-4 flex flex-col gap-4">
+                        <Field label="Intensidade do kerning" value={`${(autoConfigOptions.kerningIntensity * 100).toFixed(0)}%`}>
+                            <input
+                                type="range"
+                                min="0.3"
+                                max="2"
+                                step="0.1"
+                                value={autoConfigOptions.kerningIntensity}
+                                onChange={(e) => setAutoConfigOptions({...autoConfigOptions, kerningIntensity: parseFloat(e.target.value)})}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                        <Field label="Altura-alvo" value={autoConfigOptions.targetHeight}>
+                            <input
+                                type="range"
+                                min="500"
+                                max="900"
+                                step="50"
+                                value={autoConfigOptions.targetHeight}
+                                onChange={(e) => setAutoConfigOptions({...autoConfigOptions, targetHeight: parseInt(e.target.value)})}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                        <Field label="Margem lateral" value={autoConfigOptions.sideMargin}>
+                            <input
+                                type="range"
+                                min="20"
+                                max="150"
+                                step="10"
+                                value={autoConfigOptions.sideMargin}
+                                onChange={(e) => setAutoConfigOptions({...autoConfigOptions, sideMargin: parseInt(e.target.value)})}
+                                className="tool-slider w-full"
+                            />
+                        </Field>
+                    </div>
+                </details>
+            </Sheet>
         </div>
     );
 };

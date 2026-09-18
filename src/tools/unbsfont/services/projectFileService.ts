@@ -59,7 +59,8 @@ export const downloadProjectFile = (payload: ProjectFilePayload, fileName?: stri
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Liberar a URL na hora cancela o download em alguns navegadores.
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
 };
 
 const isValidStyleMap = (value: unknown): value is StyleMap => {

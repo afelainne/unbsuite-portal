@@ -1,6 +1,8 @@
 import React, { useRef, useState } from 'react';
+import { ArrowLeftRight, X } from 'lucide-react';
 import { GlyphData } from '../types';
 import { useNotice } from '../contexts/NoticeContext';
+import { cx } from './cx';
 
 export type GlyphWarning = 'overshoot' | 'height-violation' | 'no-path';
 
@@ -21,14 +23,18 @@ interface GlyphCardProps {
   warnings?: GlyphWarning[];
 }
 
-const WARNING_ICONS: Record<GlyphWarning, { icon: string; label: string; color: string }> = {
-  'overshoot': { icon: '⬆', label: 'Overshoot expected', color: 'bg-amber-500' },
-  'height-violation': { icon: '↕', label: 'Height violation', color: 'bg-red-500' },
-  'no-path': { icon: '∅', label: 'Empty glyph', color: 'bg-slate-500' },
+/** Avisos tipográficos: tudo em tinta; o erro é o ponto cheio, o aviso é o vazado. */
+const WARNING_INFO: Record<GlyphWarning, { label: string; solid: boolean }> = {
+  'overshoot': { label: 'Overshoot esperado', solid: false },
+  'height-violation': { label: 'Fora da altura', solid: true },
+  'no-path': { label: 'Glifo vazio', solid: false },
 };
 
-const GlyphCard: React.FC<GlyphCardProps> = ({ 
-  glyph, onEdit, onUpdate, onDragStart, onDrop, isPasteMode, onPaste, onMoveGlyph, onContextMenu, onClear, isSelected, isDarkMode, warnings
+const METRIC_INPUT =
+  'field field-sm tabular text-center px-1 pointer-events-auto h-6 text-[11px]';
+
+const GlyphCard: React.FC<GlyphCardProps> = ({
+  glyph, onEdit, onUpdate, onDragStart, onDrop, isPasteMode, onPaste, onMoveGlyph, onContextMenu, onClear, isSelected, warnings
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -45,7 +51,7 @@ const GlyphCard: React.FC<GlyphCardProps> = ({
       const parser = new DOMParser();
       const doc = parser.parseFromString(result, "image/svg+xml");
       const path = doc.querySelector("path");
-      
+
       if (path) {
         const d = path.getAttribute("d");
         if (d) {
@@ -77,13 +83,21 @@ const GlyphCard: React.FC<GlyphCardProps> = ({
     setIsDragOver(false);
     onDrop(glyph.char);
   };
-  
+
   const handleClick = () => {
       if (isPasteMode) {
           onPaste(glyph.char);
       } else {
-          // Allow editing metrics for Space too
+          // O espaço também abre o editor, para ajustar a largura.
           onEdit(glyph);
+      }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.target !== e.currentTarget) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
       }
   };
 
@@ -95,15 +109,15 @@ const GlyphCard: React.FC<GlyphCardProps> = ({
 
   const handleMoveClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      const target = window.prompt(`Move/Swap shape from '${glyph.char}' to:`, "");
+      const target = window.prompt(`Mover ou trocar o desenho de "${glyph.char}" para:`, "");
       if (target && target.trim()) {
           onMoveGlyph(glyph.char, target.trim());
       }
   };
-  
+
   const handleClearClick = (e: React.MouseEvent) => {
-      e.stopPropagation(); 
-      if (window.confirm("Clear this slot?")) {
+      e.stopPropagation();
+      if (window.confirm(`Limpar o glifo "${glyph.char}"?`)) {
           onClear();
       }
   };
@@ -114,145 +128,154 @@ const GlyphCard: React.FC<GlyphCardProps> = ({
       onContextMenu(e);
   };
 
-  // Theme styles
-  const cardBase = isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-neutral-200';
-  const cardHover = isDarkMode ? 'hover:border-slate-500' : 'hover:border-black';
-  const cardSelected = isDarkMode ? 'bg-slate-800 border-white ring-1 ring-white' : 'bg-neutral-50 border-black ring-1 ring-black';
-  const badgeStyle = isDarkMode ? 'bg-white text-black' : 'bg-black text-white';
-  const textSub = isDarkMode ? 'text-slate-500' : 'text-neutral-400';
-  const inputBg = isDarkMode ? 'bg-slate-950 border-slate-700 text-white' : 'bg-white border-neutral-200 text-black';
+  const showMetrics = !isPasteMode && (isHovered || isSelected);
 
   return (
-    <div 
-      className={`relative group border rounded-xl w-full pt-[100%] transition-all overflow-hidden cursor-pointer ${
-        isSelected ? cardSelected :
-        isDragOver ? 'border-blue-500 ring-2 ring-blue-500/20' : 
-        isPasteMode ? 'border-green-500 hover:border-green-600 cursor-copy' :
-        `${cardBase} ${cardHover}`
-      }`}
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={isPasteMode ? `Colar SVG em ${glyph.name}` : `Editar ${glyph.name}`}
+      aria-pressed={isSelected || undefined}
+      className={cx(
+        'relative group w-full pt-[100%] rounded-lg overflow-hidden cursor-pointer outline-none focus-visible:shadow-focus',
+        'transition-[background-color,color,box-shadow] duration-fast ease-out',
+        isSelected
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-card text-foreground shadow-[inset_0_0_0_1px_hsl(var(--border))] hover:shadow-hairline-strong',
+        isDragOver && 'shadow-[inset_0_0_0_2px_hsl(var(--foreground))]',
+        isPasteMode && 'cursor-copy'
+      )}
       draggable
       onDragStart={() => onDragStart(glyph.char)}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDropInternal}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       onContextMenu={handleContextMenuInternal}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Header: Char Badge & Status */}
-      <div className="absolute top-3 left-3 z-30 flex items-center gap-2 pointer-events-none">
-        <span className={`text-lg font-black font-mono w-8 h-8 flex items-center justify-center rounded-lg select-none ${
-            isPasteMode ? 'bg-green-500 text-white' : 
-            isSpace ? (isDarkMode ? 'bg-slate-800 text-slate-400 border border-slate-700' : 'bg-neutral-100 text-neutral-400 border border-neutral-200') :
-            badgeStyle
-        }`}>
-          {glyph.char === ' ' ? '␣' : glyph.char}
+      {/* Caractere e estado */}
+      <div className="absolute top-2.5 left-3 z-30 flex items-center gap-1.5 pointer-events-none">
+        <span className={cx('text-[13px] leading-none select-none', isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
+          {isSpace ? '␣' : glyph.char}
         </span>
-        
         {isComposite && (
-             <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider border ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-300' : 'bg-neutral-100 border-neutral-200 text-neutral-500'}`}>Linked</span>
+          <span className={cx('chip h-[18px] px-1.5 text-[10px]', isSelected && 'bg-primary-foreground/15 text-primary-foreground')}>Composto</span>
         )}
       </div>
 
-      {/* Typographic Warning Badges */}
+      {/* Avisos tipográficos */}
       {warnings && warnings.length > 0 && (
-          <div className="absolute bottom-10 left-3 z-30 flex gap-1 pointer-events-none">
+          <div className="absolute bottom-9 left-3 z-30 flex gap-1 pointer-events-none">
               {warnings.map(w => {
-                  const info = WARNING_ICONS[w];
+                  const info = WARNING_INFO[w];
                   return (
-                      <span key={w} className={`w-4 h-4 flex items-center justify-center rounded-full text-[8px] text-white ${info.color}`} title={info.label}>
-                          {info.icon}
-                      </span>
+                      <span
+                          key={w}
+                          title={info.label}
+                          className="w-2 h-2 rounded-pill"
+                          style={info.solid
+                              ? { background: 'currentColor' }
+                              : { boxShadow: 'inset 0 0 0 1.5px currentColor' }}
+                      />
                   );
               })}
           </div>
       )}
 
       {!isPasteMode && (
-          <div className="absolute top-3 right-3 z-30 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+          <div className="absolute top-1.5 right-1.5 z-30 flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-fast ease-out">
              {hasPath && (
-                <button 
+                <button
+                    type="button"
                     onClick={handleMoveClick}
-                    className={`w-7 h-7 flex items-center justify-center rounded-md border hover:scale-105 transition-transform ${isDarkMode ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 text-white' : 'bg-white border-neutral-200 hover:border-black text-black'}`}
-                    title="Move/Swap"
+                    className="ctl ctl-sm ctl-icon h-7 w-7 bg-card text-foreground shadow-hairline hover:bg-surface-hover"
+                    aria-label={`Mover ou trocar ${glyph.name}`}
+                    title="Mover ou trocar"
                 >
-                    ⇄
+                    <ArrowLeftRight className="w-4 h-4" aria-hidden="true" />
                 </button>
              )}
-             <button 
+             <button
+                type="button"
                 onClick={handleClearClick}
-                    className={`w-7 h-7 flex items-center justify-center rounded-md border hover:scale-105 transition-transform ${isDarkMode ? 'bg-slate-800 border-slate-700 hover:bg-red-900/50 hover:border-red-800 text-red-400' : 'bg-white border-neutral-200 hover:bg-red-50 hover:border-red-200 text-red-500'}`}
-                title="Clear Slot"
+                className="ctl ctl-sm ctl-icon h-7 w-7 bg-card text-destructive shadow-hairline hover:bg-surface-hover"
+                aria-label={`Limpar ${glyph.name}`}
+                title="Limpar glifo"
             >
-                ✕
+                <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
       )}
 
       <input type="file" ref={fileInputRef} onChange={handleFileUpload} className="hidden" accept=".svg" />
 
-      {/* Glyph Preview */}
-      <div className={`absolute inset-0 flex items-center justify-center p-4 pointer-events-none ${isPasteMode ? (isDarkMode ? 'bg-green-900/10' : 'bg-green-50') : ''}`}>
-        {/* Visual Guides on Hover */}
-        {!isSpace && isHovered && !isPasteMode && (
-            <div className="absolute inset-0 z-0 opacity-20 pointer-events-none">
-                 <div className="absolute top-0 bottom-0 left-0 bg-blue-500 border-r border-blue-600" style={{ width: `${(glyph.leftSideBearing / 1000) * 100}%` }}></div>
-                 <div className="absolute top-0 bottom-0 border-r border-red-500 border-dashed" style={{ left: `${(glyph.advanceWidth / 1000) * 100}%` }}></div>
+      {/* Desenho */}
+      <div className="absolute inset-0 flex items-center justify-center p-4 pointer-events-none">
+        {/* Guias de métrica ao passar o mouse */}
+        {!isSpace && isHovered && !isPasteMode && !isSelected && (
+            <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+                 <div className="absolute top-0 bottom-0 left-0 bg-fill-2" style={{ width: `${(glyph.leftSideBearing / 1000) * 100}%` }} />
+                 <div className="absolute top-0 bottom-0 border-r border-dashed border-foreground/30" style={{ left: `${(glyph.advanceWidth / 1000) * 100}%` }} />
             </div>
         )}
 
         {isSpace ? (
-            <div className={`flex flex-col items-center justify-center gap-2 opacity-50 select-none`}>
-                <span className={`text-xs font-bold uppercase tracking-widest ${textSub}`}>Space</span>
-                <div className={`w-16 h-1 border-b-2 border-dashed ${isDarkMode ? 'border-slate-600' : 'border-neutral-300'}`}></div>
+            <div className="flex flex-col items-center justify-center gap-2 select-none">
+                <span className={cx('text-[12px]', isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>Espaço</span>
+                <div className="w-12 h-px bg-current opacity-30" />
             </div>
         ) : hasPath ? (
-          <svg viewBox="0 0 1000 1000" className={`w-full h-full fill-current ${isDarkMode ? 'text-white' : 'text-black'}`} style={{ overflow: 'visible' }}>
+          <svg viewBox="0 0 1000 1000" className="relative w-full h-full fill-current" style={{ overflow: 'visible' }} aria-hidden="true">
              <g transform={`translate(${glyph.leftSideBearing}, ${glyph.baselineOffset}) scale(${glyph.scale})`}><path d={glyph.pathData} /></g>
           </svg>
         ) : (
-          <div className="flex flex-col items-center justify-center gap-2 pointer-events-none select-none h-full w-full opacity-5">
-             <div className={`text-[6rem] font-bold leading-none ${isDarkMode ? 'text-white' : 'text-black'}`}>{glyph.char}</div>
+          <div className="flex items-center justify-center select-none h-full w-full">
+             <div className={cx('text-[4.5rem] font-normal leading-none', isSelected ? 'opacity-40' : 'text-muted-foreground/25')}>{glyph.char}</div>
           </div>
         )}
-        
-        {isPasteMode && !hasPath && !isSpace && <span className="absolute text-green-600 text-[10px] font-bold animate-pulse bg-green-100 px-2 py-1 rounded border border-green-200">Paste Here</span>}
+
+        {isPasteMode && !hasPath && !isSpace && (
+            <span className="absolute chip chip-invert">Colar aqui</span>
+        )}
       </div>
-      
-      {/* Bottom Metrics (Inputs) */}
+
+      {/* Nome e métricas */}
       {!isPasteMode && (
           <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end z-20">
-              {/* LSB */}
-              <div className={`flex flex-col items-start transition-opacity ${isHovered || isSelected ? 'opacity-100' : 'opacity-0'}`}>
-                  <label className={`text-[8px] font-bold uppercase mb-0.5 ml-0.5 ${textSub}`}>LSB</label>
-                  <input 
-                    type="number" 
-                    className={`w-10 text-center text-[10px] font-bold rounded-md outline-none py-0.5 pointer-events-auto ${inputBg} hover:border-blue-400 focus:border-blue-500`} 
-                    value={glyph.leftSideBearing} 
-                    onClick={(e) => e.stopPropagation()} 
-                    onChange={(e) => handleMetricChange(e, 'leftSideBearing')} 
+              <label className={cx('flex flex-col items-start gap-0.5 transition-opacity duration-fast ease-out', showMetrics ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
+                  <span className={cx('text-[10px] pl-0.5', isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>LSB</span>
+                  <input
+                    type="number"
+                    className={cx(METRIC_INPUT, 'w-11')}
+                    value={glyph.leftSideBearing}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onChange={(e) => handleMetricChange(e, 'leftSideBearing')}
+                    aria-label={`Margem esquerda de ${glyph.name}`}
                   />
-              </div>
+              </label>
 
-              {/* Name Tag (Center) - Only show if not hovering metrics to avoid overlap, or push it up */}
-              <div className={`absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none transition-all ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
-                  <span className={`text-[9px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap overflow-hidden max-w-[60px] text-ellipsis ${isDarkMode ? 'text-slate-500' : 'text-neutral-400'}`}>
+              <div className={cx('absolute bottom-0 left-0 right-0 flex justify-center pointer-events-none transition-opacity duration-fast ease-out', showMetrics ? 'opacity-0' : 'opacity-100')}>
+                  <span className={cx('text-[11px] truncate max-w-[80%]', isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
                       {glyph.name}
                   </span>
               </div>
 
-              {/* Width */}
-              <div className={`flex flex-col items-end transition-opacity ${isHovered || isSelected ? 'opacity-100' : 'opacity-0'}`}>
-                  <label className={`text-[8px] font-bold uppercase mb-0.5 mr-0.5 ${textSub}`}>Width</label>
-                  <input 
-                    type="number" 
-                    className={`w-12 text-center text-[10px] font-bold rounded-md outline-none py-0.5 pointer-events-auto ${inputBg} hover:border-blue-400 focus:border-blue-500`} 
-                    value={glyph.advanceWidth} 
-                    onClick={(e) => e.stopPropagation()} 
-                    onChange={(e) => handleMetricChange(e, 'advanceWidth')} 
+              <label className={cx('flex flex-col items-end gap-0.5 transition-opacity duration-fast ease-out', showMetrics ? 'opacity-100' : 'opacity-0 pointer-events-none')}>
+                  <span className={cx('text-[10px] pr-0.5', isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>Largura</span>
+                  <input
+                    type="number"
+                    className={cx(METRIC_INPUT, 'w-12')}
+                    value={glyph.advanceWidth}
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onChange={(e) => handleMetricChange(e, 'advanceWidth')}
+                    aria-label={`Largura de ${glyph.name}`}
                   />
-              </div>
+              </label>
           </div>
       )}
     </div>
