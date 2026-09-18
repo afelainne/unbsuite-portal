@@ -1,4 +1,5 @@
 import { loadColorLibrary } from './data/encoded/loadColors';
+import { stripBrand } from './utils/reference';
 import { ReferenceColor } from './types';
 
 const colorsData = loadColorLibrary() as { colors: any[] };
@@ -174,6 +175,8 @@ export type ColorLibrarySystem = {
 export type LibraryOption = {
   id: string;
   label: string;
+  /** Finish suffix the codes of this book carry: C, U, CP or UP. */
+  finish: string;
   systemId: string;
   finishId: string;
   colors: ReferenceColor[];
@@ -189,15 +192,14 @@ const hexToRgbQuick = (hex: string) => {
   };
 };
 
+/**
+ * Pulls the code out of the book's localization wrapper and drops the brand
+ * name on the way in, so no part of the app ever holds a branded code.
+ */
 const extractCode = (raw: string) => {
   const match = raw.match(/prefix=([^$]+)\$\$\$/);
-  if (match && match[1]) return match[1].trim();
-  const cleaned = raw
-    .replace(/\$\$\$\/colorbook\/[A-Z]+\/prefix=/g, '')
-    .replace(/\$\$\$\/colorbook\/[A-Z]+\/postfix=/g, '')
-    .replace(/\$\$\$/g, '')
-    .trim();
-  return cleaned || raw.trim();
+  const wrapped = match && match[1] ? match[1] : raw;
+  return stripBrand(wrapped) || stripBrand(raw);
 };
 
 const SYSTEM_ALIAS: Record<string, string> = {
@@ -298,11 +300,24 @@ const buildSystems = (): ColorLibrarySystem[] => {
 
 export const COLOR_SYSTEMS: ColorLibrarySystem[] = buildSystems();
 
+/**
+ * Books are named by the finish their codes carry, never by the brand behind
+ * them. The wording a person reads comes from the dictionaries; these labels
+ * are only the neutral fallback.
+ */
 const LABEL_MAP: Record<string, string> = {
-  sys_b_fin_c: 'PANTONE C — Coated',
-  sys_b_fin_u: 'PANTONE U — Uncoated',
-  sys_a_fin_c: 'Color Bridge CP — Coated',
-  sys_a_fin_u: 'Color Bridge UP — Uncoated'
+  sys_b_fin_c: 'Solid C',
+  sys_b_fin_u: 'Solid U',
+  sys_a_fin_c: 'Process CP',
+  sys_a_fin_u: 'Process UP'
+};
+
+/** Finish suffix carried by the codes of each book. */
+export const LIBRARY_FINISHES: Record<string, string> = {
+  sys_b_fin_c: 'C',
+  sys_b_fin_u: 'U',
+  sys_a_fin_c: 'CP',
+  sys_a_fin_u: 'UP'
 };
 
 export const LIBRARY_OPTIONS: LibraryOption[] = COLOR_SYSTEMS.flatMap((system) =>
@@ -311,11 +326,19 @@ export const LIBRARY_OPTIONS: LibraryOption[] = COLOR_SYSTEMS.flatMap((system) =
     return {
       id: key,
       label: LABEL_MAP[key] || `${system.systemName} ${finish.finishName}`,
+      finish: LIBRARY_FINISHES[key] || finish.finishId,
       systemId: system.systemId,
       finishId: finish.finishId,
       colors: finish.colors
     };
   })
+);
+
+/** The four books, ordered the way the finish filter shows them: C, U, CP, UP. */
+export const FINISH_ORDER = ['C', 'U', 'CP', 'UP'];
+
+export const REFERENCE_LIBRARIES: LibraryOption[] = [...LIBRARY_OPTIONS].sort(
+  (a, b) => FINISH_ORDER.indexOf(a.finish) - FINISH_ORDER.indexOf(b.finish)
 );
 
 export const DEFAULT_LIBRARY: ReferenceColor[] = LIBRARY_OPTIONS[0]?.colors || [];

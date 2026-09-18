@@ -1,13 +1,17 @@
 import React from "react";
 
-interface Props extends React.InputHTMLAttributes<HTMLInputElement> {}
+interface Props extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
+  /** Monospace + tabular numerals for values like hex, coordinates, sizes */
+  mono?: boolean;
+  size?: "sm" | "md";
+}
 
 const ToolInput = React.forwardRef<HTMLInputElement, Props>(
-  ({ className = "", ...rest }, ref) => (
+  ({ className = "", mono = false, size = "md", ...rest }, ref) => (
     <input
       ref={ref}
       {...rest}
-      className={`h-7 px-2 bg-white border border-[#232323]/25 rounded-none font-mono text-[11px] text-[#232323] placeholder:text-[#232323]/40 focus:outline-none focus:border-[#232323] ${className}`}
+      className={`field ${size === "sm" ? "field-sm" : ""} ${mono ? "field-mono" : ""} ${className}`}
     />
   )
 );

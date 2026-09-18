@@ -6,7 +6,7 @@ interface Props {
 }
 
 const ToolShell: React.FC<Props> = ({ children, className = "" }) => (
-  <div className={`h-dvh w-full flex flex-col bg-white text-[#232323] ${className}`}>
+  <div className={`h-dvh w-full flex flex-col bg-background text-foreground ${className}`}>
     {children}
   </div>
 );

@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Windows folder metadata
+desktop.ini
+
+# Export cru do design system: o material triado vive em design-system/
+design-system-export/
+design-system-export.zip

@@ -3,6 +3,7 @@
 
 import { AnalysisResult } from '../types';
 import { getAnalysisFromLookup, analysisLookupMap } from './analysisLookup';
+import { formatReferenceCode } from '../utils/reference';
 
 interface ColorAnalysisEntry {
   hueRange: [number, number]; // Range de matiz HSL
@@ -2403,6 +2404,11 @@ const hexToHSL = (hex: string): { h: number; s: number; l: number } => {
 export const getColorAnalysis = (hex: string, refName?: string): AnalysisResult => {
   // Try to find analysis by color code
   if (refName) {
+    // The full code ("388 C") is what the dataset is keyed by: try it before
+    // falling back to the code without its finish.
+    const exact = getAnalysisFromLookup(formatReferenceCode(refName));
+    if (exact) return exact;
+
     const code = extractColorCode(refName);
     const analysisFromJson = getAnalysisFromLookup(code);
     if (analysisFromJson) {

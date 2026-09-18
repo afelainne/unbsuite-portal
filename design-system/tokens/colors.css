@@ -1,0 +1,91 @@
+/* UNBSTOOLS palette — grayscale canvas + a single yellow signal colour
+   (the Unserved yellow #F0FF00).
+   Base hexes are lifted verbatim from the brand colour sheet. */
+:root{
+  /* --- base ramp --- */
+  --black:#000000;
+  --white:#FFFFFF;
+  --gray:#AAA9AB;
+  --light-gray:#DBDADD;
+  --yellow:#F0FF00;
+  --mint:#75FB90;   /* former signal colour, kept for old references */
+
+  /* --- derived neutrals (canvas + surface tints) --- */
+  --canvas-100:#EFEFF1;   /* page background */
+  --canvas-200:#E6E6E8;   /* inset panel / mock frame */
+  --surface-000:#FFFFFF;  /* raised card */
+  --surface-050:#F7F7F8;  /* quiet card */
+  --surface-100:#F2F2F3;  /* field / chip */
+  --ink-900:#000000;
+  --ink-700:#3A3A3C;
+  --ink-500:#6E6D70;
+  --ink-300:#AAA9AB;
+  --ink-200:#C4C3C6;
+  --hairline:#DBDADD;
+  --hairline-soft:#E8E7EA;
+
+  /* --- yellow scale (the signal colour) ---
+     400 is the Unserved brand hex. 500 is the hover step (one step darker,
+     never lighter). 600 is the only step that may carry text: the brand
+     yellow has 1.1:1 against white, so anything written in the signal colour
+     uses this olive step (6.2:1 on white). 200 and 050 are the soft tint and
+     the quiet fill. Black on the brand yellow is 19:1. */
+  --yellow-600:#5F6600;
+  --yellow-500:#D4E000;
+  --yellow-400:#F0FF00;
+  --yellow-200:#F8FF99;
+  --yellow-050:#FDFFE5;
+
+  /* --- mint scale (former signal colour, no longer used by the aliases) ---
+     400 is the brand hex, lifted from the colour sheet. 500 is the hover step
+     (one step darker, never lighter). 600 is the only step that may carry
+     text: the brand mint has 1.3:1 against white, so anything written in the
+     signal colour uses this darker step. 200 and 050 are the focus ring and
+     the quiet fill. Black on the brand mint is 16:1. */
+  --mint-600:#1E9A43;
+  --mint-500:#3FD168;
+  --mint-400:#75FB90;
+  --mint-200:#B4FDC3;
+  --mint-050:#E8FEED;
+
+  /* --- semantic aliases --- */
+  --bg-page:var(--canvas-100);
+  --bg-inset:var(--canvas-200);
+  --surface-card:var(--surface-000);
+  --surface-card-quiet:var(--surface-050);
+  --surface-field:var(--surface-100);
+  --surface-invert:var(--black);
+  --surface-invert-soft:#2A2A2C;
+
+  --text-display:var(--ink-900);
+  --text-body:var(--ink-700);
+  --text-muted:var(--ink-500);
+  --text-faint:var(--ink-300);
+  --text-on-invert:var(--white);
+  --text-on-accent:var(--black);
+  --text-link:var(--ink-900);
+  --text-link-hover:var(--yellow-600);
+
+  --border-card:var(--hairline-soft);
+  --border-field:var(--hairline);
+  --border-strong:var(--ink-900);
+
+  --accent:var(--yellow-400);
+  --accent-hover:var(--yellow-500);
+  --accent-quiet:var(--yellow-050);
+  --accent-ink:var(--yellow-600);
+
+  /* Status is expressed with the sage + neutral ramp only — the brand sheet
+     defines no red/amber/blue. Use ink for negative, yellow for positive. */
+  --status-positive:var(--yellow-400);
+  --status-positive-ink:var(--yellow-600);
+  --status-neutral:var(--ink-300);
+  --status-negative:var(--ink-900);
+
+  /* data-viz series (charts are black → gray → yellow, never rainbow) */
+  --series-1:var(--ink-900);
+  --series-2:var(--yellow-400);
+  --series-3:var(--ink-300);
+  --series-4:var(--light-gray);
+  --grid-line:#D8D7DA;
+}

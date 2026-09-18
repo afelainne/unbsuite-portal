@@ -1,0 +1,41 @@
+/* Type scale. Source spec: A1 Heading 36px SemiBold, B1 Subheading 24px Regular,
+   C1 Body 16px Regular — everything else is extrapolated on the same ramp. */
+:root{
+  --fs-display-xl:88px;   /* hero numerals / landing headline */
+  --fs-display-l:56px;
+  --fs-display-m:44px;
+  --fs-h1:36px;           /* A1 */
+  --fs-h2:28px;
+  --fs-h3:24px;           /* B1 */
+  --fs-body-l:18px;
+  --fs-body:16px;         /* C1 */
+  --fs-body-s:14px;
+  --fs-caption:12px;
+  --fs-micro:11px;        /* eyebrow / card label, always uppercase + tracked */
+
+  --fw-thin:200; /* @kind font */
+  --fw-light:300; /* @kind font */
+  --fw-regular:400; /* @kind font */
+  --fw-medium:500; /* @kind font */
+  --fw-semibold:600; /* @kind font */
+  --fw-bold:700; /* @kind font */
+
+  --lh-tight:1.02; /* @kind font */        /* display numerals */
+  --lh-snug:1.14; /* @kind font */         /* headlines */
+  --lh-normal:1.35; /* @kind font */
+  --lh-relaxed:1.5; /* @kind font */       /* body copy */
+
+  --ls-display:-0.02em; /* @kind font */
+  --ls-headline:-0.01em; /* @kind font */
+  --ls-normal:0; /* @kind font */
+  --ls-eyebrow:0.08em; /* @kind font */    /* uppercase micro labels */
+  --ls-caps:0.04em; /* @kind font */
+
+  /* role aliases */
+  --type-hero:var(--fw-regular) var(--fs-display-xl)/var(--lh-tight) var(--font-display);
+  --type-h1:var(--fw-semibold) var(--fs-h1)/var(--lh-snug) var(--font-display);
+  --type-h3:var(--fw-regular) var(--fs-h3)/var(--lh-normal) var(--font-core);
+  --type-body:var(--fw-regular) var(--fs-body)/var(--lh-relaxed) var(--font-core);
+  --type-body-s:var(--fw-regular) var(--fs-body-s)/var(--lh-normal) var(--font-core);
+  --type-eyebrow:var(--fw-medium) var(--fs-micro)/1.2 var(--font-core);
+}

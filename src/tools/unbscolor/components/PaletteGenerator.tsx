@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { extractColorsFromSvg, extractDominantColors } from '../utils/imageExtraction';
 import { useLanguage } from '../i18n/LanguageContext';
+import { ClipboardPaste, ImageUp } from 'lucide-react';
+import { IconButton } from './ui';
 
 interface PaletteGeneratorProps {
   onColorSelect: (hex: string) => void;
@@ -41,6 +43,11 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({ onColorSelec
           if (e.target?.result) processSvg(e.target.result as string);
           setLoading(false);
         };
+        reader.onerror = () => {
+          console.error(reader.error);
+          setLoading(false);
+        };
+        reader.onabort = () => setLoading(false);
         reader.readAsText(file);
       } else {
         const colors = await extractDominantColors(file, 8);
@@ -58,71 +65,69 @@ export const PaletteGenerator: React.FC<PaletteGeneratorProps> = ({ onColorSelec
 
   return (
     <>
-        <div className="flex items-center gap-1">
-        <button
-          onClick={() => document.getElementById('hidden-file-upload')?.click()}
-          disabled={loading}
-          className="h-10 px-3 rounded-md border border-border bg-card text-foreground/80 hover:border-foreground hover:text-foreground transition-colors flex items-center gap-2 group"
-        >
-          {loading ? (
-             <span className="animate-pulse">{t.processingImage}</span>
-          ) : (
-             <>
-               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-               <span className="hidden sm:inline">SVG / IMG</span>
-             </>
-          )}
-      </button>
-        <button
-          onClick={() => { setPasteValue(''); setPasteOpen(true); }}
-          className="h-10 px-2 rounded-md border border-border bg-card text-foreground/80 hover:border-foreground hover:text-foreground transition-colors flex items-center gap-1"
-          title="Paste SVG code"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-          <span className="hidden sm:inline text-xs font-mono uppercase tracking-wider">Paste</span>
-        </button>
-        </div>
+      <IconButton
+        variant="surface"
+        label={loading ? t.processingImage : t.uploadImageSvg}
+        onClick={() => document.getElementById('hidden-file-upload')?.click()}
+        disabled={loading}
+        className={loading ? 'pulse-dot' : undefined}
+      >
+        <ImageUp aria-hidden="true" />
+      </IconButton>
+      <IconButton variant="surface" label={t.pasteSvgCode} onClick={() => { setPasteValue(''); setPasteOpen(true); }}>
+        <ClipboardPaste aria-hidden="true" />
+      </IconButton>
       <input 
           id="hidden-file-upload" 
           type="file" 
           className="hidden" 
           accept=".svg,image/svg+xml,image/jpeg,image/png,image/webp"
-          onChange={(e) => e.target.files && handleFile(e.target.files[0])} 
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+            // Allow picking the same file again
+            e.target.value = '';
+          }}
       />
       {pasteOpen && (
         <div
-          className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[100] bg-foreground/30 flex items-center justify-center p-4"
           onClick={() => setPasteOpen(false)}
         >
           <div
-            className="bg-card border border-border rounded-lg shadow-xl w-full max-w-xl p-5"
+            className="material-sheet fade-in-up w-full max-w-xl p-6 md:p-8"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t.pasteSvgCode}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-mono text-xs font-bold uppercase tracking-widest mb-3">Paste SVG code</h3>
+            <h3 className="text-[24px] font-normal leading-[1.2] tracking-[-0.01em] text-foreground mb-5">{t.pasteSvgCode}</h3>
             <textarea
               value={pasteValue}
               onChange={(e) => setPasteValue(e.target.value)}
               placeholder="<svg ...> ... </svg>"
-              className="w-full h-56 p-3 font-mono text-xs bg-background border border-border rounded-md focus:outline-none focus:border-foreground resize-none"
+              className="field field-mono h-56 text-[12px] resize-none"
               autoFocus
             />
-            <div className="flex justify-end gap-2 mt-3">
+            <div className="flex justify-end gap-2.5 mt-5">
               <button
+                type="button"
                 onClick={() => setPasteOpen(false)}
-                className="h-9 px-3 rounded-md border border-border text-xs font-mono uppercase hover:border-foreground"
+                className="ctl ctl-outline ctl-lg text-[14px]"
               >
-                Cancel
+                {t.cancel}
               </button>
               <button
+                type="button"
                 onClick={() => {
                   if (pasteValue.trim()) {
                     processSvg(pasteValue);
                     setPasteOpen(false);
                   }
                 }}
-                className="h-9 px-4 rounded-md bg-foreground text-background text-xs font-mono uppercase font-bold hover:bg-foreground/80"
+                className="ctl ctl-filled ctl-lg text-[14px]"
               >
-                Extract
+                {t.extract}
               </button>
             </div>
           </div>

@@ -1,0 +1,39 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Navigation" subtitle="NavRail, Breadcrumb, AvatarStack, CommandBar" -->
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/bold/style.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../_ds_bundle.js"></script>
+<style>body{margin:0;background:var(--bg-page);font:var(--type-body)}.wrap{padding:20px 22px;display:flex;flex-direction:column;gap:18px}.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.lbl{font-size:var(--fs-micro);letter-spacing:var(--ls-eyebrow);text-transform:uppercase;color:var(--text-faint);min-width:64px}</style></head><body><div id="root"></div>
+<script type="text/babel">
+const { NavRail, Breadcrumb, AvatarStack, CommandBar, IconButton } = window.UNBSTOOLSDesignSystem_229a5a;
+const items=[
+ {value:'home',label:'Home',icon:'ph ph-house',iconActive:'ph-fill ph-house'},
+ {value:'library',label:'Library',icon:'ph ph-folder',iconActive:'ph-fill ph-folder'},
+ {value:'auto',label:'Automations',icon:'ph ph-lightning',iconActive:'ph-fill ph-lightning'},
+ {value:'kits',label:'Kits',icon:'ph ph-briefcase',iconActive:'ph-fill ph-briefcase'},
+ {value:'docs',label:'Docs',icon:'ph ph-file-text',iconActive:'ph-fill ph-file-text'},
+ {value:'team',label:'Team',icon:'ph ph-bank',iconActive:'ph-fill ph-bank',badge:true},
+ {value:'usage',label:'Usage',icon:'ph ph-chart-line',iconActive:'ph-fill ph-chart-line'}];
+function Demo(){
+ const [v,setV]=React.useState('library');
+ return <div className="wrap">
+  <div className="row" style={{justifyContent:'center'}}><NavRail value={v} onChange={setV} items={items}/></div>
+  <div className="row" style={{justifyContent:'space-between'}}>
+   <Breadcrumb items={[{label:'Workspaces',icon:'ph-fill ph-folder'},{label:'Brand kit',icon:'ph-fill ph-squares-four'}]}/>
+   <span className="row" style={{gap:8}}>
+    <AvatarStack people={[{initials:'AM'},{initials:'RS'},{initials:'KT'}]}/>
+    <AvatarStack action="Share" people={[{initials:'AM'},{initials:'RS'},{initials:'KT'}]}/>
+   </span>
+  </div>
+  <div className="row" style={{justifyContent:'center'}}>
+   <CommandBar width={600} floating={false} suggestions={['Which exports failed this week?','Summarise usage']} onSuggestion={()=>{}}/>
+  </div>
+ </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

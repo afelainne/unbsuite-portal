@@ -1,7 +1,11 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { Check, Copy, Image as ImageIcon, Lock, RefreshCw, Star, Unlock, X } from 'lucide-react';
 import { hexToRgb, rgbToHex, rgbToHsl, hslToRgb, isValidHex, getClosestColorName, getContrastColor } from '../utils/colorMath';
 import { extractDominantColors } from '../utils/imageExtraction';
+import { contrastRatio as wcagContrastRatio, WCAG_THRESHOLDS } from '../utils/contrast';
+import { copyText, useSafeTimeout, useTransientState } from '../utils/browser';
 import { useLanguage } from '../i18n';
+import { Card, IconButton, LegendDot, Metric, SectionHeading, TextTabs } from './ui';
 
 interface PaletteMagicProps {
   initialHex: string;
@@ -62,19 +66,10 @@ const CURATED_PALETTES: { name: string; colors: string[]; tags: DesignContext[] 
 
 // --- Color math helpers ---
 
-const getLuminance = (hex: string): number => {
-  const rgb = hexToRgb(hex);
-  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(v => {
-    v /= 255;
-    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  });
-  return r * 0.2126 + g * 0.7152 + b * 0.0722;
-};
-
+// WCAG ratio from utils/contrast (invalid input falls back to 1:1).
 const getContrastRatio = (hex1: string, hex2: string): number => {
-  const l1 = getLuminance(hex1);
-  const l2 = getLuminance(hex2);
-  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+  const ratio = wcagContrastRatio(hex1, hex2);
+  return Number.isNaN(ratio) ? 1 : ratio;
 };
 
 const rotateHue = (hex: string, degrees: number): string => {
@@ -96,7 +91,8 @@ const adjustLightness = (hex: string, delta: number): string => {
 const adjustSat = (hex: string, delta: number): string => {
   const rgb = hexToRgb(hex);
   const hsl = rgbToHsl(rgb);
-  const newS = Math.max(5, Math.min(100, hsl.s + delta));
+  // Floor at 0 so neutral (gray) palettes stay neutral.
+  const newS = Math.max(0, Math.min(100, hsl.s + delta));
   const newRgb = hslToRgb({ ...hsl, s: newS });
   return rgbToHex(newRgb.r, newRgb.g, newRgb.b);
 };
@@ -288,7 +284,7 @@ const generateSinglePalette = (
     name: `${pick(prefixes)} ${String(index + 1).padStart(2, '0')}`,
     colors,
     contrastRatio: contrast,
-    wcagPass: best >= 4.5,
+    wcagPass: best >= WCAG_THRESHOLDS.aaNormal,
   };
 };
 
@@ -318,7 +314,7 @@ const generateBatch = (
         ...palette,
         colors: newColors,
         contrastRatio: contrast,
-        wcagPass: best >= 4.5,
+        wcagPass: best >= WCAG_THRESHOLDS.aaNormal,
       });
     } else {
       results.push(generateSinglePalette(sources, context, slotCount, results.length));
@@ -333,6 +329,8 @@ const generateBatch = (
   return results.sort((a, b) => b.contrastRatio - a.contrastRatio);
 };
 
+const SLOT_OPTIONS = [3, 4, 5, 6, 7];
+
 // --- Component ---
 
 export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchColors, onHexChange, onBatchColorsChange }) => {
@@ -342,13 +340,14 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
   const [palettes, setPalettes] = useState<GeneratedPalette[]>([]);
   const [lockedColors, setLockedColors] = useState<Record<string, Record<number, string>>>({});
   const [shuffleCount, setShuffleCount] = useState(0);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setTransientFeedback] = useTransientState<string>(1500);
+  const schedule = useSafeTimeout();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<GeneratedPalette[]>([]);
   const [selectedSourceColor, setSelectedSourceColor] = useState<string | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  const baseHex = isValidHex(initialHex) ? initialHex : '#F7E043';
+  const baseHex = isValidHex(initialHex) ? initialHex : '#F0FF00';
   const validBatch = batchColors.filter(c => isValidHex(c));
   const sources = validBatch.length > 0 ? validBatch : [baseHex];
 
@@ -362,8 +361,8 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
     setLockedColors(newLocks);
     setShuffleCount(c => c + 1);
     setExpandedId(null);
-    setTimeout(() => gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-  }, [sources, slotCount]);
+    schedule(() => gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }, [sources, slotCount, schedule]);
 
   const handleShuffle = useCallback(() => {
     doShuffle(context, palettes, lockedColors);
@@ -379,20 +378,16 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
     prevContextRef.current = context;
   }, [context, doShuffle, palettes.length]);
 
-  const showFeedback = useCallback((msg: string) => {
-    setFeedback(msg);
-    setTimeout(() => setFeedback(null), 1500);
-  }, []);
+  const showFeedback = setTransientFeedback;
 
   const copyPalette = useCallback((colors: string[]) => {
-    navigator.clipboard.writeText(colors.join(', '));
-    showFeedback(t.copy + ' ✓');
+    void copyText(colors.join(', ')).then((ok) => showFeedback(ok ? t.copy : t.copyFailed));
   }, [t, showFeedback]);
 
   const applyPalette = useCallback((colors: string[]) => {
     onBatchColorsChange(colors);
     if (colors[0]) onHexChange(colors[0]);
-    showFeedback(t.applyPalette + ' ✓');
+    showFeedback(t.applyPalette);
   }, [onBatchColorsChange, onHexChange, t, showFeedback]);
 
   const toggleFavorite = useCallback((palette: GeneratedPalette) => {
@@ -421,55 +416,68 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
 
   const isLocked = (paletteId: string, slotIndex: number) => !!lockedColors[paletteId]?.[slotIndex];
 
-  const contexts: { key: DesignContext; label: string; icon: string }[] = [
-    { key: 'all', label: t.allContexts, icon: '✦' },
-    { key: 'brand', label: t.contextBrand, icon: '◆' },
-    { key: 'poster', label: t.contextPoster, icon: '▣' },
-    { key: 'ui', label: t.contextUI, icon: '◫' },
-    { key: 'editorial', label: t.contextEditorial, icon: '▤' },
-    { key: 'packaging', label: t.contextPackaging, icon: '▧' },
+  const contexts: { key: DesignContext; label: string }[] = [
+    { key: 'all', label: t.allContexts },
+    { key: 'brand', label: t.contextBrand },
+    { key: 'poster', label: t.contextPoster },
+    { key: 'ui', label: t.contextUI },
+    { key: 'editorial', label: t.contextEditorial },
+    { key: 'packaging', label: t.contextPackaging },
   ];
 
   const isFav = (id: string) => favorites.some(f => f.id === id);
 
   return (
-    <div className="max-w-[1600px] mx-auto space-y-10 py-8">
-      {/* Feedback toast */}
+    <div className="flex flex-col gap-5">
+      {/* Feedback toast — floats over content, so it is the one place blur belongs. */}
       {feedback && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-foreground text-background px-8 py-3 font-mono text-[10px] uppercase tracking-[0.3em] rounded-full shadow-2xl z-50 animate-in fade-in zoom-in duration-200">
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 glass-invert px-5 py-2.5 text-[13px] rounded-pill shadow-floating z-50 animate-in fade-in duration-base" role="status">
           {feedback}
         </div>
       )}
 
-      {/* Header */}
-      <section className="text-center space-y-6">
-        <div>
-          <h2 className="font-mono text-xs font-bold text-muted-foreground/70 uppercase tracking-[0.5em] mb-2">{t.paletteMagic}</h2>
-          <p className="font-mono text-[10px] text-muted-foreground max-w-md mx-auto">
-            Curated palettes with lock & shuffle. Freeze colors you love, regenerate the rest.
-          </p>
-        </div>
+      {/* Setup: sources, context, slot count, and the one committing action. */}
+      <Card
+        label={t.paletteMagic}
+        actions={
+          <button type="button" onClick={handleShuffle} className="ctl ctl-tinted ctl-sm">
+            <RefreshCw aria-hidden="true" />
+            {t.shuffle}
+            {shuffleCount > 0 && <span className="tabular">{shuffleCount}</span>}
+          </button>
+        }
+      >
+        <p className="text-[14px] text-muted-foreground max-w-[60ch]">{t.paletteMagicIntro}</p>
 
-        {/* Source colors — click to select for injection into slots */}
-        <div className="flex justify-center gap-2 flex-wrap items-center">
-          <span className="font-mono text-[8px] text-muted-foreground uppercase tracking-wider mr-1">
-            {selectedSourceColor ? '← click a slot' : 'Source'}
+        <div className="grid grid-cols-1 sm:grid-cols-[7rem_minmax(0,1fr)] items-center gap-x-6 gap-y-2 sm:gap-y-5">
+          {/* Source colors — click to select for injection into slots */}
+          <span className="text-[14px] text-muted-foreground" aria-live="polite">
+            {selectedSourceColor ? t.clickASlot : t.sourceColors}
           </span>
-          {sources.map((c, i) => (
-            <div key={i} className="relative group">
-              <div
-                className={`w-10 h-10 rounded-lg shadow-sm border-2 cursor-pointer hover:scale-110 transition-all ${
-                  selectedSourceColor === c ? 'border-yellow-400 ring-2 ring-yellow-300 scale-110' : 'border-border/60'
-                }`}
-                style={{ backgroundColor: c }}
-                onClick={() => setSelectedSourceColor(prev => prev === c ? null : c)}
-                title={selectedSourceColor === c ? 'Deselect' : 'Select to inject into a slot'}
-              />
-              <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 font-mono text-[6px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">{c}</span>
-            </div>
-          ))}
-          {/* Extract from image button */}
-          <div className="relative">
+          <div className="flex gap-2 flex-wrap items-center mb-3 sm:mb-0">
+            {sources.map((c, i) => {
+              const active = selectedSourceColor === c;
+              return (
+                <button
+                  type="button"
+                  key={i}
+                  className="relative w-10 h-10 rounded-sm shadow-hairline hover:shadow-hairline-strong press transition-shadow duration-fast ease-out"
+                  style={{ backgroundColor: c }}
+                  onClick={() => setSelectedSourceColor(prev => prev === c ? null : c)}
+                  aria-pressed={active}
+                  aria-label={`${active ? t.deselect : t.selectToInject}: ${c}`}
+                  title={`${c} · ${active ? t.deselect : t.selectToInject}`}
+                >
+                  {/* Selected reads as everywhere else: black fill, white glyph. */}
+                  {active && (
+                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-pill bg-primary text-primary-foreground flex items-center justify-center" aria-hidden="true">
+                      <Check className="w-3 h-3" strokeWidth={3} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+            {/* Extract from image */}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -491,94 +499,78 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
             />
             <label
               htmlFor="palette-image-upload"
-              className="w-10 h-10 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-yellow-400 hover:bg-yellow-50 transition-all"
-              title="Extract palette from image (JPG/PNG/WEBP)"
+              className="ctl ctl-outline ctl-icon ctl-lg cursor-pointer"
+              title={t.extractFromImageTitle}
+              aria-label={t.extractFromImage}
             >
-              <span className="text-[14px]">🖼</span>
+              <ImageIcon aria-hidden="true" />
             </label>
           </div>
-        </div>
 
-        {/* Context pills */}
-        <div className="flex justify-center flex-wrap gap-2">
-          {contexts.map(ctx => (
-            <button
-              key={ctx.key}
-              onClick={() => setContext(ctx.key)}
-              className="px-4 py-2 font-mono text-[9px] uppercase tracking-[0.2em] rounded-full transition-all font-bold border"
-              style={context === ctx.key
-                ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--accent))' }
-                : { backgroundColor: 'white', color: '#999', borderColor: '#E5E5E5' }
-              }
-            >
-              {ctx.icon} {ctx.label}
-            </button>
-          ))}
-        </div>
+          {/* Context: quiet text tabs */}
+          <span className="text-[14px] text-muted-foreground">{t.contextLabel}</span>
+          <TextTabs<DesignContext>
+            items={contexts.map(ctx => ({ value: ctx.key, label: ctx.label }))}
+            value={context}
+            onChange={setContext}
+            ariaLabel={t.contextLabel}
+            className="mb-3 sm:mb-0"
+          />
 
-        {/* Slot count selector */}
-        <div className="flex justify-center items-center gap-3">
-          <span className="font-mono text-[9px] text-muted-foreground uppercase tracking-wider">{t.slots}:</span>
-          {[3, 4, 5, 6, 7].map(n => (
-            <button
-              key={n}
-              onClick={() => setSlotCount(n)}
-              className="w-8 h-8 rounded-full font-mono text-[11px] font-bold transition-all border"
-              style={slotCount === n
-                ? { backgroundColor: 'hsl(var(--foreground))', color: 'hsl(var(--accent))', borderColor: 'hsl(var(--foreground))' }
-                : { backgroundColor: 'white', color: '#999', borderColor: '#E5E5E5' }
-              }
-            >
-              {n}
-            </button>
-          ))}
+          {/* Slot count */}
+          <span className="text-[14px] text-muted-foreground">{t.slots}</span>
+          <TextTabs
+            items={SLOT_OPTIONS.map(n => ({ value: String(n), label: <span className="tabular">{n}</span> }))}
+            value={String(slotCount)}
+            onChange={v => setSlotCount(Number(v))}
+            ariaLabel={t.slots}
+          />
         </div>
-
-        {/* Shuffle button */}
-        <button
-          onClick={handleShuffle}
-          className="group relative inline-flex items-center gap-3 px-12 py-5 bg-foreground text-background font-mono text-sm uppercase tracking-[0.4em] rounded-full hover:scale-105 active:scale-95 transition-all duration-200 shadow-2xl hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.4)]"
-        >
-          <span className="text-xl transition-transform group-hover:rotate-180 duration-500">⟳</span>
-          <span>Shuffle</span>
-          {shuffleCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-[#F0FF00] text-foreground text-[9px] font-bold w-6 h-6 rounded-full flex items-center justify-center">
-              {shuffleCount}
-            </span>
-          )}
-        </button>
-      </section>
+      </Card>
 
       {/* Palette Grid */}
       {palettes.length > 0 && (
-        <section ref={gridRef} className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-mono text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.3em]">
+        <section ref={gridRef} className="flex flex-col gap-5 scroll-mt-24" aria-label={t.paletteMagic}>
+          <div className="flex items-center justify-between gap-4 pt-3">
+            <span className="text-[14px] text-muted-foreground tabular">
               {palettes.length} {t.paletteMagic}
-            </h3>
+            </span>
             {favorites.length > 0 && (
-              <span className="font-mono text-[9px] text-muted-foreground">★ {favorites.length} {t.save}</span>
+              <LegendDot label={<span className="tabular">{favorites.length} {t.save}</span>} />
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
             {palettes.map((palette) => {
               const isExpanded = expandedId === palette.id;
               const fav = isFav(palette.id);
               return (
-                <div
+                <Card
+                  as="article"
                   key={palette.id}
-                  className={`bg-card rounded-2xl border overflow-hidden transition-all duration-300 ${isExpanded ? 'ring-1 ring-black/10 shadow-xl border-border' : 'border-border/60 hover:shadow-md hover:border-border'}`}
+                  aria-label={palette.name}
+                  label={<span className="truncate">{palette.name}</span>}
+                  className={`transition-shadow duration-fast ease-out ${isExpanded ? 'shadow-[inset_0_0_0_1px_hsl(var(--foreground))]' : ''}`}
+                  actions={
+                    <>
+                      <IconButton label={t.save} active={fav} onClick={() => toggleFavorite(palette)}>
+                        <Star aria-hidden="true" fill={fav ? 'currentColor' : 'none'} />
+                      </IconButton>
+                      <IconButton label={t.copy} onClick={() => copyPalette(palette.colors)}>
+                        <Copy aria-hidden="true" />
+                      </IconButton>
+                    </>
+                  }
                 >
                   {/* Color strip with lock icons */}
-                  <div className="flex h-24">
+                  <div className="flex h-24 rounded-md overflow-hidden">
                     {palette.colors.map((c, ci) => {
                       const locked = isLocked(palette.id, ci);
                       return (
                         <div
                           key={ci}
-                          className={`flex-1 relative group/swatch hover:flex-[2] transition-[flex] duration-300 cursor-pointer ${
-                            selectedSourceColor ? 'ring-inset hover:ring-2 hover:ring-yellow-400' : ''
+                          className={`flex-1 relative group/swatch hover:flex-[2] transition-[flex] duration-base ease-out cursor-pointer ${
+                            selectedSourceColor ? 'ring-inset hover:ring-2 hover:ring-foreground' : ''
                           }`}
                           style={{ backgroundColor: c }}
                           onClick={() => {
@@ -588,14 +580,14 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                               newColors[ci] = selectedSourceColor;
                               const contrast = avgContrast(newColors);
                               const best = bestPairContrast(newColors);
-                              setPalettes(prev => prev.map(p => p.id === palette.id ? { ...p, colors: newColors, contrastRatio: contrast, wcagPass: best >= 4.5 } : p));
+                              setPalettes(prev => prev.map(p => p.id === palette.id ? { ...p, colors: newColors, contrastRatio: contrast, wcagPass: best >= WCAG_THRESHOLDS.aaNormal } : p));
                               // Force lock (don't toggle — always set)
                               setLockedColors(prev => ({
                                 ...prev,
                                 [palette.id]: { ...(prev[palette.id] || {}), [ci]: selectedSourceColor }
                               }));
                               setSelectedSourceColor(null);
-                              showFeedback('Color injected & locked ✓');
+                              showFeedback(t.colorInjectedLocked);
                             } else {
                               setExpandedId(isExpanded ? null : palette.id);
                             }
@@ -603,27 +595,28 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                         >
                           {/* Lock button */}
                           <button
+                            type="button"
                             onClick={(e) => { e.stopPropagation(); toggleLock(palette.id, ci, c); }}
-                            className={`absolute top-1.5 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] transition-all z-10 ${
+                            className={`absolute top-1.5 left-1/2 -translate-x-1/2 w-8 h-8 rounded-sm flex items-center justify-center press transition-opacity duration-fast ease-out z-10 ${
                               locked
-                                ? 'opacity-100 bg-yellow-400/90 shadow-md scale-100'
-                                : 'opacity-0 group-hover/swatch:opacity-70 hover:!opacity-100 bg-foreground/30'
+                                ? 'opacity-100 bg-primary text-primary-foreground'
+                                : 'opacity-0 group-hover/swatch:opacity-70 hover:!opacity-100 focus-visible:opacity-100 bg-foreground/30 text-background'
                             }`}
                             title={locked ? t.unlockColor : t.lockColor}
+                            aria-label={locked ? t.unlockColor : t.lockColor}
+                            aria-pressed={locked}
                           >
-                            <span style={{ color: locked ? 'hsl(var(--foreground))' : '#fff' }}>
-                              {locked ? '🔒' : '🔓'}
-                            </span>
+                            {locked ? <Lock className="w-3.5 h-3.5" aria-hidden="true" /> : <Unlock className="w-3.5 h-3.5" aria-hidden="true" />}
                           </button>
 
                           {/* Locked indicator border */}
                           {locked && (
-                            <div className="absolute inset-0 border-2 border-yellow-400 pointer-events-none" />
+                            <div className="absolute inset-0 border-2 border-foreground pointer-events-none" />
                           )}
 
                           {/* Hex label */}
                           <span
-                            className="absolute bottom-2 left-1/2 -translate-x-1/2 font-mono text-[7px] font-bold opacity-0 group-hover/swatch:opacity-100 transition-opacity whitespace-nowrap"
+                            className="absolute bottom-2 left-1/2 -translate-x-1/2 tabular text-[12px] opacity-0 group-hover/swatch:opacity-100 transition-opacity duration-fast ease-out whitespace-nowrap"
                             style={{ color: getContrastColor(c) }}
                           >
                             {c}
@@ -633,82 +626,73 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
                     })}
                   </div>
 
-                  {/* Info bar */}
-                  <div className="px-4 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-mono text-[10px] font-bold text-foreground uppercase tracking-wider">{palette.name}</h4>
-                      <span className={`font-mono text-[7px] font-bold px-2 py-0.5 rounded-full ${palette.wcagPass ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                        {palette.wcagPass ? 'WCAG AA' : `${palette.contrastRatio.toFixed(1)}:1`}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => toggleFavorite(palette)}
-                        className={`w-7 h-7 flex items-center justify-center rounded-full text-sm transition-all ${fav ? 'bg-[#F0FF00] scale-110' : 'hover:bg-secondary/40'}`}
-                      >
-                        {fav ? '★' : '☆'}
-                      </button>
-                      <button
-                        onClick={() => copyPalette(palette.colors)}
-                        className="w-7 h-7 flex items-center justify-center rounded-full text-[10px] hover:bg-secondary/40 transition-all"
-                        title={t.copy}
-                      >
-                        ⎘
-                      </button>
-                      <button
-                        onClick={() => applyPalette(palette.colors)}
-                        className="px-3 py-1.5 font-mono text-[8px] uppercase tracking-wider rounded-full bg-foreground text-background hover:bg-foreground/80 transition-all"
-                      >
-                        {t.applyPalette}
-                      </button>
-                    </div>
+                  {/* Contrast and apply */}
+                  <div className="flex items-end justify-between gap-3">
+                    <Metric
+                      size="sm"
+                      value={palette.contrastRatio.toFixed(2)}
+                      caption={palette.wcagPass ? `${t.contrast} · AA` : t.contrast}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => applyPalette(palette.colors)}
+                      className="ctl ctl-outline ctl-sm shrink-0"
+                    >
+                      {t.applyPalette}
+                    </button>
                   </div>
 
                   {/* Expanded detail */}
                   {isExpanded && (
-                    <div className="px-4 pb-4 pt-1 border-t border-border/40 animate-in slide-in-from-top-2 duration-200">
-                      <div className="space-y-1.5 mb-3">
-                        <h5 className="font-mono text-[8px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-2">Contrast Pairs</h5>
+                    <div className="flex flex-col gap-5 pt-5 hairline-t">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-[13px] text-muted-foreground">{t.contrastPairs}</span>
                         {palette.colors.map((c1, i) =>
                           palette.colors.slice(i + 1).map((c2, j) => {
                             const ratio = getContrastRatio(c1, c2);
                             if (ratio < 2) return null;
-                            const passAA = ratio >= 4.5;
+                            const passAA = ratio >= WCAG_THRESHOLDS.aaNormal;
                             return (
                               <div key={`${i}-${j}`} className="flex items-center gap-2">
-                                <div className="flex gap-0.5">
-                                  <div className="w-5 h-5 rounded-sm" style={{ backgroundColor: c1 }} />
-                                  <div className="w-5 h-5 rounded-sm" style={{ backgroundColor: c2 }} />
+                                <div className="flex gap-0.5 shrink-0">
+                                  <div className="w-5 h-5 rounded-xs shadow-hairline" style={{ backgroundColor: c1 }} />
+                                  <div className="w-5 h-5 rounded-xs shadow-hairline" style={{ backgroundColor: c2 }} />
                                 </div>
-                                <div className="flex-1 h-[2px] bg-secondary rounded-full overflow-hidden">
-                                  <div className="h-full rounded-full" style={{ width: `${Math.min(ratio / 10 * 100, 100)}%`, backgroundColor: passAA ? '#059669' : '#D97706' }} />
+                                <div className="flex-1 h-1 bg-fill-2 rounded-pill overflow-hidden">
+                                  <div className={`h-full rounded-pill ${passAA ? 'bg-foreground' : 'bg-fill-3'}`} style={{ width: `${Math.min(ratio / 10 * 100, 100)}%` }} />
                                 </div>
-                                <span className="font-mono text-[8px] font-bold w-10 text-right">{ratio.toFixed(1)}:1</span>
-                                <span className={`font-mono text-[7px] font-bold ${passAA ? 'text-emerald-500' : 'text-amber-500'}`}>
+                                <span className="tabular text-[12px] w-12 text-right text-foreground">{ratio.toFixed(1)}:1</span>
+                                <span className={`text-[12px] w-5 ${passAA ? 'text-foreground' : 'text-muted-foreground'}`}>
                                   {passAA ? 'AA' : '—'}
                                 </span>
-                                <div className="flex gap-0.5">
-                                  <div className="px-1.5 py-0.5 rounded text-[7px] font-bold leading-none" style={{ backgroundColor: c2, color: c1 }}>Aa</div>
-                                  <div className="px-1.5 py-0.5 rounded text-[7px] font-bold leading-none" style={{ backgroundColor: c1, color: c2 }}>Aa</div>
+                                <div className="flex gap-0.5 shrink-0" aria-hidden="true">
+                                  <div className="px-1.5 py-0.5 rounded-xs text-[12px] leading-none" style={{ backgroundColor: c2, color: c1 }}>Aa</div>
+                                  <div className="px-1.5 py-0.5 rounded-xs text-[12px] leading-none" style={{ backgroundColor: c1, color: c2 }}>Aa</div>
                                 </div>
                               </div>
                             );
                           })
                         )}
                       </div>
-                      <div className="space-y-1">
+                      <div className="flex flex-col">
                         {palette.colors.map((c, i) => (
-                          <div key={i} className="flex items-center gap-2 cursor-pointer hover:bg-secondary/40 rounded-md px-1 py-0.5 -mx-1 transition-colors" onClick={() => onHexChange(c)}>
-                            <div className="w-4 h-4 rounded-sm shadow-sm" style={{ backgroundColor: c }} />
-                            <span className="font-mono text-[9px] text-foreground/80 font-bold">{c}</span>
-                            <span className="font-mono text-[8px] text-muted-foreground">{getClosestColorName(c)}</span>
-                            {isLocked(palette.id, i) && <span className="text-[8px] text-yellow-500">🔒</span>}
-                          </div>
+                          <button
+                            type="button"
+                            key={i}
+                            className={`flex items-center gap-3 min-h-10 text-left hover:opacity-80 transition-opacity duration-fast ease-out ${i < palette.colors.length - 1 ? 'hairline-b' : ''}`}
+                            onClick={() => onHexChange(c)}
+                            title={c}
+                          >
+                            <span className="w-4 h-4 shrink-0 rounded-xs shadow-hairline" style={{ backgroundColor: c }} aria-hidden="true" />
+                            <span className="tabular text-[14px] text-foreground">{c}</span>
+                            <span className="text-[12px] text-muted-foreground truncate">{getClosestColorName(c)}</span>
+                            {isLocked(palette.id, i) && <Lock className="w-3 h-3 ml-auto shrink-0" aria-hidden="true" />}
+                          </button>
                         ))}
                       </div>
                     </div>
                   )}
-                </div>
+                </Card>
               );
             })}
           </div>
@@ -717,24 +701,30 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
 
       {/* Favorites */}
       {favorites.length > 0 && (
-        <section className="space-y-4 pt-6 border-t border-border/60">
-          <h3 className="font-mono text-[10px] font-bold text-muted-foreground/70 uppercase tracking-[0.3em]">★ {t.save} ({favorites.length})</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <section className="flex flex-col gap-5 pt-3" aria-label={t.save}>
+          <SectionHeading title={<>{t.save} <span className="text-muted-foreground tabular">{favorites.length}</span></>} />
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
             {favorites.map(palette => (
-              <div key={palette.id} className="bg-card rounded-2xl border border-border/60 overflow-hidden">
-                <div className="flex h-16">
+              <Card
+                as="article"
+                key={palette.id}
+                aria-label={palette.name}
+                label={<span className="truncate">{palette.name}</span>}
+                actions={
+                  <IconButton label={t.remove} onClick={() => toggleFavorite(palette)}>
+                    <X aria-hidden="true" />
+                  </IconButton>
+                }
+              >
+                <div className="flex h-16 rounded-md overflow-hidden">
                   {palette.colors.map((c, ci) => (
-                    <div key={ci} className="flex-1" style={{ backgroundColor: c }} />
+                    <div key={ci} className="flex-1" style={{ backgroundColor: c }} title={c} />
                   ))}
                 </div>
-                <div className="px-4 py-2 flex items-center justify-between">
-                  <span className="font-mono text-[9px] font-bold text-foreground/80 uppercase">{palette.name}</span>
-                  <div className="flex gap-1">
-                    <button onClick={() => applyPalette(palette.colors)} className="px-3 py-1 font-mono text-[8px] uppercase rounded-full bg-foreground text-background hover:bg-foreground/80 transition-all">{t.applyPalette}</button>
-                    <button onClick={() => toggleFavorite(palette)} className="px-2 py-1 font-mono text-[8px] text-red-400 hover:text-red-600 transition-colors">✕</button>
-                  </div>
+                <div className="flex justify-end">
+                  <button type="button" onClick={() => applyPalette(palette.colors)} className="ctl ctl-outline ctl-sm">{t.applyPalette}</button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </section>
@@ -742,11 +732,9 @@ export const PaletteMagic: React.FC<PaletteMagicProps> = ({ initialHex, batchCol
 
       {/* Empty state */}
       {palettes.length === 0 && (
-        <div className="text-center py-20 space-y-4">
-          <div className="text-6xl opacity-20">⟳</div>
-          <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.3em]">
-            Hit shuffle to generate palettes
-          </p>
+        <div className="py-16 flex flex-col items-center gap-3 text-center">
+          <RefreshCw className="w-6 h-6 text-muted-foreground opacity-50" aria-hidden="true" />
+          <p className="text-[14px] text-muted-foreground">{t.shuffleToGenerate}</p>
         </div>
       )}
     </div>

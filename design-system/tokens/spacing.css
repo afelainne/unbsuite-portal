@@ -1,0 +1,36 @@
+/* 4px base grid. Screen gutters and card padding come straight off the
+   reference layouts: 24px card padding, 20px card gap, 64px section rhythm. */
+:root{
+  --space-0:0px;
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-7:32px;
+  --space-8:40px;
+  --space-9:48px;
+  --space-10:64px;
+  --space-11:96px;
+  --space-12:128px;
+
+  --gutter-page:40px;
+  --gutter-page-mobile:20px;
+  --gap-card:20px;
+  --pad-card:24px;
+  --pad-card-tight:16px;
+  --rhythm-section:64px;
+  --rhythm-section-lg:96px;
+
+  --control-h-sm:32px;
+  --control-h:40px;
+  --control-h-lg:48px;
+  --control-square:52px;   /* nav / icon-button hit target from the UI-structure spec */
+  --icon-sm:14px;
+  --icon:18px;             /* nav glyph size from the UI-structure spec */
+  --icon-lg:24px;
+
+  --max-content:1240px;
+  --max-prose:62ch;
+}

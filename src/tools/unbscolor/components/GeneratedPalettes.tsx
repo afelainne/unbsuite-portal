@@ -1,14 +1,51 @@
+import { Download, Lock, Pencil, Plus, Shuffle, Unlock, Upload } from 'lucide-react';
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
-import { hexToRgb, rgbToHex, isValidHex, getClosestColorName, rgbToHsl, hslToRgb, mixColors, rgbToCmyk, rgbToHsv, findReferenceMatches, hexToLab } from '../utils/colorMath';
+import { hexToRgb, rgbToHex, isValidHex, getClosestColorName, rgbToHsl, hslToRgb, rgbToCmyk, rgbToHsv, findReferenceMatches, normalizeHex } from '../utils/colorMath';
+import { contrastRatio as wcagContrastRatio, wcagLevelFor } from '../utils/contrast';
+import { clusterPixels } from '../utils/imageExtraction';
+import { downloadBlob, downloadUrl } from '../utils/browser';
 import { getLibraryById } from '../constants';
+import { formatReferenceCode } from '../utils/reference';
 import { useLanguage } from '../i18n';
-
-interface PaletteColor {
-    hex: string;
-    name: string;
-    weight: number;
-    locked: boolean;
-}
+import type { Translations } from '../i18n';
+import { HexField } from './HexField';
+import { PaletteExportMenu } from './PaletteExportMenu';
+import { ColorVisionToggle, VisionCaption, VisionMode } from './ColorVisionToggle';
+import {
+    PaletteColor,
+    WeightPreset,
+    PaletteSortKey,
+    BasePosition,
+    evenWeights,
+    normalizeWeights,
+    applyWeightPreset,
+    hasSourceWeights,
+    sortPalette,
+    moveColor,
+    appendColors,
+    removeColorAt,
+    setWeightAt,
+    coverageWeights,
+    occurrenceWeights,
+    toWeightMap,
+    formatPercent
+} from './GeneratedPaletteLogic';
+import {
+    SheetTemplate,
+    SheetShow,
+    PRIMARY_SHEET_VIEWS,
+    EXTRA_SHEET_TEMPLATES,
+    TEMPLATES_WITH_VARIATIONS,
+    renderSheet,
+    screenCanvas,
+    EXPORT_CANVAS
+} from './GeneratedPaletteSheets';
+import { ALBERS_TEMPLATES, AlbersTemplate, comboLayers, maxCardsFor, renderAlbers } from './GeneratedPaletteAlbers';
+import { PaletteProportionBar } from './PaletteProportionBar';
+import { useElementWidth } from './PaletteElementWidth';
+import { PaletteColorRow } from './PaletteColorRow';
+import { PaletteHarmonyPanel } from './PaletteHarmonyPanel';
+import { Card, IconButton, LegendToggle, Metric, TextTabs } from './ui';
 
 interface Settings {
     showHex: boolean;
@@ -17,10 +54,10 @@ interface Settings {
     showHsb: boolean;
     showLab: boolean;
     showCmyk: boolean;
-    showPmsC: boolean;
-    showPmsU: boolean;
-    showPmsSolidC: boolean;
-    showPmsSolidU: boolean;
+    showRefBridgeC: boolean;
+    showRefBridgeU: boolean;
+    showRefSolidC: boolean;
+    showRefSolidU: boolean;
     mixFormat: string;
 }
 
@@ -37,32 +74,139 @@ const defaultSettings: Settings = {
     showHsb: true,
     showLab: true,
     showCmyk: true,
-    showPmsC: false,
-    showPmsU: false,
-    showPmsSolidC: false,
-    showPmsSolidU: false,
+    showRefBridgeC: false,
+    showRefBridgeU: false,
+    showRefSolidC: false,
+    showRefSolidU: false,
     mixFormat: 'rgb(80, 184, 72)'
 };
 
-export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({ 
-    initialHex = '#F7E043',
+const sheetLabel = (t: Translations, template: SheetTemplate): string => {
+    switch (template) {
+        case 'classic': return t.gpViewSheet;
+        case 'vertical': return t.gpViewStrip;
+        case 'swatches': return t.gpViewGrid;
+        case 'bars': return t.gpViewBars;
+        case 'ring': return t.gpViewRing;
+        case 'grid': return t.gpTemplateMainVariations;
+        case 'cards': return t.cards;
+        case 'stripes': return t.templateStripes;
+        case 'gradient': return t.templateGradient;
+        case 'mosaic': return t.templateMosaic;
+        case 'splitscreen': return t.templateSplitScreen;
+        case 'columns': return t.templateColumns;
+        case 'dots': return t.templateDots;
+        default: return t.templateEditorial;
+    }
+};
+
+const albersLabel = (t: Translations, template: AlbersTemplate): string => {
+    switch (template) {
+        case 'circles': return t.templateCircles;
+        case 'sunset': return t.templateSunset;
+        case 'bars': return t.templateBars;
+        case 'rings': return t.templateRings;
+        case 'diamonds': return t.templateDiamonds;
+        case 'frames': return t.templateFrames;
+        case 'split': return t.templateSplit;
+        case 'targets': return t.templateTargets;
+        case 'triangles': return t.templateTriangles;
+        default: return t.templateSquares;
+    }
+};
+
+const presetLabel = (t: Translations, preset: WeightPreset): string => {
+    switch (preset) {
+        case 'rule603010': return '60-30-10';
+        case 'golden': return t.gpPresetGolden;
+        case 'descending': return t.gpPresetDescending;
+        case 'source': return t.gpPresetSource;
+        default: return t.gpPresetEqual;
+    }
+};
+
+const ALBERS_BACKGROUNDS = { black: '#000000', white: '#FFFFFF', gray: '#E5E5E5' } as const;
+type AlbersBackground = keyof typeof ALBERS_BACKGROUNDS;
+
+/** Draws an image source onto a small canvas and returns its RGBA pixels. */
+const rasterPixels = (src: string, size = 120): Promise<Uint8ClampedArray> =>
+    new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return reject(new Error('Canvas unavailable'));
+                ctx.drawImage(img, 0, 0, size, size);
+                resolve(ctx.getImageData(0, 0, size, size).data);
+            } catch (err) {
+                reject(err instanceof Error ? err : new Error(String(err)));
+            }
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = src;
+    });
+
+/** A control on a card: muted sentence-case caption, then the control itself. */
+const Control: React.FC<{ label: React.ReactNode; children: React.ReactNode; className?: string }> = ({ label, children, className = '' }) => (
+    <div className={`flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 ${className}`}>
+        <span className="shrink-0 text-[13px] text-muted-foreground">{label}</span>
+        {children}
+    </div>
+);
+
+/** A slider with its caption and its value, the value in tabular figures. */
+const SliderControl: React.FC<{
+    label: string;
+    value: number;
+    min: number;
+    max: number;
+    onChange: (v: number) => void;
+    suffix?: string;
+    disabled?: boolean;
+}> = ({ label, value, min, max, onChange, suffix = '', disabled }) => (
+    <label className={`flex items-center gap-3 ${disabled ? 'opacity-40' : ''}`}>
+        <span className="shrink-0 text-[13px] text-muted-foreground">{label}</span>
+        <input
+            type="range"
+            min={min}
+            max={max}
+            value={value}
+            onChange={(e) => onChange(Number(e.target.value))}
+            disabled={disabled}
+            className="tool-slider w-28"
+        />
+        <span className="w-10 text-[14px] tabular text-foreground">{value}{suffix}</span>
+    </label>
+);
+
+
+/** Text-labelled download action for a card header, in the quiet 32px style. */
+const HeaderDownload: React.FC<{ label: string; ariaLabel: string; onClick: () => void }> = ({ label, ariaLabel, onClick }) => (
+    <button type="button" onClick={onClick} className="ctl ctl-gray ctl-sm" aria-label={ariaLabel} title={ariaLabel}>
+        <Download aria-hidden="true" />{label}
+    </button>
+);
+
+export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     settings = defaultSettings,
     externalColors
 }) => {
     const { t } = useLanguage();
+    const validExternal = useMemo(
+        () => (externalColors ?? []).map((c) => normalizeHex(c)).filter((c): c is string => Boolean(c)),
+        [externalColors]
+    );
+    const externalKey = validExternal.join(',');
+
     const getInitialColors = (): PaletteColor[] => {
-        if (externalColors && externalColors.length > 0) {
-            const weightPerColor = Math.floor(100 / externalColors.length);
-            const remainder = 100 - (weightPerColor * externalColors.length);
-            return externalColors.map((hex, i) => ({
-                hex,
-                name: getClosestColorName(hex),
-                weight: weightPerColor + (i === 0 ? remainder : 0),
-                locked: false
-            }));
+        if (validExternal.length > 0) {
+            return evenWeights(validExternal);
         }
         return [
-            { hex: '#F7E043', name: 'Reference Yellow', weight: 40, locked: false },
+            { hex: '#F0FF00', name: 'Unserved Yellow', weight: 40, locked: false },
             { hex: '#1A1A1A', name: 'Black', weight: 20, locked: false },
             { hex: '#FFFFFF', name: 'White', weight: 20, locked: false },
             { hex: '#E5E5E5', name: 'Light Gray', weight: 10, locked: false },
@@ -71,45 +215,66 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     };
 
     const [colors, setColors] = useState<PaletteColor[]>(getInitialColors);
-    const [showCodes, setShowCodes] = useState(true);
-    const [showVariationCodes, setShowVariationCodes] = useState(true);
     const [newColorInput, setNewColorInput] = useState('');
+    const [vision, setVision] = useState<VisionMode>('normal');
+
+    // Input: file, pasted SVG and the proportions measured from them.
+    const [svgPasteValue, setSvgPasteValue] = useState('');
+    const [inputHint, setInputHint] = useState<string | null>(null);
+    const [sourceWeights, setSourceWeights] = useState<Record<string, number> | null>(null);
+    const [activePreset, setActivePreset] = useState<WeightPreset | null>(null);
+    const loadToken = useRef(0);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Colour list.
+    const [allCodes, setAllCodes] = useState(false);
+    const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+    const [dragFrom, setDragFrom] = useState<number | null>(null);
+    const [dragOver, setDragOver] = useState<number | null>(null);
+
+    // Sheet.
+    const [sheetView, setSheetView] = useState<SheetTemplate>('classic');
+    const [show, setShow] = useState<SheetShow>({ name: true, hex: true, percent: true, codes: true });
+    const [showVariations, setShowVariations] = useState(true);
+    const [showVariationCodes, setShowVariationCodes] = useState(true);
+    const [variationCount, setVariationCount] = useState(5);
+    const [baseColorPosition, setBaseColorPosition] = useState<BasePosition>('none');
+    const [splitRatio, setSplitRatio] = useState(55);
+
+    // Interaction squares and combinations.
     const [albersSeed, setAlbersSeed] = useState(0);
     const [cardCount, setCardCount] = useState(8);
     const [contrastCardCount, setContrastCardCount] = useState(8);
-    const [variationCount, setVariationCount] = useState(5);
-    const [baseColorPosition, setBaseColorPosition] = useState<'none' | 'above' | 'center' | 'below'>('none');
-    const [splitRatio, setSplitRatio] = useState(55);
-    const [paletteTemplate, setPaletteTemplate] = useState<'classic' | 'vertical' | 'grid' | 'cards' | 'stripes' | 'swatches' | 'gradient' | 'mosaic' | 'splitscreen' | 'columns' | 'dots' | 'editorial'>('classic');
-    const [showVariations, setShowVariations] = useState(true);
-    const [albersTemplate, setAlbersTemplate] = useState<'squares' | 'circles' | 'sunset' | 'bars' | 'rings' | 'diamonds' | 'frames' | 'split' | 'targets' | 'triangles'>('squares');
-    const [albersBackground, setAlbersBackground] = useState<'black' | 'white' | 'gray'>('black');
+    const [albersTemplate, setAlbersTemplate] = useState<AlbersTemplate>('squares');
+    const [albersBackground, setAlbersBackground] = useState<AlbersBackground>('black');
+    const [albersShowHex, setAlbersShowHex] = useState(true);
+    const [albersShowPercent, setAlbersShowPercent] = useState(true);
     const [draggedComboIndex, setDraggedComboIndex] = useState<number | null>(null);
     const [comboOrder, setComboOrder] = useState<number[]>([]);
     const [editingComboIndex, setEditingComboIndex] = useState<number | null>(null);
     const [customCombos, setCustomCombos] = useState<{ [key: number]: { outer?: string; middle?: string; inner?: string } }>({});
     const [albersLayerCount, setAlbersLayerCount] = useState<2 | 3 | 4>(3);
     const [comboLocks, setComboLocks] = useState<Record<number, boolean>>({});
-    const [draggedColorIndex, setDraggedColorIndex] = useState<number | null>(null);
     const [fullContrastMode, setFullContrastMode] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [svgPasteValue, setSvgPasteValue] = useState('');
-    const [svgPasteHint, setSvgPasteHint] = useState<string | null>(null);
 
-    // Atualizar cores quando externalColors mudar
+    const [sheetRef, sheetWidth] = useElementWidth<HTMLDivElement>(1152);
+    const [albersRef, albersWidth] = useElementWidth<HTMLDivElement>(1152);
+
+    // Atualizar cores quando externalColors mudar de fato (ignora hex inválidos
+    // e novas referências com o mesmo conteúdo; preserva nomes e travas).
+    const lastExternalKey = useRef(externalKey);
     useEffect(() => {
-        if (externalColors && externalColors.length > 0) {
-            const weightPerColor = Math.floor(100 / externalColors.length);
-            const remainder = 100 - (weightPerColor * externalColors.length);
-            const newColors = externalColors.map((hex, i) => ({
-                hex,
-                name: getClosestColorName(hex),
-                weight: weightPerColor + (i === 0 ? remainder : 0),
-                locked: false
-            }));
-            setColors(newColors);
-        }
-    }, [externalColors]);
+        if (externalKey === lastExternalKey.current) return;
+        lastExternalKey.current = externalKey;
+        if (!externalKey) return;
+        setColors((prev) => evenWeights(externalKey.split(','), prev));
+        setActivePreset(null);
+    }, [externalKey]);
+
+    const exportSwatches = useMemo(
+        () => colors.filter((c) => isValidHex(c.hex)).map((c) => ({ name: c.name || c.hex, hex: c.hex })),
+        [colors]
+    );
 
     // Bibliotecas de referência
     const bridgeCoatedLibrary = useMemo(() => getLibraryById('sys_a_fin_c'), []);
@@ -137,81 +302,38 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         if (settings.showCmyk) codes.push(`CMYK ${cmyk.c}, ${cmyk.m}, ${cmyk.y}, ${cmyk.k}`);
         if (settings.showHsl) codes.push(`HSL ${hsl.h}, ${hsl.s}%, ${hsl.l}%`);
         if (settings.showHsb) codes.push(`HSB ${hsv.h}, ${hsv.s}, ${hsv.v}`);
-        
+
         // System B (C) — primary (Solid Coated)
-        if (settings.showPmsSolidC && solidCoatedLibrary.length > 0) {
+        if (settings.showRefSolidC && solidCoatedLibrary.length > 0) {
             const match = findReferenceMatches(hex, solidCoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code}`);
+            if (match && match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
         }
         // System B (U) — primary (Solid Uncoated)
-        if (settings.showPmsSolidU && solidUncoatedLibrary.length > 0) {
+        if (settings.showRefSolidU && solidUncoatedLibrary.length > 0) {
             const match = findReferenceMatches(hex, solidUncoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code}`);
+            if (match && match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
         }
         // System A (CP) — secondary (Bridge Coated)
-        if (settings.showPmsC && bridgeCoatedLibrary.length > 0) {
+        if (settings.showRefBridgeC && bridgeCoatedLibrary.length > 0) {
             const match = findReferenceMatches(hex, bridgeCoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code}`);
+            if (match && match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
         }
         // System A (UP) — secondary (Bridge Uncoated)
-        if (settings.showPmsU && bridgeUncoatedLibrary.length > 0) {
+        if (settings.showRefBridgeU && bridgeUncoatedLibrary.length > 0) {
             const match = findReferenceMatches(hex, bridgeUncoatedLibrary, 1)[0];
-            if (match && match.deltaE < 15) codes.push(`PMS ${match.reference.code}`);
+            if (match && match.deltaE < 15) codes.push(formatReferenceCode(match.reference.code));
         }
 
         return codes;
     };
 
-    const getLuminance = (hex: string) => {
-        const rgb = hexToRgb(hex);
-        const a = [rgb.r, rgb.g, rgb.b].map(v => {
-            v /= 255;
-            return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-        });
-        return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
-    };
+    /** Codes other than the hex itself, which has its own field and switch. */
+    const extraCodes = (hex: string) => formatColorCodes(hex).filter((code) => code.toUpperCase() !== hex.toUpperCase());
 
+    // WCAG helper from utils/contrast (invalid hex falls back to 1:1).
     const getContrastRatio = (hex1: string, hex2: string) => {
-        const l1 = getLuminance(hex1);
-        const l2 = getLuminance(hex2);
-        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-    };
-
-    const getContrastColor = (hex: string) => {
-        return getLuminance(hex) > 0.5 ? '#000000' : '#FFFFFF';
-    };
-
-    const getColorVariations = (hex: string, count: number = 5): string[] => {
-        const rgb = hexToRgb(hex);
-        const variations: string[] = [];
-        
-        // Tints (mais claros)
-        for (let i = count; i >= 1; i--) {
-            const tint = mixColors(rgb, { r: 255, g: 255, b: 255 }, (i / count) * 60);
-            variations.push(rgbToHex(tint.r, tint.g, tint.b));
-        }
-        
-        // Cor base no topo (acima)
-        if (baseColorPosition === 'above') {
-            variations.unshift(hex);
-        }
-        // Cor base no centro
-        else if (baseColorPosition === 'center') {
-            variations.push(hex);
-        }
-        
-        // Shades (mais escuros)
-        for (let i = 1; i <= count; i++) {
-            const shade = mixColors(rgb, { r: 0, g: 0, b: 0 }, (i / count) * 60);
-            variations.push(rgbToHex(shade.r, shade.g, shade.b));
-        }
-        
-        // Cor base no final (abaixo)
-        if (baseColorPosition === 'below') {
-            variations.push(hex);
-        }
-        
-        return variations;
+        const ratio = wcagContrastRatio(hex1, hex2);
+        return Number.isNaN(ratio) ? 1 : ratio;
     };
 
     const getContrastPairs = useCallback(() => {
@@ -301,237 +423,78 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         return result;
     }, [colors, albersSeed, fullContrastMode]);
 
-    const totalWeight = useMemo(() => colors.reduce((sum, c) => sum + c.weight, 0), [colors]);
+    /** Palette weight by hex (first occurrence), for labels on combinations. */
+    const weightByHex = useMemo(() => {
+        const map = new Map<string, number>();
+        colors.forEach((c) => {
+            const key = c.hex.toUpperCase();
+            if (!map.has(key)) map.set(key, c.weight);
+        });
+        return map;
+    }, [colors]);
+    const weightOf = useCallback((hex: string) => weightByHex.get(hex.toUpperCase()), [weightByHex]);
+
+    // ------------------------------------------------------------ palette edits
+
+    const editColors = (fn: (prev: PaletteColor[]) => PaletteColor[], keepPreset = false) => {
+        setColors(fn);
+        if (!keepPreset) setActivePreset(null);
+    };
 
     const addColor = () => {
-        if (isValidHex(newColorInput)) {
-            const hex = newColorInput.startsWith('#') ? newColorInput.toUpperCase() : `#${newColorInput.toUpperCase()}`;
-            const newCount = colors.length + 1;
-            const baseWeight = Math.floor(100 / newCount);
-            const lockedTotal = colors.filter(c => c.locked).reduce((sum, c) => sum + c.weight, 0);
-            const availableWeight = 100 - lockedTotal - baseWeight;
-            const unlockedColors = colors.filter(c => !c.locked);
-            const weightPerUnlocked = unlockedColors.length > 0 ? Math.floor(availableWeight / unlockedColors.length) : 0;
-            const updated = colors.map(c => ({ ...c, weight: c.locked ? c.weight : weightPerUnlocked }));
-            setColors([...updated, { hex, name: getClosestColorName(hex), weight: baseWeight, locked: false }]);
-            setNewColorInput('');
-        }
+        const hex = normalizeHex(newColorInput);
+        if (!hex) return;
+        editColors((prev) => appendColors(prev, [hex]));
+        setNewColorInput('');
+    };
+
+    const addColors = (hexes: string[]) => {
+        if (hexes.length === 0) return;
+        editColors((prev) => appendColors(prev, hexes));
     };
 
     const removeColor = (index: number) => {
-        if (colors.length > 2) {
-            const removedWeight = colors[index].weight;
-            const remaining = colors.filter((_, i) => i !== index);
-            const unlockedColors = remaining.filter(c => !c.locked);
-            if (unlockedColors.length > 0) {
-                const extraPerUnlocked = Math.floor(removedWeight / unlockedColors.length);
-                const updated = remaining.map(c => ({ ...c, weight: c.locked ? c.weight : c.weight + extraPerUnlocked }));
-                const newTotal = updated.reduce((sum, c) => sum + c.weight, 0);
-                if (newTotal !== 100) {
-                    const lastUnlocked = updated.findIndex(c => !c.locked);
-                    if (lastUnlocked !== -1) updated[lastUnlocked].weight += (100 - newTotal);
-                }
-                setColors(updated);
-            } else {
-                setColors(remaining);
-            }
-        }
+        editColors((prev) => removeColorAt(prev, index));
+        setExpandedRows(new Set());
     };
 
-    const updateColor = (index: number, hex: string) => {
-        if (isValidHex(hex)) {
-            const updated = [...colors];
-            updated[index] = { ...updated[index], hex: hex.startsWith('#') ? hex.toUpperCase() : `#${hex.toUpperCase()}`, name: getClosestColorName(hex) };
-            setColors(updated);
-        }
+    const updateColor = (index: number, rawHex: string) => {
+        const hex = normalizeHex(rawHex);
+        if (!hex) return;
+        editColors((prev) => prev.map((c, i) => (i === index ? { ...c, hex, name: getClosestColorName(hex) } : c)), true);
     };
 
-    const updateWeight = (index: number, newWeight: number) => {
-        const oldWeight = colors[index].weight;
-        const diff = newWeight - oldWeight;
-        if (diff === 0) return;
-        const unlockedIndices = colors.map((c, i) => ({ locked: c.locked, index: i })).filter(c => !c.locked && c.index !== index).map(c => c.index);
-        if (unlockedIndices.length === 0) return;
-        const diffPerUnlocked = Math.floor(diff / unlockedIndices.length);
-        let remainder = diff - (diffPerUnlocked * unlockedIndices.length);
-        const updated = colors.map((c, i) => {
-            if (i === index) return { ...c, weight: newWeight };
-            if (unlockedIndices.includes(i)) {
-                let adjustment = -diffPerUnlocked;
-                if (remainder !== 0) { adjustment -= Math.sign(remainder); remainder -= Math.sign(remainder); }
-                const newVal = Math.max(5, Math.min(90, c.weight + adjustment));
-                return { ...c, weight: newVal };
-            }
-            return c;
+    const updateWeight = (index: number, requested: number) => editColors((prev) => setWeightAt(prev, index, requested));
+
+    const toggleLock = (index: number) => editColors((prev) => prev.map((c, i) => (i === index ? { ...c, locked: !c.locked } : c)), true);
+
+    const updateName = (index: number, name: string) => editColors((prev) => prev.map((c, i) => (i === index ? { ...c, name } : c)), true);
+
+    const applyPreset = (preset: WeightPreset) => {
+        setColors((prev) => applyWeightPreset(prev, preset, sourceWeights));
+        setActivePreset(preset);
+    };
+
+    const sortBy = (key: PaletteSortKey) => {
+        editColors((prev) => sortPalette(prev, key), true);
+        setExpandedRows(new Set());
+    };
+
+    const moveRow = (from: number, to: number) => {
+        editColors((prev) => moveColor(prev, from, to), true);
+        setExpandedRows(new Set());
+    };
+
+    const toggleRow = (index: number) => {
+        setExpandedRows((prev) => {
+            const next = new Set(prev);
+            if (next.has(index)) next.delete(index);
+            else next.add(index);
+            return next;
         });
-        const currentTotal = updated.reduce((sum, c) => sum + c.weight, 0);
-        if (currentTotal !== 100) {
-            const lastUnlockedIdx = unlockedIndices[unlockedIndices.length - 1];
-            if (lastUnlockedIdx !== undefined) updated[lastUnlockedIdx].weight += (100 - currentTotal);
-        }
-        setColors(updated);
     };
 
-    const toggleLock = (index: number) => {
-        const updated = [...colors];
-        updated[index].locked = !updated[index].locked;
-        setColors(updated);
-    };
-
-    const updateName = (index: number, name: string) => {
-        const updated = [...colors];
-        updated[index].name = name;
-        setColors(updated);
-    };
-
-    const shuffleAlbers = () => {
-        const baseOrder = comboOrder.length > 0 ? [...comboOrder] : albersGrid.map((_, i) => i);
-        const lockedPositions = baseOrder.map((_, idx) => idx).filter((idx) => comboLocks[idx]);
-        const unlockedPositions = baseOrder.map((_, idx) => idx).filter((idx) => !comboLocks[idx]);
-
-        // Always bump seed so albersGrid reorders too
-        setAlbersSeed((prev) => prev + 1);
-
-        if (lockedPositions.length === 0) {
-            setComboOrder([]);
-            return;
-        }
-
-        // Prefer indices not currently visible to maximize variety
-        const visible = new Set(baseOrder);
-        const pool: number[] = [];
-        for (let k = 0; k < albersGrid.length; k++) if (!visible.has(k)) pool.push(k);
-        // Mix in current unlocked values as fallback
-        const unlockedValues = unlockedPositions.map((pos) => baseOrder[pos]);
-        const candidates = pool.length >= unlockedPositions.length ? pool : [...pool, ...unlockedValues];
-        for (let i = candidates.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-        }
-
-        const newOrder = [...baseOrder];
-        unlockedPositions.forEach((pos, idx) => {
-            newOrder[pos] = candidates[idx % candidates.length];
-        });
-        setComboOrder(newOrder);
-    };
-
-    // Drag & drop handlers para combinações
-    const handleComboDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-        setDraggedComboIndex(index);
-        e.dataTransfer.effectAllowed = 'move';
-    };
-
-    const handleComboDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    };
-
-    const handleComboDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
-        e.preventDefault();
-        if (draggedComboIndex === null || draggedComboIndex === dropIndex) return;
-        
-        // Criar ordem se não existir
-        const currentOrder = comboOrder.length > 0 ? [...comboOrder] : albersGrid.map((_, i) => i);
-        const [dragged] = currentOrder.splice(draggedComboIndex, 1);
-        currentOrder.splice(dropIndex, 0, dragged);
-        setComboOrder(currentOrder);
-        setDraggedComboIndex(null);
-    };
-
-    const handleComboDragEnd = () => {
-        setDraggedComboIndex(null);
-    };
-
-    // Drag & drop handlers para cores da paleta
-    const handleColorDragStart = (e: React.DragEvent<HTMLButtonElement>, index: number) => {
-        setDraggedColorIndex(index);
-        e.dataTransfer.effectAllowed = 'move';
-    };
-
-    const handleColorDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-    };
-
-    const handleColorDrop = (e: React.DragEvent<HTMLDivElement>, dropIndex: number) => {
-        e.preventDefault();
-        if (draggedColorIndex === null || draggedColorIndex === dropIndex) return;
-        
-        // Preservar as porcentagens nas posições originais
-        const originalWeights = colors.map(c => c.weight);
-        const originalLocks = colors.map(c => c.locked);
-        
-        // Reordenar as cores (hex e nome)
-        const newColors = [...colors];
-        const [dragged] = newColors.splice(draggedColorIndex, 1);
-        newColors.splice(dropIndex, 0, dragged);
-        
-        // Restaurar as porcentagens nas posições originais
-        const finalColors = newColors.map((color, idx) => ({
-            ...color,
-            weight: originalWeights[idx],
-            locked: originalLocks[idx]
-        }));
-        
-        setColors(finalColors);
-        setDraggedColorIndex(null);
-    };
-
-    const handleColorDragEnd = () => {
-        setDraggedColorIndex(null);
-    };
-
-    // Função para editar cores de uma combinação
-    const updateComboColor = (comboIdx: number, colorKey: 'outer' | 'middle' | 'inner', newHex: string) => {
-        if (!isValidHex(newHex)) return;
-        const hex = newHex.startsWith('#') ? newHex.toUpperCase() : `#${newHex.toUpperCase()}`;
-        setCustomCombos(prev => ({
-            ...prev,
-            [comboIdx]: {
-                ...prev[comboIdx],
-                [colorKey]: hex
-            }
-        }));
-    };
-
-    // Resetar customização de uma combinação
-    const resetCombo = (comboIdx: number) => {
-        setCustomCombos(prev => {
-            const newCustom = { ...prev };
-            delete newCustom[comboIdx];
-            return newCustom;
-        });
-        setEditingComboIndex(null);
-    };
-
-    // Ordenar combinações pela ordem customizada ou padrão
-    const orderedCombos = useMemo(() => {
-        const baseGrid = comboOrder.length === 0 ? albersGrid : comboOrder.map(i => albersGrid[i]).filter(Boolean);
-        // Aplicar customizações
-        return baseGrid.map((combo, idx) => {
-            const custom = customCombos[idx];
-            if (custom) {
-                return {
-                    ...combo,
-                    outer: custom.outer || combo.outer,
-                    middle: custom.middle || combo.middle,
-                    inner: custom.inner || combo.inner
-                };
-            }
-            return combo;
-        });
-    }, [albersGrid, comboOrder, customCombos]);
-
-    const getComboLayers = (combo: { outer: string; middle: string; inner: string }): string[] => {
-        const layers: string[] = [combo.outer, combo.middle];
-        if (albersLayerCount >= 3) layers.push(combo.inner);
-        if (albersLayerCount === 4) {
-            const blend = mixColors(hexToRgb(combo.middle), hexToRgb(combo.inner), 50);
-            layers.push(rgbToHex(blend.r, blend.g, blend.b));
-        }
-        return layers.slice(0, albersLayerCount);
-    };
+    // ------------------------------------------------------------ input
 
     const extractColorsFromSvgText = (svgText: string): string[] => {
         const colorRegex = /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\b/g;
@@ -557,26 +520,75 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
         return Array.from(foundColors);
     };
 
-    const applyExtractedColors = (colorArray: string[]) => {
-        if (colorArray.length === 0) return false;
-        const weightPerColor = Math.floor(100 / colorArray.length);
-        const remainder = 100 - (weightPerColor * colorArray.length);
-        const newColors: PaletteColor[] = colorArray.map((hex, i) => ({
-            hex, name: getClosestColorName(hex), weight: weightPerColor + (i === 0 ? remainder : 0), locked: false
-        }));
-        setColors(newColors);
+    /** Replaces the palette with measured colours, weighted by coverage when known. */
+    const applySourceColors = (hexes: string[], weights: number[] | null) => {
+        const map = weights && weights.some((w) => w > 0) ? toWeightMap(hexes, weights) : null;
+        setSourceWeights(map);
+        const base = evenWeights(hexes);
+        setColors(map ? applyWeightPreset(base, 'source', map) : base);
+        setActivePreset(map ? 'source' : null);
+        setExpandedRows(new Set());
+    };
+
+    const applySvgText = async (svgText: string): Promise<boolean> => {
+        const hexes = extractColorsFromSvgText(svgText);
+        if (hexes.length === 0) return false;
+        const token = ++loadToken.current;
+        applySourceColors(hexes, null);
+        let weights: number[] | null = null;
+        const url = URL.createObjectURL(new Blob([svgText], { type: 'image/svg+xml' }));
+        try {
+            const data = await rasterPixels(url);
+            const measured = coverageWeights(data, hexes);
+            weights = measured.some((w) => w > 0) ? measured : null;
+        } catch {
+            weights = null;
+        } finally {
+            URL.revokeObjectURL(url);
+        }
+        if (!weights) {
+            const counted = occurrenceWeights(svgText, hexes);
+            weights = counted.some((w) => w > 0) ? counted : null;
+        }
+        if (token === loadToken.current && weights) applySourceColors(hexes, weights);
         return true;
     };
 
-    const handleSvgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const svgText = event.target?.result as string;
-            applyExtractedColors(extractColorsFromSvgText(svgText));
-        };
-        reader.readAsText(file);
+    const handleFile = async (file: File) => {
+        setInputHint(null);
+        const isSvg = file.type === 'image/svg+xml' || /\.svg$/i.test(file.name);
+        try {
+            if (isSvg) {
+                const ok = await applySvgText(await file.text());
+                if (!ok) setInputHint(t.noColorsFound);
+                return;
+            }
+            const token = ++loadToken.current;
+            const url = URL.createObjectURL(file);
+            try {
+                const data = await rasterPixels(url);
+                const hexes = clusterPixels(data, 6);
+                if (hexes.length === 0) {
+                    setInputHint(t.noColorsFound);
+                    return;
+                }
+                if (token === loadToken.current) applySourceColors(hexes, coverageWeights(data, hexes));
+            } finally {
+                URL.revokeObjectURL(url);
+            }
+        } catch {
+            setInputHint(t.gpLoadFailed);
+        }
+    };
+
+    const applyPastedSvg = async () => {
+        const ok = await applySvgText(svgPasteValue);
+        if (ok) {
+            setSvgPasteValue('');
+            setInputHint(null);
+        } else {
+            setInputHint(t.noColorsFound);
+        }
     };
 
     const suggestNewCombination = () => {
@@ -615,861 +627,110 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
             newColors.push({ hex: '#1A1A1A', name: 'Black', weight: 100 - (weightPerColor * (colorCount - 1)), locked: false });
             setColors(newColors);
         }
+        setActivePreset(null);
+        setExpandedRows(new Set());
     };
 
-    const generatePaletteSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const mainAreaWidth = showVariations ? width * (splitRatio / 100) : width;
-        const variationsAreaWidth = width - mainAreaWidth;
-        let yOffset = 0;
-        const mainBlocks = colors.map((color) => {
-            const blockHeight = Math.max(8, Math.floor((color.weight / 100) * height));
-            const textColor = getContrastColor(color.hex);
-            const codes = showCodes ? formatColorCodes(color.hex) : [];
+    // ------------------------------------------------------------ combinations
 
-            // Tipografia básica; sem responsividade dos códigos
-            const nameFontSize = blockHeight > 140 ? 24 : blockHeight > 100 ? 18 : Math.max(14, Math.floor(blockHeight * 0.18));
-            const codeFontSize = 11;
-            const codeGap = 30;
-            const charWidth = codeFontSize * 0.6;
-            const codeY = yOffset + blockHeight - 20;
-            let xPos = 40;
-            const codeLines = codes
-                .map((code) => {
-                    const text = `<text x="${xPos}" y="${codeY}" font-size="${codeFontSize}" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.7">${code}</text>`;
-                    xPos += code.length * charWidth + codeGap;
-                    return text;
-                })
-                .join('');
+    const shuffleAlbers = () => {
+        const baseOrder = comboOrder.length > 0 ? [...comboOrder] : albersGrid.map((_, i) => i);
+        const lockedPositions = baseOrder.map((_, idx) => idx).filter((idx) => comboLocks[idx]);
+        const unlockedPositions = baseOrder.map((_, idx) => idx).filter((idx) => !comboLocks[idx]);
 
-            const nameY = yOffset + Math.min(45, Math.max(22, blockHeight * 0.3));
-            const block = `<rect x="0" y="${yOffset}" width="${mainAreaWidth}" height="${blockHeight}" fill="${color.hex}" />` +
-                `<text x="40" y="${nameY}" font-size="${nameFontSize}" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}" opacity="0.9">${color.name}</text>` +
-                codeLines;
+        // Always bump seed so albersGrid reorders too
+        setAlbersSeed((prev) => prev + 1);
 
-            yOffset += blockHeight;
-            return block;
-        }).join('');
-        const colWidth = colors.length ? variationsAreaWidth / colors.length : 0;
-        const variationBlocks = !showVariations ? '' : colors.map((color, colIdx) => {
-            const vars = getColorVariations(color.hex, variationCount);
-            const varHeight = height / vars.length;
-            return vars
-                .map((v, rowIdx) =>
-                    `<rect x="${mainAreaWidth + colIdx * colWidth}" y="${rowIdx * varHeight}" width="${colWidth}" height="${varHeight}" fill="${v}" />${showCodes && showVariationCodes ? `<text x="${mainAreaWidth + colIdx * colWidth + 10}" y="${rowIdx * varHeight + 24}" font-size="11" font-family="'JetBrains Mono', monospace" fill="${getContrastColor(v)}" opacity="0.8">${v}</text>` : ''}`
-                )
-                .join('');
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#000000" />${mainBlocks}${variationBlocks}</svg>`;
-    };
-
-    // Template 2: Vertical com hex grande centralizado - respeita peso
-    const generateVerticalSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const totalWeight = colors.reduce((sum, c) => sum + c.weight, 0);
-        
-        let xOffset = 0;
-        const columns = colors.map((color) => {
-            const colWidth = (color.weight / totalWeight) * width;
-            const x = xOffset;
-            xOffset += colWidth;
-            const textColor = getContrastColor(color.hex);
-            const codes = showCodes ? formatColorCodes(color.hex) : [];
-            
-            // Tamanho de fonte responsivo baseado na largura da coluna
-            const nameFontSize = Math.max(12, Math.min(16, colWidth * 0.04));
-            const codeFontSize = Math.max(9, Math.min(12, colWidth * 0.03));
-            const hexFontSize = Math.max(40, Math.min(120, colWidth * 0.35));
-            const codeSpacing = Math.max(16, Math.min(22, colWidth * 0.05));
-            
-            // Hex grande vertical (só mostra se showCodes e coluna tem largura suficiente)
-            const hexText = showCodes && colWidth > 100 ? `<text x="${x + colWidth / 2}" y="${height / 2}" font-size="${hexFontSize}" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}" opacity="0.15" text-anchor="middle" transform="rotate(-90, ${x + colWidth / 2}, ${height / 2})">${color.hex}</text>` : '';
-            
-            // Nome no topo
-            const nameText = `<text x="${x + 15}" y="40" font-size="${nameFontSize}" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}" opacity="0.9">${color.name}</text>`;
-            
-            // Códigos alinhados verticalmente na parte inferior (um embaixo do outro)
-            const maxCodes = colWidth > 300 ? codes.length : colWidth > 200 ? 8 : colWidth > 120 ? 5 : 3;
-            const codeLines = showCodes && colWidth > 80 ? codes.slice(0, maxCodes).map((code, i) => 
-                `<text x="${x + 15}" y="${height - 30 - (maxCodes - 1 - i) * codeSpacing}" font-size="${codeFontSize}" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.7">${code}</text>`
-            ).join('') : '';
-            
-            return `<rect x="${x}" y="0" width="${colWidth}" height="${height}" fill="${color.hex}" />${hexText}${nameText}${codeLines}`;
-        }).join('');
-        
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style>${columns}</svg>`;
-    };
-
-    // Template 3: Grid com cores principais e variações
-    const generateGridSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const mainColors = colors.filter((_, i) => i < Math.min(2, colors.length));
-        const auxColors = colors.filter((_, i) => i >= 2);
-        
-        const mainHeight = height * 0.65;
-        const auxHeight = height - mainHeight;
-        const mainColWidth = width / mainColors.length;
-        
-        // Cores principais com variações
-        const mainBlocks = mainColors.map((color, idx) => {
-            const x = idx * mainColWidth;
-            const textColor = getContrastColor(color.hex);
-            const vars = showVariations ? getColorVariations(color.hex, 3) : [];
-            const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const mainBlockHeight = showVariations ? mainHeight * 0.7 : mainHeight;
-            const varBlockHeight = vars.length ? (mainHeight - mainBlockHeight) / vars.length : 0;
-            
-            const mainRect = `<rect x="${x}" y="0" width="${mainColWidth}" height="${mainBlockHeight}" fill="${color.hex}" />`;
-            const nameLabel = `<text x="${x + 25}" y="55" font-size="48" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>`;
-            const codeLabels = codes.map((code, i) => 
-                `<text x="${x + 25}" y="${90 + i * 20}" font-size="12" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.7">${code}</text>`
-            ).join('');
-            
-            const varRects = vars.map((v, vi) => {
-                const vy = mainBlockHeight + vi * varBlockHeight;
-                return `<rect x="${x}" y="${vy}" width="${mainColWidth}" height="${varBlockHeight}" fill="${v}" />${showCodes && showVariationCodes ? `<text x="${x + 25}" y="${vy + 25}" font-size="14" font-family="'JetBrains Mono', monospace" fill="${getContrastColor(v)}">${500 - vi * 100}</text>` : ''}`;
-            }).join('');
-            
-            return mainRect + nameLabel + codeLabels + varRects;
-        }).join('');
-        
-        // Cores auxiliares na parte inferior
-        const auxColWidth = width / Math.max(auxColors.length, 1);
-        const auxBlocks = auxColors.map((color, idx) => {
-            const x = idx * auxColWidth;
-            const textColor = getContrastColor(color.hex);
-            const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const codeLabels = codes.map((code, i) => 
-                `<text x="${x + 25}" y="${mainHeight + 100 + i * 18}" font-size="11" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.7">${code}</text>`
-            ).join('');
-            return `<rect x="${x}" y="${mainHeight}" width="${auxColWidth}" height="${auxHeight}" fill="${color.hex}" /><text x="${x + 25}" y="${mainHeight + 45}" font-size="36" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>${codeLabels}`;
-        }).join('');
-        
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,700&family=JetBrains+Mono:wght@400&display=swap');</style><rect width="100%" height="100%" fill="#FFFFFF" />${mainBlocks}${auxBlocks}</svg>`;
-    };
-
-    // Template 4: Cards com tamanhos proporcionais ao peso
-    const generateCardsSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const padding = 20;
-        const gap = 15;
-        const radius = 16;
-        
-        // Ordenar por peso
-        const sortedColors = [...colors].sort((a, b) => b.weight - a.weight);
-        const topColors = sortedColors.slice(0, Math.min(3, sortedColors.length));
-        const bottomColors = sortedColors.slice(3);
-        
-        const topHeight = height * 0.6 - padding;
-        const bottomHeight = height * 0.4 - padding * 2;
-        
-        // Cards principais (topo)
-        let topX = padding;
-        const topCards = topColors.map((color, idx) => {
-            const cardWidth = ((width - padding * 2 - gap * (topColors.length - 1)) * color.weight) / topColors.reduce((s, c) => s + c.weight, 0);
-            const textColor = getContrastColor(color.hex);
-            const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const vars = showVariations ? getColorVariations(color.hex, 3) : [];
-            const varHeight = 40;
-            
-            const codeLabels = codes.map((code, i) => 
-                `<text x="${topX + 25}" y="${padding + 90 + i * 20}" font-size="12" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.7">${code}</text>`
-            ).join('');
-            
-            // Variações - apenas a última tem cantos inferiores arredondados
-            const variationRects = vars.map((v, vi) => {
-                const isLast = vi === vars.length - 1;
-                const yPos = padding + topHeight - varHeight * (vars.length - vi);
-                if (isLast) {
-                    // Última variação: desenhar com path para cantos inferiores arredondados
-                    const x1 = topX;
-                    const y1 = yPos;
-                    const w = cardWidth;
-                    const h = varHeight;
-                    const r = radius;
-                    return `<path d="M${x1},${y1} L${x1 + w},${y1} L${x1 + w},${y1 + h - r} Q${x1 + w},${y1 + h} ${x1 + w - r},${y1 + h} L${x1 + r},${y1 + h} Q${x1},${y1 + h} ${x1},${y1 + h - r} Z" fill="${v}" opacity="0.5" />`;
-                }
-                return `<rect x="${topX}" y="${yPos}" width="${cardWidth}" height="${varHeight}" fill="${v}" opacity="0.5" />`;
-            }).join('');
-            
-            const card = `
-                <rect x="${topX}" y="${padding}" width="${cardWidth}" height="${topHeight}" rx="${radius}" fill="${color.hex}" />
-                <text x="${topX + 25}" y="${padding + 55}" font-size="36" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>
-                ${codeLabels}
-                ${variationRects}
-            `;
-            topX += cardWidth + gap;
-            return card;
-        }).join('');
-        
-        // Cards secundários (bottom) com variações - respeita pesos
-        const bottomWeightTotal = bottomColors.reduce((sum, c) => sum + c.weight, 0) || 1;
-        let bottomX = padding;
-        const bottomCards = bottomColors.map((color, idx) => {
-            const bottomColWidth = ((width - padding * 2 - gap * Math.max(bottomColors.length - 1, 0)) * color.weight) / bottomWeightTotal;
-            const x = bottomX;
-            const y = topHeight + padding * 2;
-            const textColor = getContrastColor(color.hex);
-            const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const vars = showVariations ? getColorVariations(color.hex, 2) : [];
-            const varHeight = 30;
-            
-            const codeLabels = codes.map((code, i) => 
-                `<text x="${x + 20}" y="${y + 60 + i * 16}" font-size="10" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.7">${code}</text>`
-            ).join('');
-            
-            // Variações dos cards de baixo
-            const bottomVariationRects = vars.map((v, vi) => {
-                const isLast = vi === vars.length - 1;
-                const yPos = y + bottomHeight - varHeight * (vars.length - vi);
-                if (isLast) {
-                    // Última variação: desenhar com path para cantos inferiores arredondados
-                    const x1 = x;
-                    const y1 = yPos;
-                    const w = bottomColWidth;
-                    const h = varHeight;
-                    const r = radius;
-                    return `<path d="M${x1},${y1} L${x1 + w},${y1} L${x1 + w},${y1 + h - r} Q${x1 + w},${y1 + h} ${x1 + w - r},${y1 + h} L${x1 + r},${y1 + h} Q${x1},${y1 + h} ${x1},${y1 + h - r} Z" fill="${v}" opacity="0.5" />`;
-                }
-                return `<rect x="${x}" y="${yPos}" width="${bottomColWidth}" height="${varHeight}" fill="${v}" opacity="0.5" />`;
-            }).join('');
-            
-            const card = `
-                <rect x="${x}" y="${y}" width="${bottomColWidth}" height="${bottomHeight}" rx="${radius}" fill="${color.hex}" />
-                <text x="${x + 20}" y="${y + 35}" font-size="24" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>
-                ${codeLabels}
-                ${bottomVariationRects}
-            `;
-            bottomX += bottomColWidth + gap;
-            return card;
-        }).join('');
-        
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,700&family=JetBrains+Mono:wght@400&display=swap');</style><rect width="100%" height="100%" fill="#F5F5F5" />${topCards}${bottomCards}</svg>`;
-    };
-
-    // Template 5: Stripes (linhas horizontais proporcionais)
-    const generateStripesSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const totalW = colors.reduce((s, c) => s + c.weight, 0) || 1;
-        let yOff = 0;
-        const rows = colors.map((color) => {
-            const rowH = (color.weight / totalW) * height;
-            const textColor = getContrastColor(color.hex);
-            const codes = showCodes ? formatColorCodes(color.hex) : [];
-            const codeRow = codes.map((c, i) => `<text x="${width - 40 - i * 180}" y="${yOff + rowH / 2 + 5}" text-anchor="end" font-size="13" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.75">${c}</text>`).join('');
-            const block = `<rect x="0" y="${yOff}" width="${width}" height="${rowH}" fill="${color.hex}" />` +
-                `<text x="40" y="${yOff + rowH / 2 + 12}" font-size="${Math.min(48, Math.max(18, rowH * 0.35))}" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>` +
-                codeRow;
-            yOff += rowH;
-            return block;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style>${rows}</svg>`;
-    };
-
-    // Template 6: Swatches (grid de cartões iguais)
-    const generateSwatchesSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const pad = 32;
-        const cols = Math.min(colors.length, Math.ceil(Math.sqrt(colors.length * (width / height))));
-        const rows = Math.ceil(colors.length / cols);
-        const cellW = (width - pad * (cols + 1)) / cols;
-        const cellH = (height - pad * (rows + 1)) / rows;
-        const swatches = colors.map((color, i) => {
-            const r = Math.floor(i / cols);
-            const c = i % cols;
-            const x = pad + c * (cellW + pad);
-            const y = pad + r * (cellH + pad);
-            const textColor = getContrastColor(color.hex);
-            const codes = showCodes ? formatColorCodes(color.hex).slice(0, 4) : [];
-            const codeLines = codes.map((cd, ci) => `<text x="${x + 24}" y="${y + cellH - 24 - (codes.length - 1 - ci) * 18}" font-size="12" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.75">${cd}</text>`).join('');
-            return `<rect x="${x}" y="${y}" width="${cellW}" height="${cellH}" rx="20" fill="${color.hex}" />` +
-                `<text x="${x + 24}" y="${y + 48}" font-size="28" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${color.name}</text>` +
-                codeLines;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#F5F5F5" />${swatches}</svg>`;
-    };
-
-    // Template 7: Gradient (faixa contínua com fusão)
-    const generateGradientSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const stops = colors.map((c, i) => `<stop offset="${(i / Math.max(colors.length - 1, 1)) * 100}%" stop-color="${c.hex}" />`).join('');
-        const labelW = width / colors.length;
-        const labels = colors.map((c, i) => {
-            const x = i * labelW + labelW / 2;
-            const textColor = getContrastColor(c.hex);
-            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 3) : [];
-            const codeLines = codes.map((cd, ci) => `<text x="${x}" y="${height - 60 + ci * 18}" text-anchor="middle" font-size="11" font-family="'JetBrains Mono', monospace" fill="${textColor}" opacity="0.85">${cd}</text>`).join('');
-            return `<text x="${x}" y="80" text-anchor="middle" font-size="28" font-family="'Inter', sans-serif" font-weight="700" fill="${textColor}">${c.name}</text>${codeLines}`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="0%">${stops}</linearGradient></defs><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="url(#g)" />${labels}</svg>`;
-    };
-
-    // Template 8: Mosaic (cor principal + secundárias quebradas)
-    const generateMosaicSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        if (colors.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" />`;
-        const sorted = [...colors].sort((a, b) => b.weight - a.weight);
-        const main = sorted[0];
-        const rest = sorted.slice(1);
-        const heroW = width * 0.6;
-        const sideW = width - heroW;
-        const tcMain = getContrastColor(main.hex);
-        const codesMain = showCodes ? formatColorCodes(main.hex).slice(0, 6) : [];
-        const codeMainLines = codesMain.map((cd, i) => `<text x="60" y="${height - 80 - (codesMain.length - 1 - i) * 22}" font-size="14" font-family="'JetBrains Mono', monospace" fill="${tcMain}" opacity="0.8">${cd}</text>`).join('');
-        const hero = `<rect x="0" y="0" width="${heroW}" height="${height}" fill="${main.hex}" />` +
-            `<text x="60" y="120" font-size="72" font-family="'Inter', sans-serif" font-weight="700" fill="${tcMain}">${main.name}</text>` +
-            codeMainLines;
-        const totalRest = rest.reduce((s, c) => s + c.weight, 0) || 1;
-        let yOff = 0;
-        const sides = rest.map((c) => {
-            const h = (c.weight / totalRest) * height;
-            const tc = getContrastColor(c.hex);
-            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 3) : [];
-            const codeLines = codes.map((cd, i) => `<text x="${heroW + 30}" y="${yOff + h - 30 - (codes.length - 1 - i) * 16}" font-size="11" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.8">${cd}</text>`).join('');
-            const block = `<rect x="${heroW}" y="${yOff}" width="${sideW}" height="${h}" fill="${c.hex}" />` +
-                `<text x="${heroW + 30}" y="${yOff + 50}" font-size="28" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${c.name}</text>` +
-                codeLines;
-            yOff += h;
-            return block;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style>${hero}${sides}</svg>`;
-    };
-
-    // Função que retorna o SVG baseado no template selecionado
-    // Template 9: Split Screen (hero + grid)
-    const generateSplitScreenSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        if (colors.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" />`;
-        const sorted = [...colors].sort((a, b) => b.weight - a.weight);
-        const main = sorted[0];
-        const rest = sorted.slice(1);
-        const heroH = height * 0.55;
-        const tcMain = getContrastColor(main.hex);
-        const codesMain = showCodes ? formatColorCodes(main.hex).slice(0, 6) : [];
-        const codeMainLines = codesMain.map((cd, i) => `<text x="60" y="${heroH - 60 - (codesMain.length - 1 - i) * 22}" font-size="14" font-family="'JetBrains Mono', monospace" fill="${tcMain}" opacity="0.85">${cd}</text>`).join('');
-        const hero = `<rect x="0" y="0" width="${width}" height="${heroH}" fill="${main.hex}" />` +
-            `<text x="60" y="120" font-size="84" font-family="'Inter', sans-serif" font-weight="700" fill="${tcMain}">${main.name}</text>` +
-            codeMainLines;
-        const cellW = width / Math.max(rest.length, 1);
-        const cellH = height - heroH;
-        const tiles = rest.map((c, i) => {
-            const x = i * cellW;
-            const tc = getContrastColor(c.hex);
-            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 3) : [];
-            const codeLines = codes.map((cd, ci) => `<text x="${x + 24}" y="${heroH + cellH - 24 - (codes.length - 1 - ci) * 16}" font-size="11" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.8">${cd}</text>`).join('');
-            return `<rect x="${x}" y="${heroH}" width="${cellW}" height="${cellH}" fill="${c.hex}" /><text x="${x + 24}" y="${heroH + 50}" font-size="26" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${c.name}</text>${codeLines}`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style>${hero}${tiles}</svg>`;
-    };
-
-    // Template 10: Columns (vertical bars with names rotated)
-    const generateColumnsSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const pad = 24;
-        const gap = 12;
-        const totalW = width - pad * 2 - gap * (colors.length - 1);
-        const totalWeight = colors.reduce((s, c) => s + c.weight, 0) || 1;
-        let xOff = pad;
-        const cols = colors.map((c) => {
-            const colW = (c.weight / totalWeight) * totalW;
-            const tc = getContrastColor(c.hex);
-            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 5) : [];
-            const codeLines = codes.map((cd, i) => `<text x="${xOff + colW / 2}" y="${height - 60 - (codes.length - 1 - i) * 18}" text-anchor="middle" font-size="11" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.85">${cd}</text>`).join('');
-            const block = `<rect x="${xOff}" y="${pad}" width="${colW}" height="${height - pad * 2}" rx="12" fill="${c.hex}" />` +
-                `<text x="${xOff + colW / 2}" y="${height / 2}" font-size="${Math.min(56, Math.max(18, colW * 0.18))}" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}" text-anchor="middle" transform="rotate(-90, ${xOff + colW / 2}, ${height / 2})">${c.name}</text>` +
-                codeLines;
-            xOff += colW + gap;
-            return block;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#111111" />${cols}</svg>`;
-    };
-
-    // Template 11: Dots (large circles weighted)
-    const generateDotsSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const pad = 60;
-        const cols = Math.ceil(Math.sqrt(colors.length * (width / height)));
-        const rows = Math.ceil(colors.length / cols);
-        const cellW = (width - pad * 2) / cols;
-        const cellH = (height - pad * 2) / rows;
-        const maxW = colors.reduce((m, c) => Math.max(m, c.weight), 1);
-        const items = colors.map((c, i) => {
-            const r = Math.floor(i / cols);
-            const col = i % cols;
-            const cx = pad + col * cellW + cellW / 2;
-            const cy = pad + r * cellH + cellH / 2;
-            const radius = Math.min(cellW, cellH) * 0.42 * (0.5 + 0.5 * (c.weight / maxW));
-            const tc = getContrastColor(c.hex);
-            const codes = showCodes ? formatColorCodes(c.hex).slice(0, 2) : [];
-            const codeLines = codes.map((cd, ci) => `<text x="${cx}" y="${cy + radius + 22 + ci * 16}" text-anchor="middle" font-size="11" font-family="'JetBrains Mono', monospace" fill="#FFFFFF" opacity="0.85">${cd}</text>`).join('');
-            return `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="${c.hex}" /><text x="${cx}" y="${cy + 6}" text-anchor="middle" font-size="20" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${c.name}</text>${codeLines}`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#0A0A0A" />${items}</svg>`;
-    };
-
-    // Template 12: Editorial (hero + index list)
-    const generateEditorialSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        if (colors.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" />`;
-        const sorted = [...colors].sort((a, b) => b.weight - a.weight);
-        const main = sorted[0];
-        const heroW = width * 0.65;
-        const tc = getContrastColor(main.hex);
-        const codes = showCodes ? formatColorCodes(main.hex).slice(0, 8) : [];
-        const codeLines = codes.map((cd, i) => `<text x="80" y="${height - 80 - (codes.length - 1 - i) * 26}" font-size="16" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.9">${cd}</text>`).join('');
-        const hero = `<rect x="0" y="0" width="${heroW}" height="${height}" fill="${main.hex}" />` +
-            `<text x="80" y="160" font-size="120" font-family="'Inter', sans-serif" font-weight="700" fill="${tc}">${main.name}</text>` +
-            `<text x="80" y="220" font-size="22" font-family="'JetBrains Mono', monospace" fill="${tc}" opacity="0.7">${main.hex}</text>` +
-            codeLines;
-        const sideX = heroW + 60;
-        const lineH = (height - 120) / Math.max(sorted.length, 1);
-        const list = sorted.map((c, i) => {
-            const y = 80 + i * lineH;
-            return `<rect x="${sideX}" y="${y + 10}" width="40" height="40" fill="${c.hex}" />` +
-                `<text x="${sideX + 56}" y="${y + 36}" font-size="20" font-family="'Inter', sans-serif" font-weight="700" fill="#111111">${c.name}</text>` +
-                `<text x="${sideX + 56}" y="${y + 56}" font-size="12" font-family="'JetBrains Mono', monospace" fill="#666666">${c.hex} · ${c.weight.toFixed(0)}%</text>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap');</style><rect width="100%" height="100%" fill="#FAFAFA" />${hero}${list}</svg>`;
-    };
-
-    // Função que retorna o SVG baseado no template selecionado
-    const getCurrentPaletteSvg = (): string => {
-        switch (paletteTemplate) {
-            case 'vertical': return generateVerticalSvg();
-            case 'grid': return generateGridSvg();
-            case 'cards': return generateCardsSvg();
-            case 'stripes': return generateStripesSvg();
-            case 'swatches': return generateSwatchesSvg();
-            case 'gradient': return generateGradientSvg();
-            case 'mosaic': return generateMosaicSvg();
-            case 'splitscreen': return generateSplitScreenSvg();
-            case 'columns': return generateColumnsSvg();
-            case 'dots': return generateDotsSvg();
-            case 'editorial': return generateEditorialSvg();
-            default: return generatePaletteSvg();
+        if (lockedPositions.length === 0) {
+            setComboOrder([]);
+            return;
         }
-    };
 
-    // Função que retorna a cor de fundo baseada na seleção
-    const getAlbersBackgroundColor = (): string => {
-        switch (albersBackground) {
-            case 'white': return '#FFFFFF';
-            case 'gray': return '#E5E5E5';
-            default: return '#000000';
+        // Prefer indices not currently visible to maximize variety
+        const visible = new Set(baseOrder);
+        const pool: number[] = [];
+        for (let k = 0; k < albersGrid.length; k++) if (!visible.has(k)) pool.push(k);
+        // Mix in current unlocked values as fallback
+        const unlockedValues = unlockedPositions.map((pos) => baseOrder[pos]);
+        const candidates = pool.length >= unlockedPositions.length ? pool : [...pool, ...unlockedValues];
+        for (let i = candidates.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
         }
+
+        const newOrder = [...baseOrder];
+        unlockedPositions.forEach((pos, idx) => {
+            newOrder[pos] = candidates[idx % candidates.length];
+        });
+        setComboOrder(newOrder);
     };
 
-    // Limite máximo de cards por template
-    const getMaxCardsByTemplate = (template: string): number => {
-        switch (template) {
-            case 'squares': return 18;
-            case 'circles': return 18;
-            case 'sunset': return 20;
-            case 'bars': return 12;
-            case 'rings': return 18;
-            case 'diamonds': return 16;
-            case 'frames': return 16;
-            case 'split': return 16;
-            case 'targets': return 16;
-            case 'triangles': return 16;
-            default: return 18;
-        }
+    const handleComboDrop = (dropIndex: number) => {
+        if (draggedComboIndex === null || draggedComboIndex === dropIndex) return;
+        const currentOrder = comboOrder.length > 0 ? [...comboOrder] : albersGrid.map((_, i) => i);
+        const [dragged] = currentOrder.splice(draggedComboIndex, 1);
+        currentOrder.splice(dropIndex, 0, dragged);
+        setComboOrder(currentOrder);
+        setDraggedComboIndex(null);
     };
 
-    // Template 1: Quadrados (original)
-    const generateAlbersSquaresSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const padding = 60;
-        const gapX = 30;
-        const gapY = 30;
-        const maxCards = getMaxCardsByTemplate('squares');
-        const safeCardCount = Math.min(cardCount, orderedCombos.length, maxCards);
-        const displayItems = orderedCombos.slice(0, safeCardCount);
-        const itemCount = displayItems.length;
-        if (itemCount === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        
-        // Calcular grid responsivo que preencha toda a área
-        const aspectRatio = width / height;
-        let bestCols = 1;
-        let bestRows = itemCount;
-        let bestFit = 0;
-        
-        for (let cols = 1; cols <= itemCount; cols++) {
-            const rows = Math.ceil(itemCount / cols);
-            const cellWidth = (width - padding * 2 - gapX * (cols - 1)) / cols;
-            const cellHeight = (height - padding * 2 - gapY * (rows - 1)) / rows;
-            const cellSize = Math.min(cellWidth, cellHeight);
-            const totalArea = cellSize * cellSize * itemCount;
-            
-            // Penaliza linhas incompletas
-            const lastRowItems = itemCount % cols || cols;
-            const completeness = lastRowItems / cols;
-            const fit = totalArea * completeness;
-            
-            if (fit > bestFit) {
-                bestFit = fit;
-                bestCols = cols;
-                bestRows = rows;
-            }
-        }
-        
-        const cols = bestCols;
-        const rows = bestRows;
-        const cellWidth = (width - padding * 2 - gapX * (cols - 1)) / cols;
-        const cellHeight = (height - padding * 2 - gapY * (rows - 1)) / rows;
-        const squareSize = Math.min(cellWidth, cellHeight) * 0.85;
-        const cells = displayItems.map((combo, idx) => {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            const x = padding + col * (cellWidth + gapX);
-            const y = padding + row * (cellHeight + gapY);
-            const cx = x + cellWidth / 2;
-            const cy = y + cellHeight / 2;
-            const layers = getComboLayers(combo);
-            const outerSize = squareSize;
-            const sizeFactors = [1, 0.65, 0.4, 0.22];
-            const rects = layers.map((color, i) => {
-                const size = outerSize * (sizeFactors[i] || Math.max(0.15, 0.65 ** i));
-                return `<rect x="${cx - size / 2}" y="${cy - size / 2}" width="${size}" height="${size}" fill="${color}" />`;
-            }).join('');
-            const weightText = `${combo.weight.toFixed(0)}%`;
-            const labelX = cx - outerSize / 2 + 8;
-            const labelY = cy + outerSize / 2 + 14; // texto fora da base inferior
-            const weightY = labelY + 12;
-            return `<g>${rects}${showCodes ? `<text x="${labelX}" y="${labelY}" font-size="9" font-family="monospace" fill="${getContrastColor(combo.outer)}" opacity="0.8">${combo.outer}</text><text x="${labelX}" y="${weightY}" font-size="10" font-family="monospace" fill="${getContrastColor(combo.outer)}" opacity="0.9" font-weight="bold">${weightText}</text>` : ''}</g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    const updateComboColor = (comboIdx: number, colorKey: 'outer' | 'middle' | 'inner', newHex: string) => {
+        const hex = normalizeHex(newHex);
+        if (!hex) return;
+        setCustomCombos(prev => ({ ...prev, [comboIdx]: { ...prev[comboIdx], [colorKey]: hex } }));
     };
 
-    // Template 2: Círculos concêntricos
-    const generateAlbersCirclesSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const padding = 60;
-        const gapX = 40;
-        const gapY = 40;
-        const maxCards = getMaxCardsByTemplate('circles');
-        const safeCardCount = Math.min(cardCount, orderedCombos.length, maxCards);
-        const displayItems = orderedCombos.slice(0, safeCardCount);
-        const itemCount = displayItems.length;
-        if (itemCount === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        
-        // Calcular grid responsivo
-        let bestCols = 1;
-        let bestFit = 0;
-        
-        for (let cols = 1; cols <= itemCount; cols++) {
-            const rows = Math.ceil(itemCount / cols);
-            const cellWidth = (width - padding * 2 - gapX * (cols - 1)) / cols;
-            const cellHeight = (height - padding * 2 - gapY * (rows - 1)) / rows;
-            const cellSize = Math.min(cellWidth, cellHeight);
-            const lastRowItems = itemCount % cols || cols;
-            const completeness = lastRowItems / cols;
-            const fit = cellSize * cellSize * itemCount * completeness;
-            
-            if (fit > bestFit) {
-                bestFit = fit;
-                bestCols = cols;
-            }
-        }
-        
-        const cols = bestCols;
-        const rows = Math.ceil(itemCount / cols);
-        const cellWidth = (width - padding * 2 - gapX * (cols - 1)) / cols;
-        const cellHeight = (height - padding * 2 - gapY * (rows - 1)) / rows;
-        const circleRadius = Math.min(cellWidth, cellHeight) * 0.42;
-        const cells = displayItems.map((combo, idx) => {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            const cx = padding + col * (cellWidth + gapX) + cellWidth / 2;
-            const cy = padding + row * (cellHeight + gapY) + cellHeight / 2;
-            const layers = getComboLayers(combo);
-            const radiusFactors = [1, 0.65, 0.42, 0.26];
-            const circles = layers.map((color, i) => `<circle cx="${cx}" cy="${cy}" r="${circleRadius * (radiusFactors[i] || Math.max(0.2, 0.65 ** i))}" fill="${color}" />`).join('');
-            return `<g>${circles}</g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
+    const resetCombo = (comboIdx: number) => {
+        setCustomCombos(prev => {
+            const next = { ...prev };
+            delete next[comboIdx];
+            return next;
+        });
+        setEditingComboIndex(null);
     };
 
-    // Template 3: Sunset (círculos concêntricos centralizados)
-    const generateAlbersSunsetSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const padding = 30;
-        const gap = 15;
-        const maxCards = getMaxCardsByTemplate('sunset');
-        const safeCardCount = Math.min(cardCount, orderedCombos.length, maxCards);
-        const displayItems = orderedCombos.slice(0, safeCardCount);
-        const itemCount = displayItems.length;
-        if (itemCount === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        
-        // Calcular grid responsivo
-        let bestCols = 1;
-        let bestFit = 0;
-        
-        for (let cols = 1; cols <= itemCount; cols++) {
-            const rows = Math.ceil(itemCount / cols);
-            const cellWidth = (width - padding * 2 - gap * (cols - 1)) / cols;
-            const cellHeight = (height - padding * 2 - gap * (rows - 1)) / rows;
-            const cellSize = Math.min(cellWidth, cellHeight);
-            const lastRowItems = itemCount % cols || cols;
-            const completeness = lastRowItems / cols;
-            const fit = cellSize * cellSize * itemCount * completeness;
-            
-            if (fit > bestFit) {
-                bestFit = fit;
-                bestCols = cols;
-            }
-        }
-        
-        const cols = bestCols;
-        const rows = Math.ceil(itemCount / cols);
-        const cellWidth = (width - padding * 2 - gap * (cols - 1)) / cols;
-        const cellHeight = (height - padding * 2 - gap * (rows - 1)) / rows;
-        const cells = displayItems.map((combo, idx) => {
-            const col = idx % cols;
-            const row = Math.floor(idx / cols);
-            const x = padding + col * (cellWidth + gap);
-            const y = padding + row * (cellHeight + gap);
-            const cx = x + cellWidth / 2;
-            const cy = y + cellHeight / 2;
-            const r = Math.min(cellWidth, cellHeight) * 0.38;
-            // Círculos concêntricos centralizados
-            const layers = getComboLayers(combo);
-            const radiusFactors = [1, 0.65, 0.42, 0.26];
-            const circles = layers.map((color, i) => `<circle cx="${cx}" cy="${cy}" r="${r * (radiusFactors[i] || Math.max(0.2, 0.65 ** i))}" fill="${color}" />`).join('');
-            return `<g>
-                <rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" rx="8" fill="${combo.outer}" />
-                ${circles}
-            </g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
-    };
+    const orderedCombos = useMemo(() => {
+        const baseGrid = comboOrder.length === 0 ? albersGrid : comboOrder.map(i => albersGrid[i]).filter(Boolean);
+        return baseGrid.map((combo, idx) => {
+            const custom = customCombos[idx];
+            return custom
+                ? { ...combo, outer: custom.outer || combo.outer, middle: custom.middle || combo.middle, inner: custom.inner || combo.inner }
+                : combo;
+        });
+    }, [albersGrid, comboOrder, customCombos]);
 
-    // Template 4: Barras verticais - usa combinações
-    const generateAlbersBarsSvg = (): string => {
-        const width = 1920;
-        const height = 1080;
-        const padding = 80;
-        const gap = 20;
-        const maxCards = getMaxCardsByTemplate('bars');
-        const safeCardCount = Math.min(cardCount, orderedCombos.length, maxCards);
-        const displayItems = orderedCombos.slice(0, safeCardCount);
-        const numBars = displayItems.length;
-        if (numBars === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        
-        // Grid responsivo para barras - preenche toda a largura
-        const availableWidth = width - padding * 2;
-        const barWidth = (availableWidth - gap * (numBars - 1)) / numBars;
-        const barHeight = height - padding * 2 - 40; // 40 para o círculo no topo
-        
-        const bars = displayItems.map((combo, idx) => {
-            const x = padding + idx * (barWidth + gap);
-            const y = padding + 40;
-            const layers = getComboLayers(combo);
-            const segmentHeight = barHeight / layers.length;
-            const segments = layers.map((color, i) => `<rect x="${x}" y="${y + segmentHeight * i}" width="${barWidth}" height="${segmentHeight}" fill="${color}" />`).join('');
+    const visibleComboCount = Math.min(cardCount, maxCardsFor(albersTemplate), albersGrid.length);
 
-            // Círculo no topo
-            const circleY = y - 20;
-            const circleR = Math.min(15, barWidth * 0.15);
-            const circleFill = layers[1] || layers[0];
-            const circleStroke = layers[0];
-            const circle = `<circle cx="${x + barWidth / 2}" cy="${circleY}" r="${circleR}" fill="${circleFill}" stroke="${circleStroke}" stroke-width="3" />`;
+    // ------------------------------------------------------------ rendering
 
-            return segments + circle;
-        }).join('');
-        
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${bars}</svg>`;
-    };
+    const sheetColors = colors.map((c) => ({ hex: c.hex, name: c.name, weight: c.weight, codes: extraCodes(c.hex) }));
+    const sheetOptions = (canvas: { width: number; height: number; unit: number }, forExport: boolean) => ({
+        ...canvas,
+        show,
+        variations: showVariations,
+        variationCodes: showVariationCodes,
+        variationCount,
+        basePosition: baseColorPosition,
+        splitRatio,
+        forExport,
+        idPrefix: forExport ? 'gpx' : 'gp'
+    });
+    const sheetSvg = (forExport: boolean) =>
+        renderSheet(sheetView, sheetColors, sheetOptions(forExport ? EXPORT_CANVAS : screenCanvas(sheetWidth), forExport));
 
-    // Helper: compute responsive grid (cols/rows + cell size)
-    const computeAlbersGrid = (itemCount: number, width: number, height: number, padding: number, gap: number) => {
-        let bestCols = 1, bestFit = 0;
-        for (let cols = 1; cols <= itemCount; cols++) {
-            const rows = Math.ceil(itemCount / cols);
-            const cellWidth = (width - padding * 2 - gap * (cols - 1)) / cols;
-            const cellHeight = (height - padding * 2 - gap * (rows - 1)) / rows;
-            const cellSize = Math.min(cellWidth, cellHeight);
-            const lastRowItems = itemCount % cols || cols;
-            const completeness = lastRowItems / cols;
-            const fit = cellSize * cellSize * itemCount * completeness;
-            if (fit > bestFit) { bestFit = fit; bestCols = cols; }
-        }
-        const cols = bestCols;
-        const rows = Math.ceil(itemCount / cols);
-        const cellWidth = (width - padding * 2 - gap * (cols - 1)) / cols;
-        const cellHeight = (height - padding * 2 - gap * (rows - 1)) / rows;
-        return { cols, rows, cellWidth, cellHeight };
-    };
-
-    // Template 5: Rings (anéis com fundo da cor do meio)
-    const generateAlbersRingsSvg = (): string => {
-        const width = 1920, height = 1080, padding = 40, gap = 20;
-        const maxCards = getMaxCardsByTemplate('rings');
-        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
-        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
-        const r = Math.min(cellWidth, cellHeight) * 0.42;
-        const cells = items.map((combo, idx) => {
-            const col = idx % cols, row = Math.floor(idx / cols);
-            const x = padding + col * (cellWidth + gap), y = padding + row * (cellHeight + gap);
-            const cx = x + cellWidth / 2, cy = y + cellHeight / 2;
-            return `<g><rect x="${x}" y="${y}" width="${cellWidth}" height="${cellHeight}" fill="${combo.middle}" /><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${combo.outer}" stroke-width="${r * 0.35}" /><circle cx="${cx}" cy="${cy}" r="${r * 0.5}" fill="${combo.inner}" /></g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
-    };
-
-    // Template 6: Diamonds (losangos rotacionados)
-    const generateAlbersDiamondsSvg = (): string => {
-        const width = 1920, height = 1080, padding = 60, gap = 30;
-        const maxCards = getMaxCardsByTemplate('diamonds');
-        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
-        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
-        const size = Math.min(cellWidth, cellHeight) * 0.78;
-        const cells = items.map((combo, idx) => {
-            const col = idx % cols, row = Math.floor(idx / cols);
-            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
-            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
-            const layers = getComboLayers(combo);
-            const factors = [1, 0.65, 0.4, 0.22];
-            const rects = layers.map((color, i) => {
-                const s = size * (factors[i] || Math.max(0.15, 0.65 ** i));
-                return `<rect x="${cx - s / 2}" y="${cy - s / 2}" width="${s}" height="${s}" fill="${color}" transform="rotate(45 ${cx} ${cy})" />`;
-            }).join('');
-            return `<g>${rects}</g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
-    };
-
-    // Template 7: Frames (moldura grossa estilo Albers Homenagem)
-    const generateAlbersFramesSvg = (): string => {
-        const width = 1920, height = 1080, padding = 50, gap = 25;
-        const maxCards = getMaxCardsByTemplate('frames');
-        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
-        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
-        const size = Math.min(cellWidth, cellHeight) * 0.92;
-        const cells = items.map((combo, idx) => {
-            const col = idx % cols, row = Math.floor(idx / cols);
-            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
-            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
-            const layers = getComboLayers(combo);
-            const factors = [1, 0.78, 0.55, 0.32];
-            const rects = layers.map((color, i) => {
-                const s = size * (factors[i] || Math.max(0.18, 0.7 ** i));
-                const offset = i > 0 ? s * 0.08 : 0;
-                return `<rect x="${cx - s / 2}" y="${cy - s / 2 + offset}" width="${s}" height="${s}" fill="${color}" />`;
-            }).join('');
-            return `<g>${rects}</g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
-    };
-
-    // Template 8: Split (cell dividido em metades + acento)
-    const generateAlbersSplitSvg = (): string => {
-        const width = 1920, height = 1080, padding = 40, gap = 18;
-        const maxCards = getMaxCardsByTemplate('split');
-        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
-        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
-        const cells = items.map((combo, idx) => {
-            const col = idx % cols, row = Math.floor(idx / cols);
-            const x = padding + col * (cellWidth + gap), y = padding + row * (cellHeight + gap);
-            const half = cellWidth / 2;
-            const accentR = Math.min(cellWidth, cellHeight) * 0.18;
-            return `<g><rect x="${x}" y="${y}" width="${half}" height="${cellHeight}" fill="${combo.outer}" /><rect x="${x + half}" y="${y}" width="${half}" height="${cellHeight}" fill="${combo.middle}" /><circle cx="${x + cellWidth / 2}" cy="${y + cellHeight / 2}" r="${accentR}" fill="${combo.inner}" /></g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
-    };
-
-    // Template 9: Targets (alvos com anéis concêntricos múltiplos)
-    const generateAlbersTargetsSvg = (): string => {
-        const width = 1920, height = 1080, padding = 40, gap = 20;
-        const maxCards = getMaxCardsByTemplate('targets');
-        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
-        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
-        const r = Math.min(cellWidth, cellHeight) * 0.45;
-        const cells = items.map((combo, idx) => {
-            const col = idx % cols, row = Math.floor(idx / cols);
-            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
-            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
-            const palette = [combo.outer, combo.middle, combo.inner, combo.outer, combo.middle];
-            const radii = [1, 0.78, 0.58, 0.4, 0.22];
-            const circles = radii.map((rf, i) => `<circle cx="${cx}" cy="${cy}" r="${r * rf}" fill="${palette[i % palette.length]}" />`).join('');
-            return `<g>${circles}</g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
-    };
-
-    // Template 10: Triangles (triângulos sobrepostos)
-    const generateAlbersTrianglesSvg = (): string => {
-        const width = 1920, height = 1080, padding = 60, gap = 30;
-        const maxCards = getMaxCardsByTemplate('triangles');
-        const items = orderedCombos.slice(0, Math.min(cardCount, orderedCombos.length, maxCards));
-        if (items.length === 0) return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" /></svg>`;
-        const { cols, cellWidth, cellHeight } = computeAlbersGrid(items.length, width, height, padding, gap);
-        const size = Math.min(cellWidth, cellHeight) * 0.85;
-        const tri = (cx: number, cy: number, s: number, color: string, flip = false) => {
-            const h = s * 0.866;
-            const points = flip
-                ? `${cx - s / 2},${cy - h / 2} ${cx + s / 2},${cy - h / 2} ${cx},${cy + h / 2}`
-                : `${cx - s / 2},${cy + h / 2} ${cx + s / 2},${cy + h / 2} ${cx},${cy - h / 2}`;
-            return `<polygon points="${points}" fill="${color}" />`;
-        };
-        const cells = items.map((combo, idx) => {
-            const col = idx % cols, row = Math.floor(idx / cols);
-            const cx = padding + col * (cellWidth + gap) + cellWidth / 2;
-            const cy = padding + row * (cellHeight + gap) + cellHeight / 2;
-            const layers = getComboLayers(combo);
-            const factors = [1, 0.7, 0.45, 0.25];
-            const tris = layers.map((color, i) => tri(cx, cy, size * (factors[i] || 0.2), color, i % 2 === 1)).join('');
-            return `<g>${tris}</g>`;
-        }).join('');
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${getAlbersBackgroundColor()}" />${cells}</svg>`;
-    };
-
-    // Função que retorna o SVG baseado no template de Albers selecionado
-    const getCurrentAlbersSvg = (): string => {
-        switch (albersTemplate) {
-            case 'circles': return generateAlbersCirclesSvg();
-            case 'sunset': return generateAlbersSunsetSvg();
-            case 'bars': return generateAlbersBarsSvg();
-            case 'rings': return generateAlbersRingsSvg();
-            case 'diamonds': return generateAlbersDiamondsSvg();
-            case 'frames': return generateAlbersFramesSvg();
-            case 'split': return generateAlbersSplitSvg();
-            case 'targets': return generateAlbersTargetsSvg();
-            case 'triangles': return generateAlbersTrianglesSvg();
-            default: return generateAlbersSquaresSvg();
-        }
-    };
+    const albersSvg = (forExport: boolean) =>
+        renderAlbers(albersTemplate, orderedCombos.slice(0, visibleComboCount), {
+            ...(forExport ? EXPORT_CANVAS : screenCanvas(albersWidth)),
+            background: ALBERS_BACKGROUNDS[albersBackground],
+            layerCount: albersLayerCount,
+            showHex: albersShowHex,
+            showPercent: albersShowPercent,
+            weightOf,
+            forExport
+        });
 
     const downloadSvg = (svgString: string, filename: string) => {
-        const blob = new Blob([svgString], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        downloadBlob(new Blob([svgString], { type: 'image/svg+xml' }), filename);
     };
 
     const downloadPng = async (svgString: string, filename: string) => {
@@ -1484,14 +745,14 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
                 const ctx = canvas.getContext('2d');
                 if (ctx) {
                     ctx.drawImage(img, 0, 0, 1920, 1080);
-                    const pngUrl = canvas.toDataURL('image/png');
-                    const link = document.createElement('a');
-                    link.href = pngUrl;
-                    link.download = filename;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    downloadUrl(canvas.toDataURL('image/png'), filename);
                 }
+                URL.revokeObjectURL(url);
+                resolve();
+            };
+            img.onerror = () => {
+                // Broken SVG: release the URL and settle instead of hanging forever.
+                console.error('Could not render palette image');
                 URL.revokeObjectURL(url);
                 resolve();
             };
@@ -1500,459 +761,439 @@ export const GeneratedPalettes: React.FC<GeneratedPalettesProps> = ({
     };
 
     const contrastPairs = getContrastPairs();
+    const sourceAvailable = hasSourceWeights(colors, sourceWeights);
+    const extraValue = EXTRA_SHEET_TEMPLATES.includes(sheetView) ? sheetView : '';
+    const hasVariations = TEMPLATES_WITH_VARIATIONS.includes(sheetView);
+    const sheetBg = sheetView === 'classic' || sheetView === 'vertical' || sheetView === 'columns' || sheetView === 'dots' ? 'bg-foreground' : 'bg-card';
 
     return (
-        <div className="max-w-[1600px] mx-auto py-8 space-y-16">
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-                <div>
-                    <h2 className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-[0.3em] mb-1">PALETTE EXPORT</h2>
-                    <p className="text-3xl font-normal tracking-tight text-foreground">Paletas Geradas</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-full cursor-pointer hover:bg-secondary/40 hover:border-border transition-all text-foreground/80">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground/80">Upload SVG</span>
-                        <input ref={fileInputRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
-                    </label>
-                    <div className="flex items-center gap-1 px-2 py-1 bg-card border border-border rounded-full">
+        <div className="flex flex-col gap-5">
+            {/* Input: load or paste a source, or let the tool suggest one. */}
+            <Card aria-label={t.gpInputLabel} label={t.gpInputLabel}>
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="ctl ctl-outline h-10 px-4 shrink-0">
+                        <Upload aria-hidden="true" className="h-4 w-4" />
+                        {t.gpLoadFile}
+                    </button>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp,image/gif"
+                        className="hidden"
+                        aria-hidden="true"
+                        tabIndex={-1}
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) void handleFile(file);
+                            e.target.value = '';
+                        }}
+                    />
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
                         <input
                             type="text"
                             value={svgPasteValue}
-                            onChange={(e) => { setSvgPasteValue(e.target.value); if (svgPasteHint) setSvgPasteHint(null); }}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    const colorsFound = extractColorsFromSvgText(svgPasteValue);
-                                    if (applyExtractedColors(colorsFound)) { setSvgPasteValue(''); setSvgPasteHint(null); }
-                                    else setSvgPasteHint('Nenhuma cor encontrada');
-                                }
-                            }}
-                            placeholder="Cole código SVG…"
-                            className="w-44 px-2 py-1 bg-transparent font-mono text-[10px] focus:outline-none text-foreground placeholder:text-muted-foreground"
+                            onChange={(e) => { setSvgPasteValue(e.target.value); if (inputHint) setInputHint(null); }}
+                            onKeyDown={(e) => { if (e.key === 'Enter') void applyPastedSvg(); }}
+                            placeholder={t.pasteSvgPlaceholder}
+                            aria-label={t.pasteSvgPlaceholder}
+                            className="field h-10 min-w-0 flex-1"
                         />
-                        <button
-                            onClick={() => {
-                                const colorsFound = extractColorsFromSvgText(svgPasteValue);
-                                if (applyExtractedColors(colorsFound)) { setSvgPasteValue(''); setSvgPasteHint(null); }
-                                else setSvgPasteHint('Nenhuma cor encontrada');
-                            }}
-                            className="px-2 py-1 bg-foreground text-background rounded-full font-mono text-[9px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all"
-                        >
-                            Apply
+                        <button type="button" onClick={() => void applyPastedSvg()} disabled={!svgPasteValue.trim()} className="ctl ctl-outline h-10 px-4 shrink-0">
+                            {t.apply}
                         </button>
-                        {svgPasteHint && <span className="font-mono text-[9px] text-amber-600 ml-1">{svgPasteHint}</span>}
                     </div>
-                    <button onClick={suggestNewCombination} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-full font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">
-                        <span>🎲</span> Sugerir Combinação
+                    <button type="button" onClick={suggestNewCombination} className="ctl ctl-tinted h-10 px-4 shrink-0">
+                        <Shuffle aria-hidden="true" className="h-4 w-4" />{t.suggestCombination}
                     </button>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={showCodes} onChange={(e) => setShowCodes(e.target.checked)} className="w-4 h-4 accent-black" />
-                        <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground/80">Mostrar Códigos</span>
-                    </label>
                 </div>
-            </div>
+                {inputHint && <p className="-mt-2 text-[13px] text-muted-foreground" role="status">{inputHint}</p>}
+            </Card>
 
-            <section className="bg-secondary/40 rounded-[2rem] p-8 border border-border/60">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">CORES DA PALETA</h3>
-                    <div className="flex items-center gap-2">
-                        <span className={`font-mono text-sm font-bold ${totalWeight === 100 ? 'text-emerald-600' : 'text-amber-600'}`}>Total: {totalWeight}%</span>
-                        {totalWeight !== 100 && <span className="text-[9px] text-amber-600">(deve ser 100%)</span>}
+            {/* Palette colours */}
+            <Card
+                aria-label={t.paletteColorsLabel}
+                label={`${t.paletteColorsLabel} · ${t.gpColorsCount.replace('{n}', String(colors.length))}`}
+                actions={<PaletteExportMenu t={t} swatches={exportSwatches} />}
+            >
+                <PaletteProportionBar t={t} colors={colors} vision={vision} onFixTotal={() => setColors((prev) => normalizeWeights(prev))} />
+
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <Control label={t.gpDistribution}>
+                            <TextTabs<WeightPreset>
+                                className="max-w-full"
+                                ariaLabel={t.gpDistribution}
+                                value={activePreset}
+                                onChange={applyPreset}
+                                items={(['equal', 'rule603010', 'golden', 'descending', 'source'] as WeightPreset[]).map((preset) => ({
+                                    value: preset,
+                                    label: presetLabel(t, preset),
+                                    disabled: preset === 'source' && !sourceAvailable,
+                                    title: preset === 'source' && !sourceAvailable ? t.gpPresetSourceHint : undefined
+                                }))}
+                            />
+                        </Control>
+                        <Control label={t.gpSortBy}>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <button type="button" onClick={() => sortBy('weight')} className="ctl ctl-outline ctl-sm">{t.gpSortWeight}</button>
+                                <button type="button" onClick={() => sortBy('lightness')} className="ctl ctl-outline ctl-sm">{t.gpSortLightness}</button>
+                                <button type="button" onClick={() => sortBy('hue')} className="ctl ctl-outline ctl-sm">{t.gpSortHue}</button>
+                            </div>
+                        </Control>
                     </div>
+                    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                        <ColorVisionToggle t={t} value={vision} onChange={setVision} />
+                        <LegendToggle label={t.showCodes} on={allCodes} onClick={() => setAllCodes(!allCodes)} />
+                    </div>
+                    <VisionCaption t={t} mode={vision} />
                 </div>
-                <div className="space-y-4 mb-6">
+
+                <div className="flex flex-col divide-y divide-separator">
                     {colors.map((color, idx) => (
-                        <div 
-                            key={idx} 
-                            className={`flex flex-wrap items-center gap-4 p-4 bg-card rounded-2xl border transition-all ${draggedColorIndex === idx ? 'border-foreground opacity-50' : 'border-border/60 hover:border-border'}`}
-                            onDragOver={handleColorDragOver}
-                            onDrop={(e) => handleColorDrop(e, idx)}
-                        >
-                            <button
-                                draggable
-                                onDragStart={(e) => handleColorDragStart(e, idx)}
-                                onDragEnd={handleColorDragEnd}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-secondary hover:bg-muted cursor-grab active:cursor-grabbing transition-all flex-shrink-0"
-                                title="Arrastar para reordenar"
-                            >
-                                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-                                </svg>
-                            </button>
-                            <div className="flex items-center gap-2">
-                                <div className="w-16 h-16 rounded-xl shadow-md border border-border flex-shrink-0" style={{ backgroundColor: color.hex }} />
-                            </div>
-                            <div className="flex-1 min-w-[200px] space-y-2">
-                                <div className="flex gap-2">
-                                    <input type="text" value={color.hex} onChange={(e) => updateColor(idx, e.target.value)} className="w-28 px-3 py-2 font-mono text-sm border border-border rounded-lg focus:outline-none focus:border-foreground" placeholder="#FFFFFF" />
-                                    <input type="text" value={color.name} onChange={(e) => updateName(idx, e.target.value)} className="flex-1 px-3 py-2 text-sm border border-border rounded-lg focus:outline-none focus:border-foreground" placeholder="Nome da cor" />
-                                </div>
-                                <div className="flex flex-wrap gap-2 text-[9px] font-mono text-muted-foreground">
-                                    {formatColorCodes(color.hex).slice(1).map((code, i) => (
-                                        <span key={i} className="px-2 py-0.5 bg-secondary rounded">{code}</span>
-                                    ))}
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <button onClick={() => toggleLock(idx)} className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${color.locked ? 'bg-amber-100 text-amber-600' : 'bg-secondary text-muted-foreground hover:bg-muted'}`} title={color.locked ? 'Destrava peso' : 'Trava peso'}>
-                                        {color.locked ? (
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
-                                        ) : (
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a5 5 0 00-5 5v2a2 2 0 00-2 2v5a2 2 0 002 2h10a2 2 0 002-2v-5a2 2 0 00-2-2H7V7a3 3 0 015.905-.75 1 1 0 001.937-.5A5.002 5.002 0 0010 2z" /></svg>
-                                        )}
-                                    </button>
-                                    <span className={`font-mono text-[10px] w-16 ${color.locked ? 'text-amber-600 font-bold' : 'text-muted-foreground'}`}>{color.weight}% {color.locked && '🔒'}</span>
-                                    <input type="range" min="5" max="90" step="1" value={color.weight} onChange={(e) => updateWeight(idx, parseInt(e.target.value))} disabled={color.locked} className={`flex-1 h-2 accent-black rounded-full ${color.locked ? 'opacity-50 cursor-not-allowed' : ''}`} />
-                                </div>
-                            </div>
-                            {colors.length > 2 && (
-                                <button onClick={() => removeColor(idx)} className="w-8 h-8 flex items-center justify-center rounded-full bg-secondary hover:bg-red-100 hover:text-red-600 transition-all">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                                </button>
-                            )}
-                        </div>
+                        <PaletteColorRow
+                            key={`${idx}-${color.hex}`}
+                            t={t}
+                            color={color}
+                            index={idx}
+                            count={colors.length}
+                            vision={vision}
+                            codes={allCodes || expandedRows.has(idx) ? extraCodes(color.hex) : []}
+                            expanded={allCodes || expandedRows.has(idx)}
+                            canRemove={colors.length > 2}
+                            dragging={dragFrom === idx}
+                            dropTarget={dragFrom !== null && dragOver === idx && dragFrom !== idx}
+                            onToggleExpand={() => toggleRow(idx)}
+                            onHex={(hex) => updateColor(idx, hex)}
+                            onName={(name) => updateName(idx, name)}
+                            onWeight={(w) => updateWeight(idx, w)}
+                            onToggleLock={() => toggleLock(idx)}
+                            onRemove={() => removeColor(idx)}
+                            onMove={(to) => moveRow(idx, to)}
+                            onDragStart={setDragFrom}
+                            onDragOverRow={setDragOver}
+                            onDrop={(to) => {
+                                if (dragFrom !== null) moveRow(dragFrom, to);
+                                setDragFrom(null);
+                                setDragOver(null);
+                            }}
+                            onDragEnd={() => {
+                                setDragFrom(null);
+                                setDragOver(null);
+                            }}
+                        />
                     ))}
                 </div>
-                <div className="flex gap-2">
-                    <input type="text" value={newColorInput} onChange={(e) => setNewColorInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addColor()} className="flex-1 px-4 py-3 font-mono text-sm border-2 border-dashed border-border rounded-xl focus:outline-none focus:border-foreground" placeholder={t.addColorPlaceholder} />
-                    <button onClick={addColor} disabled={!isValidHex(newColorInput)} className="px-6 py-3 bg-foreground text-background rounded-xl font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all">{t.addColorButton}</button>
-                </div>
-            </section>
 
-            <section>
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.preview1Title}</h3>
-                        <p className="text-xl font-normal tracking-tight">{t.preview1Subtitle}</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.templateLabel}:</span>
-                            <select 
-                                value={paletteTemplate} 
-                                onChange={(e) => setPaletteTemplate(e.target.value as typeof paletteTemplate)}
-                                className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
+                <div className="flex gap-2">
+                    <input
+                        type="text"
+                        value={newColorInput}
+                        onChange={(e) => setNewColorInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && addColor()}
+                        className="field h-10 min-w-0 flex-1 tabular"
+                        placeholder={t.addColorPlaceholder}
+                        aria-label={t.addColorPlaceholder}
+                    />
+                    <button type="button" onClick={addColor} disabled={!normalizeHex(newColorInput)} className="ctl ctl-outline h-10 px-4 shrink-0">
+                        <Plus aria-hidden="true" className="h-4 w-4" />{t.addColorButton}
+                    </button>
+                </div>
+            </Card>
+
+            {/* Colours from a base */}
+            <Card aria-label={t.gpHarmonyTitle} label={t.gpHarmonyTitle}>
+                <p className="-mt-1 text-[14px] text-muted-foreground">{t.gpHarmonyHint}</p>
+                <PaletteHarmonyPanel t={t} colors={colors} onAdd={addColors} />
+            </Card>
+
+            {/* Colour sheet */}
+            <Card
+                aria-label={t.preview1Subtitle}
+                label={t.preview1Subtitle}
+                actions={
+                    <>
+                        <HeaderDownload label="SVG" ariaLabel={t.gpDownloadSvg} onClick={() => downloadSvg(sheetSvg(true), 'palette-sheet.svg')} />
+                        <HeaderDownload label="PNG" ariaLabel={t.gpDownloadPng} onClick={() => void downloadPng(sheetSvg(true), 'palette-sheet.png')} />
+                    </>
+                }
+            >
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <TextTabs<SheetTemplate>
+                            ariaLabel={t.gpViewLabel}
+                            value={sheetView}
+                            onChange={setSheetView}
+                            className="max-w-full"
+                            items={PRIMARY_SHEET_VIEWS.map((view) => ({ value: view, label: sheetLabel(t, view) }))}
+                        />
+                        <label className="flex items-center gap-3">
+                            <span className="shrink-0 text-[13px] text-muted-foreground">{t.gpMoreLayouts}</span>
+                            <select
+                                value={extraValue}
+                                onChange={(e) => e.target.value && setSheetView(e.target.value as SheetTemplate)}
+                                className={`field field-sm w-auto min-w-0 ${extraValue ? 'shadow-[inset_0_0_0_1px_hsl(var(--foreground))]' : ''}`}
                             >
-                                <option value="classic">{t.classic}</option>
-                                <option value="vertical">{t.vertical}</option>
-                                <option value="grid">{t.grid}</option>
-                                <option value="cards">{t.cards}</option>
-                                <option value="stripes">Stripes</option>
-                                <option value="swatches">Swatches</option>
-                                <option value="gradient">Gradient</option>
-                                <option value="mosaic">Mosaic</option>
-                                <option value="splitscreen">Split Screen</option>
-                                <option value="columns">Columns</option>
-                                <option value="dots">Dots</option>
-                                <option value="editorial">Editorial</option>
+                                <option value="">{t.gpChoose}</option>
+                                {EXTRA_SHEET_TEMPLATES.map((tpl) => (
+                                    <option key={tpl} value={tpl}>{sheetLabel(t, tpl)}</option>
+                                ))}
                             </select>
+                        </label>
+                    </div>
+                    <Control label={t.gpShowLabel}>
+                        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                            <LegendToggle label={t.gpShowName} on={show.name} onClick={() => setShow((s) => ({ ...s, name: !s.name }))} />
+                            <LegendToggle label={t.gpShowHex} on={show.hex} onClick={() => setShow((s) => ({ ...s, hex: !s.hex }))} />
+                            <LegendToggle label={t.gpShowPercent} on={show.percent} onClick={() => setShow((s) => ({ ...s, percent: !s.percent }))} />
+                            <LegendToggle label={t.gpShowCodes} on={show.codes} onClick={() => setShow((s) => ({ ...s, codes: !s.codes }))} />
                         </div>
-                        {paletteTemplate === 'classic' && (
-                            <>
-                                <div className="flex items-center gap-3">
-                                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.splitLabel}:</span>
-                                    <input 
-                                        type="range" 
-                                        min="30" 
-                                        max="80" 
-                                        value={splitRatio} 
-                                        onChange={(e) => setSplitRatio(Number(e.target.value))} 
-                                        className="w-20 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-black"
+                    </Control>
+                    {hasVariations && (
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                            <LegendToggle label={t.gpVariationsToggle} on={showVariations} onClick={() => setShowVariations(!showVariations)} />
+                            {(() => {
+                                const codesDisabled = !showVariations || sheetView === 'cards';
+                                return (
+                                    <LegendToggle label={t.gpVariationCodes} on={showVariationCodes} disabled={codesDisabled} onClick={() => setShowVariationCodes(!showVariationCodes)} />
+                                );
+                            })()}
+                            {sheetView === 'classic' && (
+                                <>
+                                    <SliderControl
+                                        label={t.gpTonesPerSide}
+                                        min={1}
+                                        max={baseColorPosition === 'none' ? 12 : 6}
+                                        value={Math.min(variationCount, baseColorPosition === 'none' ? 12 : 6)}
+                                        onChange={setVariationCount}
+                                        disabled={!showVariations}
                                     />
-                                    <span className="font-mono text-sm font-bold w-10 text-center">{splitRatio}%</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.variationsLabel}:</span>
-                                    <input 
-                                        type="range" 
-                                        min="1" 
-                                        max={baseColorPosition === 'none' ? 12 : 6} 
-                                        value={variationCount} 
-                                        onChange={(e) => setVariationCount(Number(e.target.value))} 
-                                        className="w-20 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-black"
+                                    <SliderControl
+                                        label={t.splitLabel}
+                                        min={30}
+                                        max={80}
+                                        value={splitRatio}
+                                        onChange={setSplitRatio}
+                                        suffix="%"
+                                        disabled={!showVariations}
                                     />
-                                    <span className="font-mono text-sm font-bold w-12 text-center">
-                                        {baseColorPosition === 'none' ? `${variationCount}+${variationCount}` : `${variationCount}+1+${variationCount}`}
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.baseColorPositionLabel}:</span>
-                                    <select 
-                                        value={baseColorPosition} 
-                                        onChange={(e) => setBaseColorPosition(e.target.value as 'none' | 'above' | 'center' | 'below')}
-                                        className="px-2 py-1 border border-border rounded text-[10px] font-mono bg-card"
+                                </>
+                            )}
+                            {(sheetView === 'classic' || sheetView === 'grid') && (
+                                <label className={`flex items-center gap-3 ${!showVariations ? 'opacity-40' : ''}`}>
+                                    <span className="shrink-0 text-[13px] text-muted-foreground">{t.basePosition}</span>
+                                    <select
+                                        value={baseColorPosition}
+                                        onChange={(e) => setBaseColorPosition(e.target.value as BasePosition)}
+                                        disabled={!showVariations}
+                                        className="field field-sm w-auto min-w-0"
                                     >
                                         <option value="none">{t.basePositionNone}</option>
-                    	                <option value="above">{t.basePositionAbove}</option>
+                                        <option value="above">{t.basePositionAbove}</option>
                                         <option value="center">{t.basePositionCenter}</option>
                                         <option value="below">{t.basePositionBelow}</option>
                                     </select>
-                                </div>
-                            </>
-                        )}
-                        <button 
-                            onClick={() => setShowVariationCodes((prev) => !prev)}
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariationCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
-                        >
-                            {showVariationCodes ? t.showVariationCodesOn : t.showVariationCodesOff}
-                        </button>
-                        <button
-                            onClick={() => setShowVariations((prev) => !prev)}
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showVariations ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
-                        >
-                            {showVariations ? 'Hide variations' : 'Show variations'}
-                        </button>
-                        <button 
-                            onClick={() => setShowCodes((prev) => !prev)}
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all ${showCodes ? 'border border-border hover:bg-secondary/40 text-foreground/80' : 'bg-foreground text-background hover:bg-foreground/80'}`}
-                        >
-                            {showCodes ? t.showCodesOn : t.showCodesOff}
-                        </button>
-                        <div className="flex gap-2">
-                            <button onClick={() => downloadSvg(getCurrentPaletteSvg(), 'palette-sheet.svg')} className="px-4 py-2 border border-border rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-secondary/40 transition-all">↓ SVG</button>
-                            <button onClick={() => downloadPng(getCurrentPaletteSvg(), 'palette-sheet.png')} className="px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">↓ PNG</button>
-                        </div>
-                    </div>
-                </div>
-                <div className={`w-full rounded-2xl overflow-hidden shadow-2xl ${paletteTemplate === 'cards' || paletteTemplate === 'grid' ? 'bg-secondary' : 'bg-foreground'}`}>
-                    <div className="w-full [&>svg]:w-full [&>svg]:h-auto [&>svg]:block" dangerouslySetInnerHTML={{ __html: getCurrentPaletteSvg() }} />
-                </div>
-            </section>
-
-            <section>
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.preview2Title.toUpperCase()}</h3>
-                        <p className="text-xl font-normal tracking-tight">{t.preview2Subtitle}</p>
-                        <span className="text-xs text-muted-foreground">{albersGrid.length} {t.availableCombinations}</span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.templateLabel}:</span>
-                            <select 
-                                value={albersTemplate} 
-                                onChange={(e) => setAlbersTemplate(e.target.value as typeof albersTemplate)}
-                                className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
-                            >
-                                <option value="squares">{t.templateSquares}</option>
-                                <option value="circles">{t.templateCircles}</option>
-                                <option value="sunset">{t.templateSunset}</option>
-                                <option value="bars">{t.templateBars}</option>
-                                <option value="rings">Rings</option>
-                                <option value="diamonds">Diamonds</option>
-                                <option value="frames">Frames</option>
-                                <option value="split">Split</option>
-                                <option value="targets">Targets</option>
-                                <option value="triangles">Triangles</option>
-                            </select>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-muted-foreground uppercase">Layers:</span>
-                            <select
-                                value={albersLayerCount}
-                                onChange={(e) => setAlbersLayerCount(Number(e.target.value) as 2 | 3 | 4)}
-                                className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
-                            >
-                                <option value={2}>2</option>
-                                <option value={3}>3</option>
-                                <option value={4}>4</option>
-                            </select>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.backgroundLabel}:</span>
-                            <select 
-                                value={albersBackground} 
-                                onChange={(e) => setAlbersBackground(e.target.value as 'black' | 'white' | 'gray')}
-                                className="px-3 py-1.5 border border-border rounded-lg font-mono text-[10px] focus:outline-none focus:border-foreground bg-card"
-                            >
-                                <option value="black">{t.backgroundBlack}</option>
-                                <option value="white">{t.backgroundWhite}</option>
-                                <option value="gray">{t.backgroundGray}</option>
-                            </select>
-                        </div>
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => setFullContrastMode(!fullContrastMode)} 
-                                className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all border ${fullContrastMode ? 'border-transparent' : 'border-border hover:bg-secondary/40'}`}
-                                style={fullContrastMode ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))' } : {}}
-                            >
-                                {fullContrastMode ? '◉' : '○'} FULL CONTRAST
-                            </button>
-                            <button onClick={shuffleAlbers} className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-muted transition-all">
-                                🔀 {t.shuffleAlbers}
-                            </button>
-                            <button onClick={() => downloadSvg(getCurrentAlbersSvg(), 'albers-grid.svg')} className="px-4 py-2 border border-border rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-secondary/40 transition-all">↓ SVG</button>
-                            <button onClick={() => downloadPng(getCurrentAlbersSvg(), 'albers-grid.png')} className="px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">↓ PNG</button>
-                        </div>
-                    </div>
-                </div>
-                <div className="w-full rounded-2xl overflow-hidden shadow-2xl" style={{ backgroundColor: getAlbersBackgroundColor() }}>
-                    <div className="w-full [&>svg]:w-full [&>svg]:h-auto [&>svg]:block" dangerouslySetInnerHTML={{ __html: getCurrentAlbersSvg() }} />
-                </div>
-            </section>
-
-            <section className="bg-secondary/40 rounded-[2rem] p-8 border border-border/60">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.preview3Title.toUpperCase()}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{t.preview3Subtitle}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3">
-                            <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.cardsLabel}:</span>
-                            <input 
-                                type="range" 
-                                min="4" 
-                                max={Math.min(getMaxCardsByTemplate(albersTemplate), albersGrid.length)} 
-                                value={Math.min(cardCount, getMaxCardsByTemplate(albersTemplate), albersGrid.length)} 
-                                onChange={(e) => setCardCount(Math.min(Number(e.target.value), getMaxCardsByTemplate(albersTemplate), albersGrid.length))} 
-                                className="w-24 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-black"
-                            />
-                            <span className="font-mono text-sm font-bold w-6 text-center">{Math.min(cardCount, getMaxCardsByTemplate(albersTemplate), albersGrid.length)}</span>
-                        </div>
-                        <button 
-                            onClick={() => setFullContrastMode(!fullContrastMode)} 
-                            className={`px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all border ${fullContrastMode ? 'border-transparent' : 'border-border hover:bg-secondary/40'}`}
-                            style={fullContrastMode ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))' } : {}}
-                        >
-                            {fullContrastMode ? '◉' : '○'} FULL CONTRAST
-                        </button>
-                        <button onClick={() => { shuffleAlbers(); setCustomCombos({}); }} className="flex items-center gap-2 px-4 py-2 bg-foreground text-background rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider hover:bg-foreground/80 transition-all">
-                            🔀 {t.shuffleAlbers}
-                        </button>
-                    </div>
-                </div>
-                <div className={`grid gap-3 ${cardCount <= 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-6' : cardCount <= 12 ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-6' : 'grid-cols-4 sm:grid-cols-6 md:grid-cols-8'}`}>
-                    {orderedCombos.slice(0, Math.min(cardCount, getMaxCardsByTemplate(albersTemplate), albersGrid.length)).map((combo, idx) => (
-                        <div 
-                            key={idx}
-                            draggable={editingComboIndex !== idx}
-                            onDragStart={(e) => editingComboIndex !== idx && handleComboDragStart(e, idx)}
-                            onDragOver={handleComboDragOver}
-                            onDrop={(e) => handleComboDrop(e, idx)}
-                            onDragEnd={handleComboDragEnd}
-                            className={`space-y-1 transition-all ${editingComboIndex === idx ? 'ring-2 ring-black rounded-xl' : 'cursor-grab active:cursor-grabbing hover:scale-105'} ${draggedComboIndex === idx ? 'opacity-50 scale-95' : ''}`}
-                        >
-                            <div 
-                                className="aspect-square rounded-xl overflow-hidden shadow-lg relative cursor-pointer" 
-                                style={{ backgroundColor: combo.outer }}
-                                onClick={() => setEditingComboIndex(editingComboIndex === idx ? null : idx)}
-                            >
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setComboLocks((prev) => ({ ...prev, [idx]: !prev[idx] })); }}
-                                    className="absolute top-1 left-1 px-1.5 py-1 rounded-md bg-card/80 text-[9px] font-mono font-bold shadow-sm hover:bg-card"
-                                    title={comboLocks[idx] ? 'Unlock slot' : 'Lock slot'}
-                                >
-                                    {comboLocks[idx] ? '🔒' : '🔓'}
-                                </button>
-                                <div className="absolute w-[60%] h-[60%] left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 rounded-lg" style={{ backgroundColor: combo.middle }}>
-                                    <div className="absolute w-[50%] h-[50%] left-1/2 top-[52%] -translate-x-1/2 -translate-y-1/2 rounded-md" style={{ backgroundColor: combo.inner }} />
-                                </div>
-                                {customCombos[idx] && (
-                                    <div className="absolute top-1 right-1 w-4 h-4 bg-amber-400 rounded-full flex items-center justify-center text-[8px]">✏️</div>
-                                )}
-                            </div>
-                            
-                            {editingComboIndex === idx ? (
-                                <div className="p-2 bg-card rounded-lg border border-border space-y-2">
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-[8px] text-muted-foreground w-8">{t.externalColorLabel}:</span>
-                                        <input 
-                                            type="color" 
-                                            value={combo.outer} 
-                                            onChange={(e) => updateComboColor(idx, 'outer', e.target.value)}
-                                            className="w-6 h-6 rounded cursor-pointer"
-                                        />
-                                        <input 
-                                            type="text" 
-                                            value={combo.outer} 
-                                            onChange={(e) => updateComboColor(idx, 'outer', e.target.value)}
-                                            className="flex-1 text-[9px] font-mono px-1 py-0.5 border rounded w-16"
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-[8px] text-muted-foreground w-8">Mid:</span>
-                                        <input 
-                                            type="color" 
-                                            value={combo.middle} 
-                                            onChange={(e) => updateComboColor(idx, 'middle', e.target.value)}
-                                            className="w-6 h-6 rounded cursor-pointer"
-                                        />
-                                        <input 
-                                            type="text" 
-                                            value={combo.middle} 
-                                            onChange={(e) => updateComboColor(idx, 'middle', e.target.value)}
-                                            className="flex-1 text-[9px] font-mono px-1 py-0.5 border rounded w-16"
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-[8px] text-muted-foreground w-8">{t.internalColorLabel}:</span>
-                                        <input 
-                                            type="color" 
-                                            value={combo.inner} 
-                                            onChange={(e) => updateComboColor(idx, 'inner', e.target.value)}
-                                            className="w-6 h-6 rounded cursor-pointer"
-                                        />
-                                        <input 
-                                            type="text" 
-                                            value={combo.inner} 
-                                            onChange={(e) => updateComboColor(idx, 'inner', e.target.value)}
-                                            className="flex-1 text-[9px] font-mono px-1 py-0.5 border rounded w-16"
-                                        />
-                                    </div>
-                                    {customCombos[idx] && (
-                                        <button 
-                                            onClick={() => resetCombo(idx)}
-                                            className="w-full text-[8px] text-red-500 hover:text-red-700 py-1"
-                                        >
-                                            {t.resetCombo}
-                                        </button>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="text-center">
-                                    <div className="flex justify-center gap-0.5 mb-0.5">
-                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-border`} style={{ backgroundColor: combo.outer }} title={combo.outer}></span>
-                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-border`} style={{ backgroundColor: combo.middle }} title={combo.middle}></span>
-                                        <span className={`${cardCount > 12 ? 'w-2 h-2' : 'w-3 h-3'} rounded border border-border`} style={{ backgroundColor: combo.inner }} title={combo.inner}></span>
-                                    </div>
-                                    <span className={`font-mono text-muted-foreground ${cardCount > 12 ? 'text-[6px]' : 'text-[8px]'}`}>{combo.weight.toFixed(0)}% • {getContrastRatio(combo.middle, combo.inner).toFixed(1)}:1</span>
-                                </div>
+                                </label>
                             )}
                         </div>
-                    ))}
+                    )}
                 </div>
-            </section>
+                <div className="flex flex-col gap-2">
+                    <div ref={sheetRef} className={`w-full overflow-hidden rounded-md shadow-hairline ${sheetBg}`}>
+                        <div className="w-full [&>svg]:block [&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: sheetSvg(false) }} />
+                    </div>
+                    <p className="text-[12px] text-muted-foreground">{t.gpSheetHint}</p>
+                </div>
+            </Card>
 
-            <section className="bg-secondary/40 rounded-[2rem] p-8 border border-border/60 overflow-hidden">
-                <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <h3 className="font-mono text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{t.preview4Title.toUpperCase()}</h3>
-                    <div className="flex items-center gap-3">
-                        <span className="font-mono text-[10px] text-muted-foreground uppercase">{t.cardsLabel}:</span>
-                        <input 
-                            type="range" 
-                            min="4" 
-                            max="16" 
-                            value={contrastCardCount} 
-                            onChange={(e) => setContrastCardCount(Number(e.target.value))} 
-                            className="w-24 h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-black"
-                        />
-                        <span className="font-mono text-sm font-bold w-6 text-center">{contrastCardCount}</span>
+            {/* Colour interaction squares */}
+            <Card
+                aria-label={t.preview2Title}
+                label={t.preview2Title}
+                actions={
+                    <>
+                        <HeaderDownload label="SVG" ariaLabel={t.gpDownloadSvg} onClick={() => downloadSvg(albersSvg(true), 'albers-grid.svg')} />
+                        <HeaderDownload label="PNG" ariaLabel={t.gpDownloadPng} onClick={() => void downloadPng(albersSvg(true), 'albers-grid.png')} />
+                    </>
+                }
+            >
+                <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+                    <p className="max-w-[60ch] text-[14px] text-muted-foreground">{t.preview2Subtitle}</p>
+                    <Metric size="md" value={albersGrid.length} caption={t.availableCombinations} align="right" />
+                </div>
+                <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+                        <label className="flex items-center gap-3">
+                            <span className="shrink-0 text-[13px] text-muted-foreground">{t.templateLabel}</span>
+                            <select value={albersTemplate} onChange={(e) => setAlbersTemplate(e.target.value as AlbersTemplate)} className="field field-sm w-auto min-w-0">
+                                {ALBERS_TEMPLATES.map((tpl) => <option key={tpl} value={tpl}>{albersLabel(t, tpl)}</option>)}
+                            </select>
+                        </label>
+                        <Control label={t.layersLabel}>
+                            <TextTabs<'2' | '3' | '4'>
+                                ariaLabel={t.layersLabel}
+                                value={String(albersLayerCount) as '2' | '3' | '4'}
+                                onChange={(v) => setAlbersLayerCount(Number(v) as 2 | 3 | 4)}
+                                items={(['2', '3', '4'] as const).map((n) => ({ value: n, label: <span className="tabular">{n}</span> }))}
+                            />
+                        </Control>
+                        <Control label={t.backgroundLabel}>
+                            <TextTabs<AlbersBackground>
+                                ariaLabel={t.backgroundLabel}
+                                value={albersBackground}
+                                onChange={setAlbersBackground}
+                                items={(['black', 'white', 'gray'] as AlbersBackground[]).map((bg) => ({
+                                    value: bg,
+                                    label: bg === 'black' ? t.backgroundBlack : bg === 'white' ? t.backgroundWhite : t.backgroundGray
+                                }))}
+                            />
+                        </Control>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                        <Control label={t.gpShowLabel}>
+                            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                                <LegendToggle label={t.gpShowHex} on={albersShowHex} onClick={() => setAlbersShowHex(!albersShowHex)} />
+                                <LegendToggle label={t.gpShowPercent} on={albersShowPercent} onClick={() => setAlbersShowPercent(!albersShowPercent)} />
+                            </div>
+                        </Control>
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                            <LegendToggle label={t.fullContrast} on={fullContrastMode} onClick={() => setFullContrastMode(!fullContrastMode)} />
+                            <button type="button" onClick={shuffleAlbers} className="ctl ctl-outline ctl-sm">
+                                <Shuffle aria-hidden="true" />{t.shuffleAlbers}
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                    {contrastPairs.slice(0, contrastCardCount).map((pair, idx) => (
-                        <div key={idx} className="rounded-xl overflow-hidden shadow-sm border border-border/60">
-                            <div className="p-4 flex flex-col items-center justify-center h-24" style={{ backgroundColor: pair.bg }}>
-                                <span className="text-2xl font-bold" style={{ color: pair.fg }}>Aa</span>
-                                <span className="text-xs font-mono" style={{ color: pair.fg }}>{pair.fg}</span>
-                            </div>
-                            <div className="bg-card p-3 text-center border-t border-border/60">
-                                <span className={`font-mono text-[10px] font-bold block ${pair.ratio >= 7 ? 'text-emerald-600' : pair.ratio >= 4.5 ? 'text-amber-600' : 'text-red-500'}`}>{pair.ratio.toFixed(1)}:1</span>
-                                <span className={`font-mono text-[9px] ${pair.ratio >= 7 ? 'text-emerald-500' : pair.ratio >= 4.5 ? 'text-amber-500' : 'text-red-400'}`}>{pair.ratio >= 7 ? 'AAA' : pair.ratio >= 4.5 ? 'AA' : 'FAIL'}</span>
-                            </div>
-                        </div>
-                    ))}
+                <div ref={albersRef} className="w-full overflow-hidden rounded-md shadow-hairline" style={{ backgroundColor: ALBERS_BACKGROUNDS[albersBackground] }}>
+                    <div className="w-full [&>svg]:block [&>svg]:h-auto [&>svg]:w-full" dangerouslySetInnerHTML={{ __html: albersSvg(false) }} />
                 </div>
-            </section>
+            </Card>
+
+            {/* Custom combinations */}
+            <Card
+                aria-label={t.preview3Title}
+                label={t.preview3Title}
+                actions={
+                    <IconButton label={t.shuffleAlbers} onClick={() => { shuffleAlbers(); setCustomCombos({}); }}>
+                        <Shuffle aria-hidden="true" />
+                    </IconButton>
+                }
+            >
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                    <p className="max-w-[60ch] text-[14px] text-muted-foreground">{t.gpCombosHint}</p>
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                        <SliderControl
+                            label={t.cardsLabel}
+                            min={Math.min(4, Math.max(1, albersGrid.length))}
+                            max={Math.max(1, Math.min(maxCardsFor(albersTemplate), albersGrid.length))}
+                            value={visibleComboCount}
+                            onChange={setCardCount}
+                        />
+                        <LegendToggle label={t.fullContrast} on={fullContrastMode} onClick={() => setFullContrastMode(!fullContrastMode)} />
+                    </div>
+                </div>
+                <div className={`grid gap-x-3 gap-y-5 ${visibleComboCount <= 6 ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-6' : 'grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8'}`}>
+                    {orderedCombos.slice(0, visibleComboCount).map((combo, idx) => {
+                        const layers = comboLayers(combo, 3);
+                        const ratio = getContrastRatio(combo.middle, combo.inner);
+                        return (
+                            <div
+                                key={idx}
+                                draggable={editingComboIndex !== idx}
+                                onDragStart={(e) => { if (editingComboIndex !== idx) { setDraggedComboIndex(idx); e.dataTransfer.effectAllowed = 'move'; } }}
+                                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                                onDrop={(e) => { e.preventDefault(); handleComboDrop(idx); }}
+                                onDragEnd={() => setDraggedComboIndex(null)}
+                                className={`flex min-w-0 flex-col gap-2 transition-opacity duration-fast ease-out ${editingComboIndex === idx ? '' : 'cursor-grab active:cursor-grabbing'} ${draggedComboIndex === idx ? 'opacity-40' : ''}`}
+                            >
+                                <div
+                                    className={`relative aspect-square cursor-pointer overflow-hidden rounded-md shadow-hairline ${editingComboIndex === idx ? 'ring-[1.5px] ring-foreground ring-offset-2 ring-offset-card' : ''}`}
+                                    style={{ backgroundColor: combo.outer }}
+                                    onClick={() => setEditingComboIndex(editingComboIndex === idx ? null : idx)}
+                                >
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); setComboLocks((prev) => ({ ...prev, [idx]: !prev[idx] })); }}
+                                        aria-pressed={!!comboLocks[idx]}
+                                        aria-label={comboLocks[idx] ? t.unlockSlot : t.lockSlot}
+                                        title={comboLocks[idx] ? t.unlockSlot : t.lockSlot}
+                                        className={`absolute left-1 top-1 z-10 flex h-7 w-7 items-center justify-center rounded-sm transition-colors duration-fast ease-out ${comboLocks[idx] ? 'bg-foreground text-background' : 'bg-card/85 text-foreground hover:bg-card'}`}
+                                    >
+                                        {comboLocks[idx] ? <Lock className="h-3.5 w-3.5" aria-hidden="true" /> : <Unlock className="h-3.5 w-3.5" aria-hidden="true" />}
+                                    </button>
+                                    <div className="absolute left-1/2 top-[52%] h-[60%] w-[60%] -translate-x-1/2 -translate-y-1/2 rounded-sm" style={{ backgroundColor: combo.middle }}>
+                                        <div className="absolute left-1/2 top-[52%] h-[50%] w-[50%] -translate-x-1/2 -translate-y-1/2 rounded-xs" style={{ backgroundColor: combo.inner }} />
+                                    </div>
+                                    {customCombos[idx] && (
+                                        <div className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-sm bg-card/85 text-foreground" aria-hidden="true"><Pencil className="h-3 w-3" /></div>
+                                    )}
+                                </div>
+
+                                {editingComboIndex === idx ? (
+                                    <div className="material-popover materialize flex flex-col gap-1.5 p-2">
+                                        {(['outer', 'middle', 'inner'] as const).map((key) => {
+                                            const label = key === 'outer' ? t.externalColorLabel : key === 'middle' ? t.middleColorLabel : t.internalColorLabel;
+                                            return (
+                                                <div key={key} className="flex items-center gap-1.5">
+                                                    <span className="w-10 shrink-0 truncate text-[12px] text-muted-foreground">{label}</span>
+                                                    <input type="color" value={combo[key]} onChange={(e) => updateComboColor(idx, key, e.target.value)} aria-label={label} className="h-6 w-6 shrink-0 cursor-pointer rounded-sm" />
+                                                    <HexField value={combo[key]} onCommit={(hex) => updateComboColor(idx, key, hex)} maxLength={7} aria-label={`${label} hex`} className="field field-sm tabular w-16 min-w-0 flex-1 px-1.5 text-[12px]" />
+                                                </div>
+                                            );
+                                        })}
+                                        {customCombos[idx] && (
+                                            <button type="button" onClick={() => resetCombo(idx)} className="ctl ctl-outline ctl-sm w-full">{t.resetCombo}</button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[14px] tabular text-foreground">{ratio.toFixed(1)}:1</span>
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5" title={t.gpWeightInPalette}>
+                                            {layers.map((hex, li) => {
+                                                const w = weightOf(hex);
+                                                return (
+                                                    <span key={li} className="inline-flex items-center gap-1 text-[12px] tabular text-muted-foreground">
+                                                        <span className="h-2 w-2 rounded-pill shadow-hairline" style={{ backgroundColor: hex }} aria-hidden="true" />
+                                                        {typeof w === 'number' ? formatPercent(w) : '–'}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            </Card>
+
+            {/* Contrast pairs */}
+            <Card aria-label={t.preview4Title} label={t.preview4Title}>
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+                    <p className="text-[14px] text-muted-foreground">{t.gpContrastHint}</p>
+                    <SliderControl label={t.cardsLabel} min={4} max={16} value={contrastCardCount} onChange={setContrastCardCount} />
+                </div>
+                {contrastPairs.length === 0 ? (
+                    <p className="text-[14px] text-muted-foreground">{t.gpNoPairs}</p>
+                ) : (
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4">
+                        {contrastPairs.slice(0, contrastCardCount).map((pair, idx) => {
+                            const level = wcagLevelFor(pair.ratio, 'normal');
+                            return (
+                                <div key={idx} className="flex min-w-0 flex-col gap-3">
+                                    <div className="flex h-24 flex-col items-center justify-center gap-0.5 rounded-md p-4 shadow-hairline" style={{ backgroundColor: pair.bg }}>
+                                        <span className="text-[28px] font-normal leading-none" style={{ color: pair.fg }}>Aa</span>
+                                        <span className="text-[12px] tabular" style={{ color: pair.fg }}>{pair.fg}</span>
+                                    </div>
+                                    <div className="flex items-end justify-between gap-2">
+                                        <Metric size="sm" value={`${pair.ratio.toFixed(1)}:1`} caption={`${pair.bg} · ${pair.fg}`} />
+                                        <span className={`shrink-0 text-[13px] ${level === 'AAA' ? 'text-foreground' : 'text-muted-foreground'}`}>{level}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </Card>
         </div>
     );
 };

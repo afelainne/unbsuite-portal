@@ -20,25 +20,38 @@ const SKIP_VALUES = new Set([
   'none', 'transparent', 'inherit', 'currentcolor', 'initial', 'unset',
 ]);
 
-function normalizeColorToHex(raw: string): string | null {
-  const value = raw.trim().toLowerCase();
+const parseRgbComponent = (token: string): number => {
+  const t = token.trim();
+  if (t.endsWith('%')) return (parseFloat(t) / 100) * 255;
+  return parseFloat(t);
+};
+
+export function normalizeColorToHex(raw: string): string | null {
+  if (typeof raw !== 'string') return null;
+  const value = raw.replace(/!important/i, '').trim().toLowerCase();
 
   if (!value || SKIP_VALUES.has(value) || value.startsWith('url(')) return null;
 
-  // Already hex
+  // Hex: #RGB, #RGBA, #RRGGBB, #RRGGBBAA (alpha ignored). Characters are validated.
   if (value.startsWith('#')) {
-    if (value.length === 4) {
-      // #RGB -> #RRGGBB
-      return `#${value[1]}${value[1]}${value[2]}${value[2]}${value[3]}${value[3]}`.toUpperCase();
+    const body = value.slice(1);
+    if (!/^[0-9a-f]+$/.test(body)) return null;
+    if (body.length === 3 || body.length === 4) {
+      return `#${body[0]}${body[0]}${body[1]}${body[1]}${body[2]}${body[2]}`.toUpperCase();
     }
-    if (value.length === 7) return value.toUpperCase();
+    if (body.length === 6 || body.length === 8) return `#${body.slice(0, 6)}`.toUpperCase();
     return null;
   }
 
-  // rgb(r, g, b) or rgba(r, g, b, a)
-  const rgbMatch = value.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
-  if (rgbMatch) {
-    return rgbToHex(Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3]));
+  // rgb()/rgba(): comma or space syntax, integers, decimals or percentages.
+  // rgbToHex clamps out-of-range values (e.g. rgb(300, 0, 0) -> #FF0000).
+  const fn = value.match(/^rgba?\(([^)]*)\)/);
+  if (fn) {
+    const parts = fn[1].split(/[\s,/]+/).filter(Boolean);
+    if (parts.length < 3) return null;
+    const [r, g, b] = parts.slice(0, 3).map(parseRgbComponent);
+    if ([r, g, b].some((n) => Number.isNaN(n))) return null;
+    return rgbToHex(r, g, b);
   }
 
   // CSS named color
@@ -111,65 +124,95 @@ export const extractColorsFromSvg = (svgContent: string): string[] => {
 };
 
 /**
+ * Clusters RGBA pixel data into dominant colors (greedy running-mean clustering).
+ * Pixels with alpha < 128 are ignored. Pure function, exported for testing.
+ */
+export const clusterPixels = (
+  data: ArrayLike<number>,
+  maxColors: number = 6,
+  threshold: number = 20
+): string[] => {
+  const colorMap: { r: number; g: number; b: number; count: number }[] = [];
+  const thresholdSq = threshold * threshold;
+
+  for (let i = 0; i + 3 < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+    if (a < 128) continue;
+    let found = false;
+    for (let j = 0; j < colorMap.length; j++) {
+      const c = colorMap[j];
+      const dr = c.r - r, dg = c.g - g, db = c.b - b;
+      if (dr * dr + dg * dg + db * db < thresholdSq) {
+        c.r = (c.r * c.count + r) / (c.count + 1);
+        c.g = (c.g * c.count + g) / (c.count + 1);
+        c.b = (c.b * c.count + b) / (c.count + 1);
+        c.count++;
+        found = true;
+        break;
+      }
+    }
+    if (!found) colorMap.push({ r, g, b, count: 1 });
+  }
+
+  colorMap.sort((a, b) => b.count - a.count);
+
+  // Running means can make two clusters converge on the same hex: dedupe.
+  const out: string[] = [];
+  const limit = Math.max(0, maxColors);
+  for (const c of colorMap) {
+    if (out.length >= limit) break;
+    const hex = rgbToHex(c.r, c.g, c.b);
+    if (!out.includes(hex)) out.push(hex);
+  }
+  return out;
+};
+
+/**
  * Extract dominant colors from a raster image File (JPG/PNG/WEBP).
  * Reads as dataURL, draws to a small canvas, then clusters by proximity.
  */
 export const extractDominantColors = (file: File, maxColors: number = 8): Promise<string[]> => {
   return new Promise((resolve, reject) => {
+    if (!file) return reject(new Error('No file provided'));
+    if (file.type && !file.type.startsWith('image/')) {
+      return reject(new Error(`Unsupported file type: ${file.type}`));
+    }
     const reader = new FileReader();
     reader.onload = (e) => {
-      if (!e.target?.result) return reject('Failed to read file');
+      if (!e.target?.result) return reject(new Error('Failed to read file'));
       extractColorsFromImage(e.target.result as string, maxColors).then(resolve).catch(reject);
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(reader.error ?? new Error('Failed to read file'));
+    reader.onabort = () => reject(new Error('File read aborted'));
     reader.readAsDataURL(file);
   });
 };
 
-// Keep legacy function for backward compatibility but it's no longer used
 export const extractColorsFromImage = (imageSrc: string, maxColors: number = 6): Promise<string[]> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "Anonymous";
-    
+    img.crossOrigin = 'Anonymous';
+
     img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return reject("Canvas unavailable");
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas unavailable'));
 
-      const SAMPLE_SIZE = 100;
-      canvas.width = SAMPLE_SIZE;
-      canvas.height = SAMPLE_SIZE;
-      ctx.drawImage(img, 0, 0, SAMPLE_SIZE, SAMPLE_SIZE);
+        const SAMPLE_SIZE = 100;
+        canvas.width = SAMPLE_SIZE;
+        canvas.height = SAMPLE_SIZE;
+        ctx.drawImage(img, 0, 0, SAMPLE_SIZE, SAMPLE_SIZE);
 
-      const imageData = ctx.getImageData(0, 0, SAMPLE_SIZE, SAMPLE_SIZE).data;
-      const colorMap: { r: number; g: number; b: number; count: number }[] = [];
-      const COLOR_THRESHOLD = 20;
-
-      for (let i = 0; i < imageData.length; i += 4) {
-        const r = imageData[i], g = imageData[i + 1], b = imageData[i + 2], a = imageData[i + 3];
-        if (a < 128) continue;
-        const newColor = { r, g, b, count: 1 };
-        let found = false;
-        for (let j = 0; j < colorMap.length; j++) {
-          const dr = colorMap[j].r - r, dg = colorMap[j].g - g, db = colorMap[j].b - b;
-          if (Math.sqrt(dr * dr + dg * dg + db * db) < COLOR_THRESHOLD) {
-            colorMap[j].r = (colorMap[j].r * colorMap[j].count + r) / (colorMap[j].count + 1);
-            colorMap[j].g = (colorMap[j].g * colorMap[j].count + g) / (colorMap[j].count + 1);
-            colorMap[j].b = (colorMap[j].b * colorMap[j].count + b) / (colorMap[j].count + 1);
-            colorMap[j].count++;
-            found = true;
-            break;
-          }
-        }
-        if (!found) colorMap.push(newColor);
+        // getImageData throws SecurityError on tainted (cross-origin) canvases
+        const imageData = ctx.getImageData(0, 0, SAMPLE_SIZE, SAMPLE_SIZE).data;
+        resolve(clusterPixels(imageData, maxColors));
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error(String(err)));
       }
-
-      colorMap.sort((a, b) => b.count - a.count);
-      resolve(colorMap.slice(0, maxColors).map(c => rgbToHex(Math.round(c.r), Math.round(c.g), Math.round(c.b))));
     };
 
-    img.onerror = (e) => reject(e);
+    img.onerror = () => reject(new Error('Failed to load image'));
     img.src = imageSrc;
   });
 };

@@ -1,54 +1,47 @@
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import UnbsToolsLogo from "@/components/UnbsToolsLogo";
 
 const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error("404 — rota não curada:", location.pathname);
+    console.error("404 — rota não encontrada:", location.pathname);
   }, [location.pathname]);
 
   return (
     <div className="min-h-dvh bg-background text-foreground flex flex-col">
-      <header className="border-b border-border">
-        <div className="container-fluid flex h-14 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <UnbsToolsLogo height={18} color="hsl(var(--foreground))" />
+      <header className="sticky top-0 z-50 material-chrome">
+        <div className="container-centered flex h-12 items-center justify-between">
+          <Link to="/" className="flex items-center" aria-label="UNBS Suite">
+            <UnbsToolsLogo height={16} color="hsl(var(--foreground))" />
           </Link>
-          <span className="pill-status hidden sm:inline-flex">
-            ERR · 404
-          </span>
+          <span className="chip chip-outline">Erro 404</span>
         </div>
       </header>
 
-      <main className="flex-1 container-fluid grid place-items-center py-20">
-        <div className="max-w-2xl text-center space-y-8">
-          <p className="eyebrow-strong">§ ROTA NÃO CURADA</p>
-
-          <h1 className="font-bold tracking-[-0.05em] leading-[0.85] text-[clamp(5rem,18vw,14rem)]">
-            <span className="bg-accent px-3 -mx-1 box-decoration-clone">404</span>
-          </h1>
-
-          <p className="text-balance text-lg md:text-xl text-foreground/70 max-w-md mx-auto">
-            Esse caminho não passou pela curadoria. Ou nunca existiu, ou a
-            gente cortou.
+      <main className="flex-1 container-centered grid place-items-center py-12 sm:py-20">
+        <div className="max-w-md text-center">
+          <p className="text-display text-muted-foreground/40 select-none" aria-hidden>
+            404
+          </p>
+          <h1 className="text-title-1 mt-2 text-balance">Essa página não existe.</h1>
+          <p className="text-callout text-muted-foreground mt-3 text-pretty">
+            O endereço pode ter mudado ou nunca existiu. Volte para a suíte e escolha uma ferramenta.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Link to="/" className="btn-primary group">
-              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" strokeWidth={2} />
-              Voltar pra suíte
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
+            <Link to="/" className="ctl ctl-filled ctl-lg">
+              <ChevronLeft className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+              Voltar para a suíte
             </Link>
-            <a href="#" onClick={(e) => { e.preventDefault(); window.history.back(); }} className="btn-ghost">
+            <button type="button" onClick={() => window.history.back()} className="ctl ctl-plain ctl-lg text-tint">
               Página anterior
-            </a>
+            </button>
           </div>
 
-          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70 pt-8">
-            REQ // {location.pathname}
-          </p>
+          <p className="font-mono text-caption text-muted-foreground/70 mt-10 break-all">{location.pathname}</p>
         </div>
       </main>
     </div>

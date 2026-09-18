@@ -1,6 +1,4 @@
 import { Link } from "react-router-dom";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { LucideIcon } from "lucide-react";
 
 interface ToolCardProps {
@@ -15,39 +13,31 @@ const ToolCard = ({ name, description, icon: Icon, path, status }: ToolCardProps
   const isActive = status === "active";
 
   const content = (
-    <Card
-      className={`group relative overflow-hidden transition-all duration-200 rounded-lg ${
-        isActive
-          ? "hover:shadow-[var(--shadow-floating)] hover:-translate-y-0.5 cursor-pointer border-border/60 bg-card"
-          : "opacity-50 cursor-not-allowed border-dashed border-border/40 bg-card/50"
+    <div
+      className={`group relative overflow-hidden material-card p-5 ${
+        isActive ? "hover-card press cursor-pointer" : "opacity-60 cursor-not-allowed"
       }`}
     >
-      <div className="p-5 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-secondary transition-colors group-hover:bg-accent">
-            <Icon className="h-4 w-4 text-foreground" />
-          </div>
-          {!isActive && (
-            <Badge variant="secondary" className="text-[11px] font-medium px-2 py-0.5">
-              Em breve
-            </Badge>
-          )}
+      <div className="flex items-start justify-between">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md bg-fill-2 transition-colors duration-fast ease-out group-hover:bg-accent">
+          <Icon className="h-[18px] w-[18px] text-foreground" strokeWidth={2} />
         </div>
-        <div className="space-y-0.5">
-          <h3 className="text-sm font-bold tracking-tight uppercase text-foreground">
-            {name}
-          </h3>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {description}
-          </p>
-        </div>
+        {!isActive && <span className="chip">Em breve</span>}
       </div>
-    </Card>
+      <div className="mt-4 space-y-1">
+        <h3 className="text-headline">{name}</h3>
+        <p className="text-footnote text-muted-foreground text-pretty">{description}</p>
+      </div>
+    </div>
   );
 
   if (!isActive) return content;
 
-  return <Link to={path}>{content}</Link>;
+  return (
+    <Link to={path} className="block rounded-lg focus-visible:shadow-focus">
+      {content}
+    </Link>
+  );
 };
 
 export default ToolCard;

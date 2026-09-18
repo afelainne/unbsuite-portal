@@ -1,44 +1,43 @@
 import paper from 'paper';
 import {
   hexToColor,
-  PHI,
   clipLineToRect,
   showIfIntersects,
-  computeContentBounds,
-  computeVisualCentroid,
+  isUsableRect,
+  formatLength,
+  MAX_RENDER_ITEMS,
   type StyleConfig,
   type RenderContext,
 } from './utils';
-
-/** Resolve geometric anchor (centroid + reference rect) preferring real path data. */
-function resolveAnchor(bounds: paper.Rectangle, context?: RenderContext): {
-  center: paper.Point;
-  refRect: paper.Rectangle;
-} {
-  if (context?.useRealData && context?.actualPaths && context.actualPaths.length > 0) {
-    const cb = context.contentBounds || computeContentBounds(context.actualPaths) || bounds;
-    const center = computeVisualCentroid(context.actualPaths);
-    return { center, refRect: cb };
-  }
-  return { center: bounds.center, refRect: bounds };
-}
+import { metricsFor } from './scale';
+import { resolveAnchor } from './sacred';
 
 /**
- * Triangular Grid — three families of parallel lines at 0°, 60° and 120°,
- * producing equilateral triangles. In real-data mode, lines are clipped to
- * the content bounds and only kept where they cross an actual SVG path.
+ * Triangular Grid — three families of parallel lines at 0°, 60° and 120° with
+ * the SAME spacing, all three passing through the anchor, so every cell is an
+ * equilateral triangle of side 2·spacing/√3. Lines are clipped to the content
+ * box and, in real-data mode, kept only where they cross an actual path.
  */
 export function renderTriangularGrid(
   bounds: paper.Rectangle,
   style: StyleConfig,
   context?: RenderContext
 ) {
+  if (!isUsableRect(bounds)) return;
+  const m = metricsFor(context, bounds);
   const color = hexToColor(style.color, style.opacity);
   const { center, refRect } = resolveAnchor(bounds, context);
-  const spacing = Math.max(4, refRect.width / 12);
+  if (!isUsableRect(refRect)) return;
+  const diag = Math.hypot(refRect.width, refRect.height);
+  // at most MAX_RENDER_ITEMS/3 lines per family (tall, narrow content used to explode)
+  const spacing = Math.max(
+    m.len(4),
+    Math.min(refRect.width, refRect.height) / 8,
+    (2 * diag) / (MAX_RENDER_ITEMS / 3),
+  );
+  if (!(spacing > 0) || !Number.isFinite(spacing)) return;
   const cx = center.x;
   const cy = center.y;
-  const diag = Math.sqrt(refRect.width * refRect.width + refRect.height * refRect.height);
 
   const families = [0, Math.PI / 3, (2 * Math.PI) / 3]; // 0°, 60°, 120°
 
@@ -52,12 +51,8 @@ export function renderTriangularGrid(
       const oy = cy + perpDy * i * spacing;
       const dx = Math.cos(angle);
       const dy = Math.sin(angle);
-      const x1 = ox - dx * diag;
-      const y1 = oy - dy * diag;
-      const x2 = ox + dx * diag;
-      const y2 = oy + dy * diag;
       const clipped = clipLineToRect(
-        x1, y1, x2, y2,
+        ox - dx * diag, oy - dy * diag, ox + dx * diag, oy + dy * diag,
         refRect.left, refRect.top, refRect.right, refRect.bottom
       );
       if (!clipped) continue;
@@ -67,112 +62,156 @@ export function renderTriangularGrid(
       );
       showIfIntersects(line, context, () => {
         line.strokeColor = color;
-        line.strokeWidth = style.strokeWidth;
+        line.strokeWidth = m.stroke(style.strokeWidth);
       });
     }
   }
 }
 
+/** Rings and spokes of a polar grid. */
+export const POLAR_RINGS = 6;
+export const POLAR_SPOKES = 12;
+
 /**
- * Polar / Radial Grid — concentric circles + 12 radial spokes around the bounds center.
+ * Polar / Radial Grid — equally spaced rings and equally spaced spokes around
+ * the ink center. The outer ring reaches the farthest corner of the content,
+ * so the grid actually covers the drawing (it used to stop at half the SHORT
+ * side, leaving wide wordmarks mostly outside).
  */
 export function renderPolarGrid(
   bounds: paper.Rectangle,
   style: StyleConfig,
   context?: RenderContext
 ) {
+  if (!isUsableRect(bounds)) return;
+  const m = metricsFor(context, bounds);
   const color = hexToColor(style.color, style.opacity);
   const dimColor = hexToColor(style.color, style.opacity * 0.6);
   const { center, refRect } = resolveAnchor(bounds, context);
-  const maxR = Math.min(refRect.width, refRect.height) / 2;
-  if (maxR < 1) return;
+  if (!isUsableRect(refRect)) return;
+  const corners = [
+    [refRect.left, refRect.top], [refRect.right, refRect.top],
+    [refRect.left, refRect.bottom], [refRect.right, refRect.bottom],
+  ];
+  const maxR = corners.reduce((acc, [x, y]) => Math.max(acc, Math.hypot(x - center.x, y - center.y)), 0);
+  if (!(maxR >= 1) || !Number.isFinite(maxR)) return;
 
-  const ringCount = 6;
-  for (let i = 1; i <= ringCount; i++) {
-    const r = (maxR * i) / ringCount;
-    const c = new paper.Path.Circle(center, r);
-    const isOuter = i === ringCount;
+  const ringStep = maxR / POLAR_RINGS;
+  for (let i = 1; i <= POLAR_RINGS; i++) {
+    const c = new paper.Path.Circle(center, ringStep * i);
+    const isOuter = i === POLAR_RINGS;
     showIfIntersects(c, context, () => {
       c.strokeColor = isOuter ? color : dimColor;
-      c.strokeWidth = style.strokeWidth;
+      c.strokeWidth = m.stroke(style.strokeWidth);
       c.fillColor = null;
     });
   }
 
-  const spokeCount = 12;
-  for (let i = 0; i < spokeCount; i++) {
-    const a = (i * 2 * Math.PI) / spokeCount;
+  for (let i = 0; i < POLAR_SPOKES; i++) {
+    const a = (i * 2 * Math.PI) / POLAR_SPOKES;
     const x2 = center.x + maxR * Math.cos(a);
     const y2 = center.y + maxR * Math.sin(a);
     const line = new paper.Path.Line(center, new paper.Point(x2, y2));
     const isMajor = i % 3 === 0;
     showIfIntersects(line, context, () => {
       line.strokeColor = isMajor ? color : dimColor;
-      line.strokeWidth = style.strokeWidth * (isMajor ? 1 : 0.7);
+      line.strokeWidth = m.stroke(style.strokeWidth * (isMajor ? 1 : 0.7));
     });
   }
 
   // Center mark always visible (anchors the grid)
-  const dot = new paper.Path.Circle(center, Math.max(1.5, style.strokeWidth));
+  const dot = new paper.Path.Circle(center, m.dot(1.5) + m.stroke(style.strokeWidth) * 0.5);
   dot.fillColor = color;
   dot.strokeColor = null;
+
+  const label = new paper.PointText(new paper.Point(center.x + m.len(5), center.y - m.len(5)));
+  label.content = `${POLAR_SPOKES}×${360 / POLAR_SPOKES}° · r ${formatLength(ringStep, context)}`;
+  label.fillColor = dimColor;
+  label.fontSize = m.font(8);
+  label.justification = 'left';
 }
 
+/** Number of nested squares drawn by {@link renderConcentricSquares}. */
+export const CONCENTRIC_COUNT = 5;
+
 /**
- * Concentric Squares — 5 nested squares centered on the bounds, scaled by 1/φ.
+ * Concentric Squares — nested squares with a CONSTANT step, centered on the
+ * ink center (they used to shrink by 1/φ each time, so the "step" changed at
+ * every ring and could not be read as a module).
  */
 export function renderConcentricSquares(
   bounds: paper.Rectangle,
   style: StyleConfig,
   context?: RenderContext
 ) {
+  if (!isUsableRect(bounds)) return;
+  const m = metricsFor(context, bounds);
   const color = hexToColor(style.color, style.opacity);
   const { center, refRect } = resolveAnchor(bounds, context);
-  const baseSize = Math.min(refRect.width, refRect.height);
-  if (baseSize < 1) return;
-  const ratio = 1 / PHI;
+  if (!isUsableRect(refRect)) return;
+  const minDim = Math.min(refRect.width, refRect.height);
+  if (!(minDim >= 1)) return;
 
-  const count = 5;
-  for (let i = 0; i < count; i++) {
-    const size = baseSize * Math.pow(ratio, i);
-    const half = size / 2;
+  // Keep the outer square inside the content box around the chosen center;
+  // if the ink center is too close to an edge, fall back to the box center.
+  let cx = center.x;
+  let cy = center.y;
+  let half = Math.min(
+    minDim / 2,
+    cx - refRect.left, refRect.right - cx,
+    cy - refRect.top, refRect.bottom - cy,
+  );
+  if (!(half >= minDim * 0.25)) {
+    cx = refRect.center.x;
+    cy = refRect.center.y;
+    half = minDim / 2;
+  }
+
+  const step = half / CONCENTRIC_COUNT; // constant inset between rings
+  if (!(step > 0) || !Number.isFinite(step)) return;
+
+  for (let i = 0; i < CONCENTRIC_COUNT; i++) {
+    const h = half - step * i;
+    if (!(h > 0)) break;
     const rect = new paper.Path.Rectangle(
-      new paper.Point(center.x - half, center.y - half),
-      new paper.Point(center.x + half, center.y + half)
+      new paper.Point(cx - h, cy - h),
+      new paper.Point(cx + h, cy + h)
     );
     // Outermost square always visible (defines the system); inner ones filtered
     if (i === 0) {
       rect.strokeColor = color;
-      rect.strokeWidth = style.strokeWidth;
+      rect.strokeWidth = m.stroke(style.strokeWidth);
       rect.fillColor = null;
     } else {
       showIfIntersects(rect, context, () => {
         rect.strokeColor = color;
-        rect.strokeWidth = style.strokeWidth;
+        rect.strokeWidth = m.stroke(style.strokeWidth);
         rect.fillColor = null;
-        rect.dashArray = [4, 3];
+        rect.dashArray = m.dash(4, 3);
       });
     }
   }
 
   // Diagonal guides through all squares for proportion reading
   const diag1 = new paper.Path.Line(
-    new paper.Point(center.x - baseSize / 2, center.y - baseSize / 2),
-    new paper.Point(center.x + baseSize / 2, center.y + baseSize / 2)
+    new paper.Point(cx - half, cy - half),
+    new paper.Point(cx + half, cy + half)
   );
-  showIfIntersects(diag1, context, () => {
-    diag1.strokeColor = hexToColor(style.color, style.opacity * 0.4);
-    diag1.strokeWidth = style.strokeWidth * 0.5;
-    diag1.dashArray = [2, 3];
+  const diag2 = new paper.Path.Line(
+    new paper.Point(cx - half, cy + half),
+    new paper.Point(cx + half, cy - half)
+  );
+  [diag1, diag2].forEach(d => {
+    showIfIntersects(d, context, () => {
+      d.strokeColor = hexToColor(style.color, style.opacity * 0.4);
+      d.strokeWidth = m.stroke(style.strokeWidth * 0.5);
+      d.dashArray = m.dash(2, 3);
+    });
   });
 
-  const diag2 = new paper.Path.Line(
-    new paper.Point(center.x - baseSize / 2, center.y + baseSize / 2),
-    new paper.Point(center.x + baseSize / 2, center.y - baseSize / 2)
-  );
-  showIfIntersects(diag2, context, () => {
-    diag2.strokeColor = hexToColor(style.color, style.opacity * 0.4);
-    diag2.strokeWidth = style.strokeWidth * 0.5;
-    diag2.dashArray = [2, 3];
-  });
+  const label = new paper.PointText(new paper.Point(cx, cy - half - m.len(5)));
+  label.content = `step ${formatLength(step, context)}`;
+  label.fillColor = hexToColor(style.color, style.opacity * 0.8);
+  label.fontSize = m.font(8);
+  label.justification = 'center';
 }

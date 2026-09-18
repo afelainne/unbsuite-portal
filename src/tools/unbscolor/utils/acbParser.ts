@@ -1,230 +1,192 @@
 import { ReferenceColor } from '../types';
-import { rgbToHex, labToHex, cmykToRgb } from './colorMath';
+import { rgbToHex, labToHex, cmykToRgb, hexToRgb } from './colorMath';
 
 /**
  * Parses an Adobe Color Book (.acb) binary file.
- * Supports V1 (Legacy) and V4+ (Modern, UTF-16, 16-bit channels).
+ *
+ * Layout (big-endian): "8BCB", u16 version, u16 id, title, prefix, suffix,
+ * description, u16 colorCount, u16 pageSize, u16 pageSelectorOffset,
+ * u16 colorSpace (0=RGB, 2=CMYK, 7=Lab), then per color: name, 6-byte code,
+ * components. Strings are normally "Unicode strings" (u32 char count +
+ * UTF-16BE); very old books use Pascal strings. The string format is detected
+ * once (from the title) and used for the whole file, so empty strings
+ * (u32 = 0) are read correctly.
  */
 export const parseACB = async (buffer: ArrayBuffer): Promise<{ name: string; colors: ReferenceColor[] }> => {
   const view = new DataView(buffer);
   let offset = 0;
 
+  const ensure = (bytes: number) => {
+    if (offset + bytes > view.byteLength) {
+      throw new Error('Invalid ACB file: unexpected end of data.');
+    }
+  };
+
   // 1. Signature "8BCB"
+  if (view.byteLength < 8) throw new Error('Invalid ACB file: too small.');
   const signature = getString(view, offset, 4);
   offset += 4;
   if (signature !== '8BCB') {
     throw new Error('Invalid ACB file: Signature mismatch (Expected 8BCB).');
   }
 
-  // 2. Version
+  // 2. Version / 3. Identifier
   const version = view.getUint16(offset);
   offset += 2;
+  offset += 2; // identifier (unused)
 
-  // 3. Identifier
-  const id = view.getUint16(offset);
-  offset += 2;
+  // String format detection (once per file)
+  ensure(4);
+  const unicodeStrings = view.getUint32(offset) < 1024;
 
-  // 4. Title
-  // Try reading as Pascal String first.
-  let titleData = readStringBlock(view, offset);
-  let title = titleData.text;
-  offset += titleData.bytesRead;
+  const readStr = () => {
+    const res = readStringBlock(view, offset, unicodeStrings);
+    offset += res.bytesRead;
+    return res.text;
+  };
 
-  // 5. Prefix
-  let prefixData = readStringBlock(view, offset);
-  let prefix = prefixData.text;
-  offset += prefixData.bytesRead;
+  // 4–7. Title, prefix, suffix, description
+  const title = readStr();
+  const prefix = readStr();
+  const suffix = readStr();
+  readStr(); // description
 
-  // 6. Suffix
-  let suffixData = readStringBlock(view, offset);
-  let suffix = suffixData.text;
-  offset += suffixData.bytesRead;
-
-  // 7. Description
-  let descData = readStringBlock(view, offset);
-  offset += descData.bytesRead;
-
-  // 8. Color Count
+  // 8–11. Color count, page size, page selector offset, color space
+  ensure(8);
   const colorCount = view.getUint16(offset);
   offset += 2;
-
-  // 9. Page Size
-  const pageSize = view.getUint16(offset);
-  offset += 2;
-
-  // 10. Page Selector Offset
-  offset += 2; // skip
-
-  // 11. Color Space
-  // 0=RGB, 2=CMYK, 7=Lab
+  offset += 2; // page size
+  offset += 2; // page selector offset
   const colorSpace = view.getUint16(offset);
   offset += 2;
 
-  // Detect if we are in 16-bit mode (V4/V5 files often use this)
-  // Usually implied by version > 1, but we can verify by checking if next data looks like string len
-  // For safety, we assume 8-bit for V1 and 16-bit for others if parsing fails later, but let's try a heuristic.
-  const is16Bit = version >= 4 || (version === 0 && colorSpace === 7); // Heuristic
+  // Standard books are 8-bit per component. Keep the legacy heuristic for
+  // non-standard 16-bit exports.
+  const is16Bit = version >= 4 || (version === 0 && colorSpace === 7);
+  const componentBytes =
+    colorSpace === 2 ? (is16Bit ? 8 : 4) : is16Bit ? 6 : 3;
 
   const colors: ReferenceColor[] = [];
 
   for (let i = 0; i < colorCount; i++) {
     if (offset >= view.byteLength) break;
 
-    // Color Name
-    const nameData = readStringBlock(view, offset);
-    const name = nameData.text;
-    offset += nameData.bytesRead;
+    const name = readStr();
 
     // Color Code (6 bytes unique ID)
-    const colorCode = getString(view, offset, 6);
+    ensure(6);
     offset += 6;
 
-    // Component Values
-    let hex = '#000000';
-    let rgb = { r: 0, g: 0, b: 0 };
+    ensure(componentBytes);
 
-    if (colorSpace === 0) { // RGB
-      let r, g, b;
+    let hex: string | null = null;
+
+    if (colorSpace === 0) {
+      // RGB
+      let r: number, g: number, b: number;
       if (is16Bit) {
-         r = view.getUint16(offset) / 257; // 65535 -> 255
-         g = view.getUint16(offset + 2) / 257;
-         b = view.getUint16(offset + 4) / 257;
-         offset += 6;
+        r = view.getUint16(offset) / 257;
+        g = view.getUint16(offset + 2) / 257;
+        b = view.getUint16(offset + 4) / 257;
       } else {
-         r = view.getUint8(offset);
-         g = view.getUint8(offset + 1);
-         b = view.getUint8(offset + 2);
-         offset += 3;
+        r = view.getUint8(offset);
+        g = view.getUint8(offset + 1);
+        b = view.getUint8(offset + 2);
       }
-      hex = rgbToHex(Math.round(r), Math.round(g), Math.round(b));
-      rgb = { r: Math.round(r), g: Math.round(g), b: Math.round(b) };
-    } 
-    else if (colorSpace === 2) { // CMYK
-      let c, m, y, k;
+      hex = rgbToHex(r, g, b);
+    } else if (colorSpace === 2) {
+      // CMYK: stored inverted (max = 0% ink)
+      let c: number, m: number, y: number, k: number;
       if (is16Bit) {
-        c = (1 - (view.getUint16(offset) / 65535)) * 100;
-        m = (1 - (view.getUint16(offset + 2) / 65535)) * 100;
-        y = (1 - (view.getUint16(offset + 4) / 65535)) * 100;
-        k = (1 - (view.getUint16(offset + 6) / 65535)) * 100;
-        offset += 8;
+        c = (1 - view.getUint16(offset) / 65535) * 100;
+        m = (1 - view.getUint16(offset + 2) / 65535) * 100;
+        y = (1 - view.getUint16(offset + 4) / 65535) * 100;
+        k = (1 - view.getUint16(offset + 6) / 65535) * 100;
       } else {
-        c = (1 - (view.getUint8(offset) / 255)) * 100;
-        m = (1 - (view.getUint8(offset + 1) / 255)) * 100;
-        y = (1 - (view.getUint8(offset + 2) / 255)) * 100;
-        k = (1 - (view.getUint8(offset + 3) / 255)) * 100;
-        offset += 4;
+        c = (1 - view.getUint8(offset) / 255) * 100;
+        m = (1 - view.getUint8(offset + 1) / 255) * 100;
+        y = (1 - view.getUint8(offset + 2) / 255) * 100;
+        k = (1 - view.getUint8(offset + 3) / 255) * 100;
       }
-      // Note: ACB CMYK is often stored as 'ink amount' (0-100) or 'lightness' (100-0).
-      // Adobe usually stores 0 as 100% ink (255=white) for 8-bit, 
-      // BUT for 16-bit it's often 65535 = 100% ink or 0 = 100% ink.
-      // Standard behavior: 65535 is white (0% ink). So (1 - val/max) is correct.
-      
-      const cmyk = { c, m, y, k };
-      rgb = cmykToRgb(cmyk);
+      const rgb = cmykToRgb({ c, m, y, k });
       hex = rgbToHex(rgb.r, rgb.g, rgb.b);
-    } 
-    else if (colorSpace === 7) { // Lab
-      let l, a, bVal;
-      
+    } else if (colorSpace === 7) {
+      // Lab
+      let l: number, a: number, bVal: number;
       if (is16Bit) {
-         // L: 0..10000 -> 0..100
-         // a: -12800..12700 -> -128..127
-         // b: -12800..12700 -> -128..127
-         // Adobe V4 Lab is encoded usually as:
-         // L: uint16 (0..10000) => L / 100
-         // a: int16 => a / 100
-         // b: int16 => b / 100
-         
-         const lRaw = view.getUint16(offset);
-         const aRaw = view.getInt16(offset + 2);
-         const bRaw = view.getInt16(offset + 4);
-         offset += 6;
-         
-         l = lRaw / 100.0;
-         a = aRaw / 100.0;
-         bVal = bRaw / 100.0;
+        l = view.getUint16(offset) / 100;
+        a = view.getInt16(offset + 2) / 100;
+        bVal = view.getInt16(offset + 4) / 100;
       } else {
-         const lRaw = view.getUint8(offset);
-         const aRaw = view.getUint8(offset + 1);
-         const bRaw = view.getUint8(offset + 2);
-         offset += 3;
-         l = (lRaw / 255) * 100;
-         a = (aRaw / 255) * 255 - 128;
-         bVal = (bRaw / 255) * 255 - 128;
+        l = view.getUint8(offset) / 2.55;
+        a = view.getUint8(offset + 1) - 128;
+        bVal = view.getUint8(offset + 2) - 128;
       }
-
-      hex = labToHex({ l, a: a, b: bVal });
-      const cleanHex = hex.replace('#', '');
-      const bigint = parseInt(cleanHex, 16);
-      rgb = {
-        r: (bigint >> 16) & 255,
-        g: (bigint >> 8) & 255,
-        b: bigint & 255
-      };
-    } else {
-      // Skip unknown space
-      offset += is16Bit ? 6 : 3; // Guess
+      hex = labToHex({ l, a, b: bVal });
     }
+    offset += componentBytes;
 
-    const fullCode = (prefix + " " + name + " " + suffix).trim();
-    
-    // Safety check for empty data
-    if (fullCode.length > 0 && hex !== '#000000') {
-        colors.push({
-          code: fullCode,
-          name: name || fullCode,
-          hex: hex,
-          rgb: rgb
-        });
-    }
+    // Unknown color space, or empty placeholder records (books pad pages with nameless entries)
+    if (!hex || name.length === 0) continue;
+
+    const fullCode = [prefix, name, suffix].filter(Boolean).join(' ').trim();
+
+    colors.push({
+      code: fullCode,
+      name,
+      hex,
+      rgb: hexToRgb(hex)
+    });
   }
 
-  return { name: title || "Imported Library", colors };
+  return { name: title || 'Imported Library', colors };
 };
 
 // --- Helpers ---
 
 function getString(view: DataView, offset: number, length: number): string {
   let str = '';
-  for (let i = 0; i < length; i++) {
-    if (offset + i < view.byteLength) {
-      str += String.fromCharCode(view.getUint8(offset + i));
-    }
+  for (let i = 0; i < length && offset + i < view.byteLength; i++) {
+    str += String.fromCharCode(view.getUint8(offset + i));
   }
   return str;
 }
 
-// Reads either a Pascal String (1 byte len) or a V4 String (4 byte len + UTF-16)
-function readStringBlock(view: DataView, offset: number): { text: string, bytesRead: number } {
+/**
+ * Photoshop books use localization keys like
+ * "$$$/colorbook/<book>/title=<book> Solid Coated"; keep the display value.
+ */
+export function stripLocalizationKey(text: string): string {
+  if (text.startsWith('$$$')) {
+    const eq = text.indexOf('=');
+    return eq >= 0 ? text.slice(eq + 1) : '';
+  }
+  return text;
+}
+
+function readStringBlock(view: DataView, offset: number, unicode: boolean): { text: string; bytesRead: number } {
   if (offset >= view.byteLength) return { text: '', bytesRead: 0 };
 
-  // Heuristic: Check for V4 32-bit length (Big Endian)
-  // If the first 4 bytes are 00 00 00 XX (where XX > 0), it's likely V4
-  const potentialLen32 = view.getUint32(offset);
-  const isV4 = potentialLen32 < 500 && potentialLen32 > 0 && view.getUint8(offset) === 0;
-
-  if (isV4) {
-    // V4: 4 bytes length (in chars, not bytes, usually), followed by UTF-16BE
-    const charCount = potentialLen32;
-    if (charCount === 0) return { text: '', bytesRead: 4 };
-
+  if (unicode) {
+    if (offset + 4 > view.byteLength) return { text: '', bytesRead: view.byteLength - offset };
+    const charCount = view.getUint32(offset);
     const byteLen = charCount * 2;
+    if (offset + 4 + byteLen > view.byteLength) {
+      throw new Error('Invalid ACB file: string exceeds file size.');
+    }
     let str = '';
-    // Read UTF-16BE
     for (let i = 0; i < charCount; i++) {
-       const charCode = view.getUint16(offset + 4 + (i * 2));
-       if (charCode !== 0) str += String.fromCharCode(charCode); // Filter nulls just in case
+      const charCode = view.getUint16(offset + 4 + i * 2);
+      if (charCode !== 0) str += String.fromCharCode(charCode);
     }
-    return { text: str.trim(), bytesRead: 4 + byteLen };
-  } else {
-    // Legacy: Pascal String (1 byte length + ASCII/MacRoman)
-    const len = view.getUint8(offset);
-    let str = '';
-    for (let i = 0; i < len; i++) {
-        if (offset + 1 + i < view.byteLength) {
-            str += String.fromCharCode(view.getUint8(offset + 1 + i));
-        }
-    }
-    return { text: str.trim(), bytesRead: 1 + len };
+    return { text: stripLocalizationKey(str).trim(), bytesRead: 4 + byteLen };
   }
+
+  // Legacy: Pascal String (1 byte length + ASCII/MacRoman)
+  const len = view.getUint8(offset);
+  let str = '';
+  for (let i = 0; i < len && offset + 1 + i < view.byteLength; i++) {
+    str += String.fromCharCode(view.getUint8(offset + 1 + i));
+  }
+  return { text: stripLocalizationKey(str).trim(), bytesRead: 1 + len };
 }

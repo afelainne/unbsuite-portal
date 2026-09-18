@@ -10,29 +10,29 @@ interface Props {
   actions?: React.ReactNode;
 }
 
+/**
+ * Translucent toolbar. Content scrolls under it; a hairline (not a border)
+ * separates it from the page.
+ */
 const ToolHeader: React.FC<Props> = ({ name, nav, actions }) => (
-  <header className="h-12 flex items-center border-b border-[#232323] bg-white px-4 flex-shrink-0">
+  <header className="sticky top-0 z-40 h-12 flex items-center gap-3 material-chrome px-4 flex-shrink-0">
     <Link
       to="/"
-      className="font-mono text-[11px] uppercase tracking-[0.2em] font-semibold text-[#232323] hover:underline"
+      className="inline-flex items-center gap-1.5 text-[13px] font-semibold tracking-[-0.006em] text-foreground rounded-md px-1.5 -mx-1.5 h-7 transition-colors duration-fast ease-out hover:bg-fill press"
     >
-      UNBS / <span className="opacity-70">{name}</span>
+      UNBS <span className="text-muted-foreground font-medium">/ {name}</span>
     </Link>
 
     {nav && nav.length > 0 && (
-      <nav className="flex items-center gap-1 ml-8">
+      <nav className="segmented ml-2 hidden sm:inline-flex" aria-label="Seções">
         {nav.map((n, i) => {
-          const cls = `font-mono text-[10px] uppercase tracking-[0.2em] px-2 h-7 inline-flex items-center border ${
-            n.active
-              ? "bg-[#F0FF00] text-[#232323] border-[#232323]"
-              : "border-transparent text-[#232323] hover:bg-[#F7E043]/40"
-          }`;
+          const cls = `segmented-item ${n.active ? "is-active" : ""}`;
           return n.href ? (
-            <a key={i} href={n.href} className={cls}>
+            <a key={i} href={n.href} className={cls} aria-current={n.active ? "page" : undefined}>
               {n.label}
             </a>
           ) : (
-            <button key={i} onClick={n.onClick} className={cls}>
+            <button key={i} type="button" onClick={n.onClick} className={cls} aria-pressed={n.active}>
               {n.label}
             </button>
           );
@@ -40,7 +40,7 @@ const ToolHeader: React.FC<Props> = ({ name, nav, actions }) => (
       </nav>
     )}
 
-    <div className="ml-auto flex items-center gap-2">{actions}</div>
+    <div className="ml-auto flex items-center gap-1.5">{actions}</div>
   </header>
 );
 

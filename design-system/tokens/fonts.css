@@ -1,0 +1,15 @@
+/* UNBSTOOLS — BDO Grotesk, vendored as static OpenType files, one per weight.
+   Urbanist (SIL OFL 1.1, see assets/fonts/Urbanist-OFL.txt) stays in the repo as
+   the fallback that exported SVGs can still load from Google Fonts. */
+@font-face{font-family:"BDO Grotesk";src:url("../assets/fonts/BDOGrotesk-Light.otf") format("opentype");font-weight:100 300;font-style:normal;font-display:swap}
+@font-face{font-family:"BDO Grotesk";src:url("../assets/fonts/BDOGrotesk-Regular.otf") format("opentype");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"BDO Grotesk";src:url("../assets/fonts/BDOGrotesk-Medium.otf") format("opentype");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"BDO Grotesk";src:url("../assets/fonts/BDOGrotesk-DemiBold.otf") format("opentype");font-weight:600;font-style:normal;font-display:swap}
+@font-face{font-family:"BDO Grotesk";src:url("../assets/fonts/BDOGrotesk-Bold.otf") format("opentype");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"BDO Grotesk";src:url("../assets/fonts/BDOGrotesk-ExtraBold.otf") format("opentype");font-weight:800;font-style:normal;font-display:swap}
+@font-face{font-family:"BDO Grotesk";src:url("../assets/fonts/BDOGrotesk-Black.otf") format("opentype");font-weight:900;font-style:normal;font-display:swap}
+:root{
+  --font-core:"BDO Grotesk",system-ui,sans-serif;
+  --font-display:"BDO Grotesk",system-ui,sans-serif;
+  --font-mono:ui-monospace,"SFMono-Regular","Menlo",monospace;
+}

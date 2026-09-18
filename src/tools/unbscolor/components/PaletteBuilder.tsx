@@ -1,10 +1,31 @@
 
 import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { hexToRgb, rgbToHex, isValidHex, mixColors, adjustHue, adjustSaturation, getContrastColor, getClosestColorName, findReferenceMatches } from '../utils/colorMath';
+import { hexToRgb, rgbToHex, isValidHex, normalizeHex, mixColors, adjustHue, adjustSaturation, getContrastColor, getClosestColorName, findReferenceMatches } from '../utils/colorMath';
 import { DEFAULT_LIBRARY } from '../constants';
+import { formatReferenceCode } from '../utils/reference';
 import { useLanguage } from '../i18n';
+import type { Translations } from '../i18n';
+import { copyText, useTransientState } from '../utils/browser';
+import { HexField } from './HexField';
+import { Shuffle } from 'lucide-react';
+import { Card, IconButton, LegendToggle, TextTabs } from './ui';
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+type BgContext = 'white' | 'black' | 'darkest' | 'lightest';
+
+const bgContextLabel = (t: Translations, ctx: BgContext): string => {
+    switch (ctx) {
+        case 'white':
+            return t.backgroundWhite;
+        case 'black':
+            return t.backgroundBlack;
+        case 'darkest':
+            return t.bgDarkest;
+        case 'lightest':
+            return t.bgLightest;
+    }
+};
 
 interface ControlSliderProps {
     label: string;
@@ -26,10 +47,10 @@ const ControlSlider = memo(({ label, paramKey, min, max, unit = "", value, onCha
     };
 
     return (
-        <div className="flex flex-col gap-1 mb-6">
-            <div className="flex justify-between items-center mb-1">
-                <label className="font-mono text-[9px] font-bold uppercase text-muted-foreground tracking-widest">{label}</label>
-                <span className="font-mono text-[10px] font-bold text-foreground bg-secondary/40 px-2 py-0.5 rounded">
+        <div className="flex flex-col gap-3">
+            <div className="flex justify-between items-baseline gap-3">
+                <span className="text-[14px] text-muted-foreground">{label}</span>
+                <span className="text-[14px] tabular text-foreground">
                     {isCount ? value : Math.round(value)}{unit}
                 </span>
             </div>
@@ -40,7 +61,8 @@ const ControlSlider = memo(({ label, paramKey, min, max, unit = "", value, onCha
                 step="any"
                 value={value}
                 onChange={handleChange}
-                className="w-full h-[2px] bg-muted appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-transform [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-foreground [&::-moz-range-thumb]:rounded-full"
+                className="tool-slider w-full"
+                aria-label={label}
             />
         </div>
     );
@@ -71,7 +93,8 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
 
     // Sincroniza hex externo
     useEffect(() => {
-        if (isValidHex(initialHex)) setBaseHex(initialHex);
+        const normalized = normalizeHex(initialHex);
+        if (normalized) setBaseHex(normalized);
     }, [initialHex]);
 
     // Handler único para todos os sliders
@@ -100,11 +123,11 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
             color = mixColors(color, { r: 0, g: 0, b: 0 }, Math.min(100, i * darknessIntensity));
             color = adjustSaturation(color, satDark * (i / Math.max(1, darkCount)));
             const hexVal = rgbToHex(color.r, color.g, color.b);
-            newPalette.push({ hex: hexVal, referenceCode: useReference ? findReferenceMatches(hexVal, DEFAULT_LIBRARY, 1)[0]?.reference.code : undefined });
+            newPalette.push({ hex: hexVal, referenceCode: useReference ? formatReferenceCode(findReferenceMatches(hexVal, DEFAULT_LIBRARY, 1)[0]?.reference.code) : undefined });
         }
 
         // Base
-        const baseP = useReference ? findReferenceMatches(baseHex, DEFAULT_LIBRARY, 1)[0]?.reference.code : undefined;
+        const baseP = useReference ? formatReferenceCode(findReferenceMatches(baseHex, DEFAULT_LIBRARY, 1)[0]?.reference.code) : undefined;
         newPalette.push({ hex: baseHex, isBase: true, referenceCode: baseP });
 
         // Tints
@@ -113,13 +136,13 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
              color = mixColors(color, { r: 255, g: 255, b: 255 }, Math.min(100, i * lightnessIntensity));
              color = adjustSaturation(color, satLight * (i / Math.max(1, lightCount)));
              const hexVal = rgbToHex(color.r, color.g, color.b);
-             newPalette.push({ hex: hexVal, referenceCode: useReference ? findReferenceMatches(hexVal, DEFAULT_LIBRARY, 1)[0]?.reference.code : undefined });
+             newPalette.push({ hex: hexVal, referenceCode: useReference ? formatReferenceCode(findReferenceMatches(hexVal, DEFAULT_LIBRARY, 1)[0]?.reference.code) : undefined });
         }
         return newPalette;
     }, [baseHex, darkCount, lightCount, darknessIntensity, lightnessIntensity, hueRotDark, hueRotLight, satDark, satLight, useReference]);
 
     const [bgContext, setBgContext] = useState<'white' | 'black' | 'darkest' | 'lightest'>('white');
-    const [feedback, setFeedback] = useState<string | null>(null);
+    const [feedback, showFeedback] = useTransientState<string>(1500);
 
     const renderBg = useMemo(() => {
         if (bgContext === 'black') return '#000000';
@@ -128,133 +151,173 @@ export const PaletteBuilder: React.FC<PaletteBuilderProps> = ({ initialHex, onHe
         return '#FFFFFF';
     }, [bgContext, palette]);
 
+    const bgSwatch = (ctx: BgContext) =>
+        ctx === 'white' ? '#FFFFFF' : ctx === 'black' ? '#000000' : ctx === 'darkest' ? palette[0]?.hex : palette[palette.length - 1]?.hex;
+
+
     return (
-        <div className="max-w-[1600px] mx-auto space-y-12">
+        <div className="flex flex-col gap-5">
             {/* Seção Batch Palettes */}
             {batchColors && batchColors.length > 0 && (
-                <div className="bg-secondary/40 rounded-[2rem] p-6 border border-border/60">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-mono text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{t.batchPalette} ({batchColors.length} {t.colors})</h3>
-                        <button 
+                <Card
+                    aria-label={t.batchPalette}
+                    label={<>{t.batchPalette} <span className="tabular">· {batchColors.length} {t.colors}</span></>}
+                    actions={
+                        <button
+                            type="button"
                             onClick={() => setShowBatchPalettes(!showBatchPalettes)}
-                             className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm"
-                             style={showBatchPalettes ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--accent))' } : { backgroundColor: 'white', color: 'hsl(var(--foreground))', borderColor: '#D0D0C8' }}
+                            aria-expanded={showBatchPalettes}
+                            className="ctl ctl-outline ctl-sm px-3"
                         >
                             {showBatchPalettes ? t.hideBatch : t.showBatch}
                         </button>
-                    </div>
+                    }
+                >
                     {showBatchPalettes && (
-                        <div className="space-y-4">
-                            <div className="flex flex-wrap gap-3">
+                        <>
+                            <div className="flex flex-wrap gap-2">
                                 {batchColors.map((color, idx) => (
                                     <button
+                                        type="button"
                                         key={idx}
                                         onClick={() => {
-                                            setBaseHex(color);
-                                            onHexChange(color);
+                                            const normalized = normalizeHex(color);
+                                            if (!normalized) return;
+                                            setBaseHex(normalized);
+                                            onHexChange(normalized);
                                             setSelectedBatchIndex(idx);
                                         }}
-                                        className={`group relative flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${selectedBatchIndex === idx ? 'ring-2 ring-black scale-105' : 'hover:scale-105'}`}
+                                        aria-pressed={selectedBatchIndex === idx}
+                                        className={`flex flex-col items-start gap-1.5 p-2 rounded-md press transition-colors duration-fast ease-out ${selectedBatchIndex === idx ? 'bg-primary text-primary-foreground' : 'hover:bg-fill'}`}
                                     >
-                                        <div 
-                                            className="w-16 h-16 rounded-lg shadow-md border border-border"
-                                            style={{ backgroundColor: color }}
-                                        />
-                                        <span className="font-mono text-[8px] text-muted-foreground uppercase">{color}</span>
-                                        <span className="font-mono text-[7px] text-muted-foreground">{getClosestColorName(color)}</span>
+                                        <span className="w-16 h-16 rounded-sm shadow-hairline" style={{ backgroundColor: color }} aria-hidden="true" />
+                                        <span className="text-[13px] tabular">{color.toUpperCase()}</span>
+                                        <span className="text-[12px] opacity-70 max-w-[4.5rem] truncate">{getClosestColorName(color)}</span>
                                     </button>
                                 ))}
                             </div>
-                            <p className="text-[10px] text-muted-foreground font-mono">{t.clickToUseAsBase}</p>
-                        </div>
+                            <p className="text-[13px] text-muted-foreground">{t.clickToUseAsBase}</p>
+                        </>
                     )}
-                </div>
+                </Card>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
-                <div className="lg:col-span-5">
-                    <h2 className="font-mono text-sm font-medium mb-8 text-muted-foreground uppercase tracking-widest">{t.baseColor}</h2>
-                    <input 
-                        type="text" 
-                        value={baseHex}
-                        onChange={(e) => { 
-                            const val = e.target.value;
-                            setBaseHex(val); 
-                            if (isValidHex(val)) onHexChange(val); 
-                        }}
-                        className="text-7xl md:text-8xl font-sans font-normal tracking-tighter outline-none w-full bg-transparent"
-                        maxLength={7}
-                    />
-                    <div className="flex flex-wrap items-center gap-4 mt-2 mb-8">
-                         <div className="font-mono text-muted-foreground uppercase tracking-widest text-sm font-bold">{getClosestColorName(baseHex)}</div>
-                         <div className="flex gap-2">
-                            <button onClick={() => {
-                                const h = rgbToHex(Math.random()*255|0, Math.random()*255|0, Math.random()*255|0);
-                                setBaseHex(h); onHexChange(h);
-                             }} className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold shadow-sm" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'; e.currentTarget.style.color = 'hsl(var(--foreground))'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}>{t.randomize}</button>
-                             <button onClick={() => setUseReference(!useReference)} className="px-4 py-2 font-mono text-[10px] uppercase rounded-full transition-all font-bold border shadow-sm" style={useReference ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--accent))' } : { backgroundColor: 'white', color: 'hsl(var(--foreground))', borderColor: '#D0D0C8' }}>{t.useRefMatch}</button>
-                         </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5">
+                {/* The base colour: the same anatomy as the Matcher's input card. */}
+                <Card
+                    className="md:col-span-2 lg:col-span-4"
+                    aria-label={t.baseColor}
+                    label={t.baseColor}
+                    actions={
+                        <IconButton
+                            label={t.randomize}
+                            onClick={() => {
+                                const h = rgbToHex(Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256));
+                                setBaseHex(h);
+                                onHexChange(h);
+                            }}
+                        >
+                            <Shuffle aria-hidden="true" />
+                        </IconButton>
+                    }
+                >
+                    <span className="block h-24 w-full rounded-md shadow-hairline" style={{ backgroundColor: baseHex }} aria-hidden="true" />
+                    <div className="flex flex-col gap-1 min-w-0">
+                        <HexField
+                            value={baseHex}
+                            onCommit={(hex) => {
+                                // HexField only commits normalized, valid "#RRGGBB"
+                                setBaseHex(hex);
+                                onHexChange(hex);
+                            }}
+                            className="w-full bg-transparent outline-none rounded-sm focus-visible:shadow-focus text-[34px] md:text-[44px] leading-[1.08] tracking-[-0.02em] font-normal tabular text-foreground"
+                            maxLength={7}
+                            aria-label={t.baseColor}
+                        />
+                        <span className="text-[13px] text-muted-foreground truncate">{getClosestColorName(baseHex)}</span>
                     </div>
-                </div>
-                <div className="lg:col-span-7 grid md:grid-cols-2 gap-x-12">
-                     <div>
-                        <h3 className="font-mono text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-8 border-b border-border/60 pb-2">{t.shades}</h3>
+                    <LegendToggle label={t.useRefMatch} on={useReference} onClick={() => setUseReference(!useReference)} />
+                </Card>
+
+                <Card className="lg:col-span-4" aria-label={t.shades} label={t.shades} bodyClassName="gap-6">
                         <ControlSlider label={t.count} paramKey="darkCount" min={0} max={10} value={darkCount} onChange={handleSliderChange} />
                         <ControlSlider label={t.step} paramKey="darknessIntensity" min={1} max={30} unit="%" value={darknessIntensity} onChange={handleSliderChange} />
                         <ControlSlider label={t.hue} paramKey="hueRotDark" min={-60} max={60} unit="°" value={hueRotDark} onChange={handleSliderChange} />
-                     </div>
-                     <div>
-                        <h3 className="font-mono text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest mb-8 border-b border-border/60 pb-2">{t.tints}</h3>
+                </Card>
+
+                <Card className="lg:col-span-4" aria-label={t.tints} label={t.tints} bodyClassName="gap-6">
                         <ControlSlider label={t.count} paramKey="lightCount" min={0} max={10} value={lightCount} onChange={handleSliderChange} />
                         <ControlSlider label={t.step} paramKey="lightnessIntensity" min={1} max={30} unit="%" value={lightnessIntensity} onChange={handleSliderChange} />
                         <ControlSlider label={t.hue} paramKey="hueRotLight" min={-60} max={60} unit="°" value={hueRotLight} onChange={handleSliderChange} />
-                     </div>
-                </div>
+                </Card>
             </div>
 
-            <div className="relative w-full rounded-[3rem] shadow-2xl ring-1 ring-black/5 px-10 py-10" style={{ backgroundColor: renderBg }}>
-                <div className="flex w-full justify-center">
-                    <div className="w-[88%] max-w-[1400px] h-[260px] rounded-[2rem] overflow-hidden shadow-xl ring-1 ring-black/5 bg-card/40 backdrop-blur-sm">
-                        <div className="flex w-full h-full">
-                            {palette.map((color, idx) => (
-                                <div 
-                                    key={idx}
-                                    onClick={() => { 
-                                        const val = useReference && color.referenceCode ? color.referenceCode : color.hex;
-                                        navigator.clipboard.writeText(val); 
-                                        setFeedback(`${t.copiedToClipboard} ${val}`); 
-                                        setTimeout(()=>setFeedback(null),1500); 
-                                    }}
-                                    className={`relative flex flex-col justify-end items-center pb-8 cursor-pointer transition-[flex] duration-500 ease-out group ${color.isBase ? 'flex-[6] z-10 shadow-2xl ring-1 ring-white/10' : 'flex-[1] hover:flex-[3]'}`}
-                                    style={{ backgroundColor: color.hex }}
-                                >
-                                    <span 
-                                        className={`font-mono text-[10px] font-bold tracking-widest uppercase transition-all duration-300 ${color.isBase ? 'opacity-100 text-lg mb-2' : 'opacity-0 group-hover:opacity-100 mb-10 vertical-text'}`}
-                                        style={{ 
-                                            color: getContrastColor(color.hex), 
-                                            writingMode: color.isBase ? 'horizontal-tb' : 'vertical-lr', 
-                                            transform: color.isBase ? 'none' : 'rotate(180deg)' 
-                                        }}
-                                    >
-                                        {useReference && color.referenceCode ? color.referenceCode : color.hex}
-                                    </span>
-                                    {color.isBase && <span className="font-mono text-[9px] uppercase tracking-[0.4em] opacity-30 font-black" style={{ color: getContrastColor(color.hex) }}>{t.baseBadge}</span>}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+            {/* The palette on its background. The strip and the backdrop are data: they keep their colours. */}
+            <Card aria-label={t.preview} label={t.preview}>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <span className="text-[13px] text-muted-foreground">{t.background}</span>
+                    <TextTabs<BgContext>
+                        ariaLabel={t.background}
+                        value={bgContext}
+                        onChange={setBgContext}
+                        items={(['white', 'black', 'darkest', 'lightest'] as const).map((ctx) => ({
+                            value: ctx,
+                            label: (
+                                <span className="inline-flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-pill shadow-hairline-strong" style={{ backgroundColor: bgSwatch(ctx) }} aria-hidden="true" />
+                                    {bgContextLabel(t, ctx)}
+                                </span>
+                            )
+                        }))}
+                    />
                 </div>
-                {feedback && (
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-foreground text-background px-8 py-3 font-mono text-[10px] uppercase tracking-widest rounded-full shadow-2xl z-30 pointer-events-none animate-in fade-in zoom-in duration-300">
-                        {feedback}
+                    <div
+                        className="relative w-full rounded-md shadow-hairline px-4 py-6 md:px-10 md:py-10 transition-colors duration-base ease-out"
+                        style={{ backgroundColor: renderBg }}
+                    >
+                        <div className="w-full max-w-[1100px] mx-auto h-[220px] md:h-[260px] rounded-md overflow-hidden shadow-hairline">
+                            <div className="flex w-full h-full">
+                                {palette.map((color, idx) => {
+                                    const shown = useReference && color.referenceCode ? color.referenceCode : color.hex;
+                                    return (
+                                        <button
+                                            type="button"
+                                            key={idx}
+                                            onClick={() => {
+                                                void copyText(shown).then((ok) => showFeedback(ok ? `${t.copiedToClipboard} ${shown}` : t.copyFailed));
+                                            }}
+                                            title={`${t.copy} ${shown}`}
+                                            aria-label={`${t.copy} ${shown}`}
+                                            className={`relative min-w-0 flex flex-col justify-end items-center pb-6 md:pb-8 transition-[flex-grow] duration-slow ease-out group ${color.isBase ? 'flex-[6] z-10' : 'flex-[1] hover:flex-[3] focus-visible:flex-[3]'}`}
+                                            style={{ backgroundColor: color.hex }}
+                                        >
+                                            <span
+                                                className={`tabular uppercase transition-opacity duration-base ease-out ${color.isBase ? 'opacity-100 text-[24px] leading-[1.2] mb-1' : 'text-[12px] opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 mb-10'}`}
+                                                style={{
+                                                    color: getContrastColor(color.hex),
+                                                    writingMode: color.isBase ? 'horizontal-tb' : 'vertical-lr',
+                                                    transform: color.isBase ? 'none' : 'rotate(180deg)'
+                                                }}
+                                            >
+                                                {shown}
+                                            </span>
+                                            {color.isBase && (
+                                                <span className="text-[12px] opacity-60" style={{ color: getContrastColor(color.hex) }}>
+                                                    {t.baseBadge}
+                                                </span>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        {feedback && (
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 material-popover rounded-pill px-5 py-2.5 text-[13px] text-foreground z-30 pointer-events-none fade-in-up" role="status">
+                                {feedback}
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
-            <div className="flex justify-center gap-4 pt-4">
-                {(['white', 'black', 'darkest', 'lightest'] as const).map(ctx => (
-                    <button key={ctx} onClick={() => setBgContext(ctx)} className={`w-6 h-6 rounded-full border border-border transition-all ${bgContext === ctx ? 'scale-150 ring-2 ring-black ring-offset-2' : 'hover:scale-125 shadow-sm'}`} style={{ backgroundColor: ctx === 'white' ? '#fff' : ctx === 'black' ? '#000' : ctx === 'darkest' ? palette[0]?.hex : palette[palette.length-1]?.hex }} />
-                ))}
-            </div>
+            </Card>
         </div>
     );
 };

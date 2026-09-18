@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 import { Language, Translations, translations } from './translations';
+import { safeGetItem, safeSetItem } from '../utils/safeStorage';
 
 interface LanguageContextType {
   language: Language;
@@ -11,28 +12,45 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 const STORAGE_KEY = 'unbscolor-language';
 
+export const isSupportedLanguage = (value: unknown): value is Language =>
+  value === 'en' || value === 'pt' || value === 'es';
+
+/**
+ * First language to show when nothing is stored: the browser's own, when it
+ * is one of ours (pt-BR → pt, es-MX → es), otherwise English.
+ */
+export function detectBrowserLanguage(
+  languages: readonly string[] | undefined = typeof navigator !== 'undefined'
+    ? (navigator.languages?.length ? navigator.languages : [navigator.language])
+    : undefined,
+): Language {
+  for (const tag of languages ?? []) {
+    const base = String(tag || '').toLowerCase().split('-')[0];
+    if (isSupportedLanguage(base)) return base;
+  }
+  return 'en';
+}
+
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    // Tenta carregar do localStorage
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && (stored === 'en' || stored === 'pt' || stored === 'es')) {
-      return stored as Language;
-    }
-    return 'en'; // Idioma padrão é inglês
+    // localStorage can throw (private mode / blocked storage); safeGetItem never does
+    const stored = safeGetItem(STORAGE_KEY);
+    return isSupportedLanguage(stored) ? stored : detectBrowserLanguage();
   });
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = useCallback((lang: Language) => {
+    if (!isSupportedLanguage(lang)) return;
     setLanguageState(lang);
-    localStorage.setItem(STORAGE_KEY, lang);
-  };
+    safeSetItem(STORAGE_KEY, lang);
+  }, []);
 
-  const t = translations[language];
-
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
-      {children}
-    </LanguageContext.Provider>
+  // Stable context value: consumers only re-render when the language changes
+  const value = useMemo<LanguageContextType>(
+    () => ({ language, setLanguage, t: translations[language] ?? translations.en }),
+    [language, setLanguage]
   );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
 
 export const useLanguage = (): LanguageContextType => {

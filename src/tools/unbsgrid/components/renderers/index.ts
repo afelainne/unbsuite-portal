@@ -7,3 +7,10 @@ export { renderIsometricGrid, renderPixelGrid, renderContrastGuide, renderKenBur
 export { renderBezierHandles, renderParallelFlowLines, renderUnderlyingCircles, renderDominantDiagonals, renderCurvatureComb, renderSkeletonCenterline, renderConstructionGrid, renderPathDirectionArrows, renderTangentIntersections, renderAnchorPoints } from './advanced';
 export { renderFlowerOfLife, renderReuleauxTriangle, renderHexGrid } from './sacred';
 export { renderTriangularGrid, renderPolarGrid, renderConcentricSquares } from './construction';
+export { renderInkHeightBands, renderSlantAngle, renderStrokeWeight, renderReductionTest, renderCornerRadii } from './extra';
+export {
+  renderWordBaselines, renderLetterHeights, renderLetterRhythm, renderLetterAxes,
+  renderLetterStemWidth, renderOpticalEdges, renderCounterAreas, renderDensityCurve,
+  renderSignatureRelation, renderXHeightGrid,
+} from './type';
+export * from './scale';

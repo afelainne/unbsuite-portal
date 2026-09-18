@@ -17,7 +17,7 @@ const BreadcrumbList = React.forwardRef<HTMLOListElement, React.ComponentPropsWi
     <ol
       ref={ref}
       className={cn(
-        "flex flex-wrap items-center gap-1.5 break-words text-sm text-muted-foreground sm:gap-2.5",
+        "flex flex-wrap items-center gap-1.5 break-words text-[13px] text-muted-foreground sm:gap-2",
         className,
       )}
       {...props}
@@ -41,7 +41,7 @@ const BreadcrumbLink = React.forwardRef<
 >(({ asChild, className, ...props }, ref) => {
   const Comp = asChild ? Slot : "a";
 
-  return <Comp ref={ref} className={cn("transition-colors hover:text-foreground", className)} {...props} />;
+  return <Comp ref={ref} className={cn("-mx-1 rounded-md px-1 py-0.5 text-tint transition-colors duration-fast ease-out hover:bg-fill", className)} {...props} />;
 });
 BreadcrumbLink.displayName = "BreadcrumbLink";
 
@@ -52,7 +52,7 @@ const BreadcrumbPage = React.forwardRef<HTMLSpanElement, React.ComponentPropsWit
       role="link"
       aria-disabled="true"
       aria-current="page"
-      className={cn("font-normal text-foreground", className)}
+      className={cn("font-medium text-foreground", className)}
       {...props}
     />
   ),
@@ -70,7 +70,7 @@ const BreadcrumbEllipsis = ({ className, ...props }: React.ComponentProps<"span"
   <span
     role="presentation"
     aria-hidden="true"
-    className={cn("flex h-9 w-9 items-center justify-center", className)}
+    className={cn("flex h-7 w-7 items-center justify-center rounded-md hover:bg-fill", className)}
     {...props}
   >
     <MoreHorizontal className="h-4 w-4" />

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { InfoGrid } from './components/InfoGrid';
 import { PaletteGenerator } from './components/PaletteGenerator';
-import { SwatchStrip } from './components/SwatchStrip';
-import { SimilarityGrid } from './components/SimilarityGrid';
 import { ColorGuide } from './components/ColorGuide';
 import { PaletteBuilder } from './components/PaletteBuilder';
 import { GeneratedPalettes } from './components/GeneratedPalettes';
+import { MatcherView, MatcherValueRow } from './components/MatcherView';
 import { PaletteMagic } from './components/PaletteMagic';
 import { BatchAnalyzer } from './components/BatchAnalyzer';
 import { useLanguage, Language } from './i18n';
+import { Settings2, X } from 'lucide-react';
+import { IconButton, LegendToggle, TextTabs } from './components/ui';
 import {
     hexToRgb,
     rgbToHex,
@@ -21,21 +21,20 @@ import {
     getClosestColorName,
     enrichLibraryWithLab,
     cmykToRgb,
-    hslToRgb
+    hslToRgb,
+    normalizeHex
 } from './utils/colorMath';
+import { escapeXml, toSafeFileName } from './utils/escape';
+import { formatReferenceCode } from './utils/reference';
+import { formatOklch } from './utils/oklab';
+import { copyText, downloadBlob, downloadUrl, revokeObjectUrlLater, useTransientState } from './utils/browser';
 import { analyzeColor } from './services/analysisService';
 import { triggerFakeColorTraffic } from './services/obfuscatedColorService';
 import { fetchMatchesWithFallback } from './services/matchApi';
-import { RGB, CMYK, HSL, HSV, LAB, ColorMatch, AnalysisResult, ReferenceColor, HarmonyColor } from './types';
+import { RGB, CMYK, HSL, HSV, LAB, ColorMatch, AnalysisResult, ReferenceColor } from './types';
 import { LIBRARY_OPTIONS, getLibraryById, DEFAULT_LIBRARY } from './constants';
 
 const defaultLibraryId = LIBRARY_OPTIONS[0]?.id || '';
-const LIBRARY_SHORT_LABELS: Record<string, string> = {
-    sys_b_fin_c: 'C',
-    sys_b_fin_u: 'U',
-    sys_a_fin_c: 'CP',
-    sys_a_fin_u: 'UP'
-};
 
 type SettingsState = {
     showHex: boolean;
@@ -44,10 +43,10 @@ type SettingsState = {
     showHsb: boolean;
     showLab: boolean;
     showCmyk: boolean;
-    showPmsC: boolean;
-    showPmsU: boolean;
-    showPmsSolidC: boolean;
-    showPmsSolidU: boolean;
+    showRefBridgeC: boolean;
+    showRefBridgeU: boolean;
+    showRefSolidC: boolean;
+    showRefSolidU: boolean;
     mixFormat: string;
 };
 
@@ -55,7 +54,7 @@ const App: React.FC = () => {
     const { language, setLanguage, t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'matcher' | 'batch' | 'guide' | 'palette' | 'generated' | 'magic'>('matcher');
     const [showSettings, setShowSettings] = useState(false);
-    const [batchColors, setBatchColors] = useState<string[]>(['#F7E043', '#1A1A1A', '#FFFFFF', '#E5E5E5', '#333333']);
+    const [batchColors, setBatchColors] = useState<string[]>(['#F0FF00', '#1A1A1A', '#FFFFFF', '#E5E5E5', '#333333']);
 
     const [settings, setSettings] = useState<SettingsState>({
         showHex: true,
@@ -64,27 +63,26 @@ const App: React.FC = () => {
         showHsb: true,
         showLab: true,
         showCmyk: true,
-        showPmsC: true,
-        showPmsU: true,
-        showPmsSolidC: true,
-        showPmsSolidU: true,
+        showRefBridgeC: true,
+        showRefBridgeU: true,
+        showRefSolidC: true,
+        showRefSolidU: true,
         mixFormat: 'rgb(80, 184, 72)'
     });
 
-    const [hex, setHex] = useState<string>('#F7E043');
-    const [rgb, setRgb] = useState<RGB>(() => hexToRgb('#F7E043'));
-    const [cmyk, setCmyk] = useState<CMYK>(() => rgbToCmyk(hexToRgb('#F7E043')));
-    const [hsl, setHsl] = useState<HSL>(() => rgbToHsl(hexToRgb('#F7E043')));
-    const [hsv, setHsv] = useState<HSV>(() => rgbToHsv(hexToRgb('#F7E043')));
-    const [lab, setLab] = useState<LAB>(() => hexToLab('#F7E043'));
+    const [hex, setHex] = useState<string>('#F0FF00');
+    const [rgb, setRgb] = useState<RGB>(() => hexToRgb('#F0FF00'));
+    const [cmyk, setCmyk] = useState<CMYK>(() => rgbToCmyk(hexToRgb('#F0FF00')));
+    const [hsl, setHsl] = useState<HSL>(() => rgbToHsl(hexToRgb('#F0FF00')));
+    const [hsv, setHsv] = useState<HSV>(() => rgbToHsv(hexToRgb('#F0FF00')));
+    const [lab, setLab] = useState<LAB>(() => hexToLab('#F0FF00'));
 
     const [libraryType, setLibraryType] = useState<string>(defaultLibraryId);
     const [library, setLibrary] = useState<ReferenceColor[]>(DEFAULT_LIBRARY);
     const [matches, setMatches] = useState<ColorMatch[]>([]);
-    const [stripColors, setStripColors] = useState<HarmonyColor[]>([]);
     const [analysis, setAnalysis] = useState<{ description: string; usageTips: string[]; psychology: string } | null>(null);
     const [loadingAi, setLoadingAi] = useState(false);
-    const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+    const [copyFeedback, showCopyFeedback] = useTransientState<string>(2000);
     const [showRefMatch, setShowRefMatch] = useState(false);
 
     type CardTemplate = 'classic' | 'compact' | 'editorial' | 'swatchcard' | 'minimal' | 'mono';
@@ -129,10 +127,8 @@ const App: React.FC = () => {
         return `rgb(${r}, ${g}, ${b})`;
     };
 
-    const normalizeRefCode = (code?: string) => {
-        if (!code) return '';
-        return code.toUpperCase();
-    };
+    /** Every code on screen or in an export goes through the one formatter. */
+    const normalizeRefCode = (code?: string) => formatReferenceCode(code);
 
     const sendObfuscationTraffic = useCallback((value: string) => {
         if (isValidHex(value)) {
@@ -150,18 +146,19 @@ const App: React.FC = () => {
         setLab(hexToLab(currentHex));
     };
 
-    const handleHexChange = useCallback((newHex: string) => {
+    const handleHexChange = useCallback((rawHex: string) => {
+        // Callers may pass lowercase or "#"-less hex; derive and propagate only the normalized value.
+        const newHex = typeof rawHex === 'string' ? normalizeHex(rawHex) : null;
+        if (!newHex) return;
         setHex(newHex);
-        if (isValidHex(newHex)) {
-            const newRgb = hexToRgb(newHex);
-            setRgb(newRgb);
-            updateDerivedFromRgb(newRgb, newHex);
-            setBatchColors((prev) => {
-                const updated = [...prev];
-                updated[0] = newHex;
-                return updated;
-            });
-        }
+        const newRgb = hexToRgb(newHex);
+        setRgb(newRgb);
+        updateDerivedFromRgb(newRgb, newHex);
+        setBatchColors((prev) => {
+            const updated = [...prev];
+            updated[0] = newHex;
+            return updated;
+        });
     }, [sendObfuscationTraffic]);
 
     const updateBatchSlot0 = useCallback((newHex: string) => {
@@ -207,10 +204,13 @@ const App: React.FC = () => {
         updateBatchSlot0(newHex);
     };
 
-    const handleBatchColorUpdate = (index: number, newHex: string) => {
-        const updated = [...batchColors];
-        updated[index] = newHex;
-        setBatchColors(updated);
+    const handleBatchColorUpdate = (index: number, rawHex: string) => {
+        const newHex = normalizeHex(rawHex) ?? rawHex;
+        setBatchColors((prev) => {
+            const updated = [...prev];
+            updated[index] = newHex;
+            return updated;
+        });
         if (index === 0 && isValidHex(newHex)) {
             setHex(newHex);
             const newRgb = hexToRgb(newHex);
@@ -280,7 +280,7 @@ const App: React.FC = () => {
 
         const matchesList: { label: string; code: string; swatch: string }[] = [];
 
-        if (settings.showPmsSolidC) {
+        if (settings.showRefSolidC) {
             matchesList.push({
                 label: t.refSolidC,
                     code: matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : outOfGamutLabel,
@@ -288,7 +288,7 @@ const App: React.FC = () => {
             });
         }
 
-        if (settings.showPmsSolidU) {
+        if (settings.showRefSolidU) {
             matchesList.push({
                 label: t.refSolidU,
                     code: matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : outOfGamutLabel,
@@ -296,7 +296,7 @@ const App: React.FC = () => {
             });
         }
 
-        if (settings.showPmsC) {
+        if (settings.showRefBridgeC) {
             matchesList.push({
                 label: t.refBridgeC,
                     code: matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : outOfGamutLabel,
@@ -304,7 +304,7 @@ const App: React.FC = () => {
             });
         }
 
-        if (settings.showPmsU) {
+        if (settings.showRefBridgeU) {
             matchesList.push({
                 label: t.refBridgeU,
                     code: matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : outOfGamutLabel,
@@ -315,12 +315,12 @@ const App: React.FC = () => {
         const stripMatches = findReferenceMatches(color, library, 6);
         const strip = stripMatches.map((m) => ({
             hex: m.reference.hex,
-            name: m.reference.name,
+            name: getClosestColorName(m.reference.hex),
             code: normalizeRefCode(m.reference.code)
         }));
         const alternatives = includeAlternatives ? stripMatches.map((m) => ({
             hex: m.reference.hex,
-            name: m.reference.name,
+            name: getClosestColorName(m.reference.hex),
             code: normalizeRefCode(m.reference.code),
             deltaE: m.deltaE
         })) : undefined;
@@ -352,7 +352,7 @@ const App: React.FC = () => {
         const statLines = payload.stats
             .map((line, idx) => {
                 const y = cursor + idx * 22;
-                return `<text x="${padding}" y="${y}" font-size="13" font-family="Arial, sans-serif" fill="#374151">${line}</text>`;
+                return `<text x="${padding}" y="${y}" font-size="13" font-family="'BDO Grotesk', Arial, sans-serif" fill="#374151">${escapeXml(line)}</text>`;
             })
             .join('');
 
@@ -365,8 +365,8 @@ const App: React.FC = () => {
                 return `
                 <g transform="translate(${padding}, ${y})">
                     <rect width="${width - padding * 2}" height="60" rx="12" fill="#ffffff" stroke="#e5e7eb" stroke-width="1" />
-                    <text x="16" y="22" font-size="10" font-family="Arial, sans-serif" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${match.label.toUpperCase()}</text>
-                    <text x="16" y="44" font-size="16" font-family="Arial, sans-serif" fill="${isOutOfGamut ? '#9ca3af' : '#0f172a'}" font-weight="700">${match.code}</text>
+                    <text x="16" y="22" font-size="10" font-family="'BDO Grotesk', Arial, sans-serif" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${escapeXml(match.label.toUpperCase())}</text>
+                    <text x="16" y="44" font-size="16" font-family="'BDO Grotesk', Arial, sans-serif" fill="${isOutOfGamut ? '#9ca3af' : '#0f172a'}" font-weight="700">${escapeXml(match.code)}</text>
                     <rect x="${width - padding * 2 - 60}" y="10" width="44" height="40" rx="10" fill="${match.swatch}" stroke="#e5e7eb" stroke-width="1" />
                 </g>
             `;
@@ -396,7 +396,7 @@ const App: React.FC = () => {
                 }
                 // Add reference code below the swatch
                 if (s.code) {
-                    rect += `<text x="${x + slotWidth / 2}" y="${stripY + 54}" font-size="8" font-family="Arial, sans-serif" fill="#9ca3af" text-anchor="middle">${s.code}</text>`;
+                    rect += `<text x="${x + slotWidth / 2}" y="${stripY + 54}" font-size="8" font-family="'BDO Grotesk', Arial, sans-serif" fill="#9ca3af" text-anchor="middle">${escapeXml(s.code)}</text>`;
                 }
                 return rect;
             })
@@ -421,31 +421,31 @@ const App: React.FC = () => {
                 return `<g transform="translate(${x}, ${y})">
                     <rect width="${cellW}" height="${cellH}" rx="10" fill="#ffffff" stroke="#e5e7eb" />
                     <rect x="8" y="8" width="44" height="${cellH - 16}" rx="8" fill="${a.hex}" />
-                    <text x="62" y="26" font-size="11" font-family="Arial, sans-serif" fill="#0f172a" font-weight="700">${(a.code || a.name).replace(/PANTONE/gi, 'P.')}</text>
-                    <text x="62" y="46" font-size="10" font-family="Arial, sans-serif" fill="#9ca3af">${a.name.replace(/PANTONE/gi, 'P.')}</text>
-                    <text x="62" y="66" font-size="10" font-family="Arial, sans-serif" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>
+                    <text x="62" y="26" font-size="11" font-family="'BDO Grotesk', Arial, sans-serif" fill="#0f172a" font-weight="700">${escapeXml(a.code || a.name)}</text>
+                    <text x="62" y="46" font-size="10" font-family="'BDO Grotesk', Arial, sans-serif" fill="#9ca3af">${escapeXml(a.name)}</text>
+                    <text x="62" y="66" font-size="10" font-family="'BDO Grotesk', Arial, sans-serif" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>
                 </g>`;
             }).join('');
             const rows = Math.ceil(payload.alternatives.length / cols);
             cursor += rows * (cellH + 10);
-            altSvg = `<text x="${padding}" y="${altLabelY}" font-size="11" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${t.nearbyAlternatives.toUpperCase()}</text>${cells}`;
+            altSvg = `<text x="${padding}" y="${altLabelY}" font-size="11" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${escapeXml(t.nearbyAlternatives.toUpperCase())}</text>${cells}`;
         }
 
         const height = cursor + padding;
 
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${t.slotLabel} ${payload.index + 1} ${t.colorCardAria}" shape-rendering="geometricPrecision" text-rendering="optimizeLegibility">
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeXml(t.slotLabel)} ${payload.index + 1} ${escapeXml(t.colorCardAria)}" shape-rendering="geometricPrecision" text-rendering="optimizeLegibility">
     <defs>
-        <style>text { font-family: Arial, sans-serif; }</style>
+        <style>text { font-family: 'BDO Grotesk', Arial, sans-serif; }</style>
         <clipPath id="headerClip"><rect x="${padding}" y="${padding}" width="${width - padding * 2}" height="${headerHeight}" rx="24" /></clipPath>
     </defs>
     <rect width="100%" height="100%" fill="#ffffff" rx="28" />
     <rect x="${padding}" y="${padding}" width="${width - padding * 2}" height="${headerHeight}" rx="24" fill="${payload.hex}" />
-    <text x="${padding + 20}" y="${padding + 32}" font-size="11" fill="${headerTextColor}" opacity="${headerTextOpacity}" font-weight="700" letter-spacing="2">${t.slotLabel.toUpperCase()} ${payload.index + 1}</text>
-    <text x="${padding + 20}" y="${padding + 72}" font-size="28" fill="${headerTextColor}" font-weight="800">${payload.name}</text>
-    <text x="${padding + 20}" y="${padding + 100}" font-size="15" fill="${headerTextColor}" opacity="${headerTextOpacity}" font-weight="600">${payload.hex.toUpperCase()}</text>
+    <text x="${padding + 20}" y="${padding + 32}" font-size="11" fill="${headerTextColor}" opacity="${headerTextOpacity}" font-weight="700" letter-spacing="2">${escapeXml(t.slotLabel.toUpperCase())} ${payload.index + 1}</text>
+    <text x="${padding + 20}" y="${padding + 72}" font-size="28" fill="${headerTextColor}" font-weight="800">${escapeXml(payload.name)}</text>
+    <text x="${padding + 20}" y="${padding + 100}" font-size="15" fill="${headerTextColor}" opacity="${headerTextOpacity}" font-weight="600">${escapeXml(payload.hex.toUpperCase())}</text>
     ${statLines}
     ${matchBlock}
-    <text x="${padding}" y="${stripLabelY}" font-size="11" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${t.nearbyAlternatives.toUpperCase()}</text>
+    <text x="${padding}" y="${stripLabelY}" font-size="11" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${escapeXml(t.nearbyAlternatives.toUpperCase())}</text>
     <rect x="${padding}" y="${stripY}" width="${stripWidth}" height="40" rx="10" fill="#f3f4f6" />
     <g clip-path="url(#stripClip)">
         <clipPath id="stripClip"><rect x="${padding}" y="${stripY}" width="${stripWidth}" height="40" rx="10" /></clipPath>
@@ -470,14 +470,14 @@ const App: React.FC = () => {
         const statRows = Math.ceil(payload.stats.length / 2);
         const statSvg = payload.stats.map((s, i) => {
             const c = i % 2, r = Math.floor(i / 2);
-            return `<text x="${pad + c * colW}" y="${y + r * 16}" font-size="10" font-family="Arial, monospace" fill="#374151">${s}</text>`;
+            return `<text x="${pad + c * colW}" y="${y + r * 16}" font-size="10" font-family="Arial, monospace" fill="#374151">${escapeXml(s)}</text>`;
         }).join('');
         y += statRows * 16 + 12;
         const matchSvg = payload.matches.map((m, i) => {
             const my = y + i * 26;
             return `<rect x="${pad}" y="${my}" width="20" height="20" rx="4" fill="${m.swatch}" stroke="#e5e7eb" />
-                <text x="${pad + 28}" y="${my + 9}" font-size="8" font-family="Arial" fill="#9ca3af" font-weight="700">${m.label.toUpperCase()}</text>
-                <text x="${pad + 28}" y="${my + 20}" font-size="11" font-family="Arial" fill="#0f172a" font-weight="700">${m.code}</text>`;
+                <text x="${pad + 28}" y="${my + 9}" font-size="8" font-family="'BDO Grotesk', Arial, sans-serif" fill="#9ca3af" font-weight="700">${escapeXml(m.label.toUpperCase())}</text>
+                <text x="${pad + 28}" y="${my + 20}" font-size="11" font-family="'BDO Grotesk', Arial, sans-serif" fill="#0f172a" font-weight="700">${escapeXml(m.code)}</text>`;
         }).join('');
         y += payload.matches.length * 26 + 12;
         const stripW = width - pad * 2;
@@ -489,7 +489,7 @@ const App: React.FC = () => {
             altSvg = payload.alternatives.map((a, i) => {
                 const ay = y + i * 22;
                 return `<rect x="${pad}" y="${ay}" width="16" height="16" fill="${a.hex}" />
-                    <text x="${pad + 22}" y="${ay + 12}" font-size="9" font-family="Arial" fill="#0f172a">${(a.code || a.name)} · ΔE ${a.deltaE.toFixed(1)}</text>`;
+                    <text x="${pad + 22}" y="${ay + 12}" font-size="9" font-family="'BDO Grotesk', Arial, sans-serif" fill="#0f172a">${escapeXml(a.code || a.name)} · ΔE ${a.deltaE.toFixed(1)}</text>`;
             }).join('');
             y += payload.alternatives.length * 22;
         }
@@ -497,8 +497,8 @@ const App: React.FC = () => {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
             <rect width="100%" height="100%" fill="#fff" rx="14" />
             <rect x="${pad}" y="${pad}" width="${width - pad * 2}" height="${headerH}" rx="10" fill="${payload.hex}" />
-            <text x="${pad + 12}" y="${pad + 26}" font-size="14" fill="${tc}" font-weight="800">${payload.name}</text>
-            <text x="${pad + 12}" y="${pad + 48}" font-size="11" fill="${tc}" opacity="0.85" font-family="monospace">${payload.hex}</text>
+            <text x="${pad + 12}" y="${pad + 26}" font-size="14" fill="${tc}" font-weight="800">${escapeXml(payload.name)}</text>
+            <text x="${pad + 12}" y="${pad + 48}" font-size="11" fill="${tc}" opacity="0.85" font-family="monospace">${escapeXml(payload.hex)}</text>
             ${statSvg}${matchSvg}${stripSvg}${altSvg}
         </svg>`;
         return { svg, width, height };
@@ -513,13 +513,13 @@ const App: React.FC = () => {
         const tc = lum > 0.5 ? '#0f172a' : '#fff';
         let y = headerH + 32;
         const innerPad = 32;
-        const statSvg = payload.stats.map((s, i) => `<text x="${innerPad}" y="${y + i * 18}" font-size="11" font-family="monospace" fill="#374151">${s}</text>`).join('');
+        const statSvg = payload.stats.map((s, i) => `<text x="${innerPad}" y="${y + i * 18}" font-size="11" font-family="monospace" fill="#374151">${escapeXml(s)}</text>`).join('');
         y += payload.stats.length * 18 + 24;
         const matchSvg = payload.matches.map((m, i) => {
             const my = y + i * 36;
             return `<line x1="${innerPad}" y1="${my + 30}" x2="${width - innerPad}" y2="${my + 30}" stroke="#e5e7eb" />
-                <text x="${innerPad}" y="${my + 18}" font-size="10" font-family="Arial" fill="#6b7280" letter-spacing="2">${m.label.toUpperCase()}</text>
-                <text x="${width - innerPad - 80}" y="${my + 18}" font-size="14" font-family="Arial" fill="#0f172a" font-weight="700">${m.code}</text>
+                <text x="${innerPad}" y="${my + 18}" font-size="10" font-family="'BDO Grotesk', Arial, sans-serif" fill="#6b7280" letter-spacing="2">${escapeXml(m.label.toUpperCase())}</text>
+                <text x="${width - innerPad - 80}" y="${my + 18}" font-size="14" font-family="'BDO Grotesk', Arial, sans-serif" fill="#0f172a" font-weight="700">${escapeXml(m.code)}</text>
                 <rect x="${width - innerPad - 28}" y="${my + 4}" width="20" height="20" fill="${m.swatch}" />`;
         }).join('');
         y += payload.matches.length * 36 + 24;
@@ -532,7 +532,7 @@ const App: React.FC = () => {
             altSvg = payload.alternatives.map((a, i) => {
                 const ay = y + i * 28;
                 return `<rect x="${innerPad}" y="${ay}" width="20" height="20" fill="${a.hex}" />
-                    <text x="${innerPad + 28}" y="${ay + 14}" font-size="11" fill="#0f172a" font-weight="700">${a.code || a.name}</text>
+                    <text x="${innerPad + 28}" y="${ay + 14}" font-size="11" fill="#0f172a" font-weight="700">${escapeXml(a.code || a.name)}</text>
                     <text x="${width - innerPad}" y="${ay + 14}" text-anchor="end" font-size="10" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>`;
             }).join('');
             y += payload.alternatives.length * 28;
@@ -541,9 +541,9 @@ const App: React.FC = () => {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
             <rect width="100%" height="100%" fill="#fafafa" />
             <rect x="0" y="0" width="${width}" height="${headerH}" fill="${payload.hex}" />
-            <text x="${innerPad}" y="80" font-size="48" font-family="Georgia, serif" font-weight="700" fill="${tc}">${payload.name}</text>
-            <text x="${innerPad}" y="120" font-size="20" font-family="monospace" fill="${tc}" opacity="0.85">${payload.hex.toUpperCase()}</text>
-            <text x="${innerPad}" y="${headerH - 24}" font-size="11" font-family="Arial" fill="${tc}" opacity="0.7" letter-spacing="3">${t.slotLabel.toUpperCase()} ${payload.index + 1}</text>
+            <text x="${innerPad}" y="80" font-size="48" font-family="Georgia, serif" font-weight="700" fill="${tc}">${escapeXml(payload.name)}</text>
+            <text x="${innerPad}" y="120" font-size="20" font-family="monospace" fill="${tc}" opacity="0.85">${escapeXml(payload.hex.toUpperCase())}</text>
+            <text x="${innerPad}" y="${headerH - 24}" font-size="11" font-family="'BDO Grotesk', Arial, sans-serif" fill="${tc}" opacity="0.7" letter-spacing="3">${escapeXml(t.slotLabel.toUpperCase())} ${payload.index + 1}</text>
             ${statSvg}${matchSvg}${stripSvg}${altSvg}
         </svg>`;
         return { svg, width, height };
@@ -557,11 +557,11 @@ const App: React.FC = () => {
         const tc = lum > 0.5 ? '#0f172a' : '#fff';
         let y = swatchH + 24;
         const pad = 20;
-        const statSvg = payload.stats.slice(0, 4).map((s, i) => `<text x="${pad}" y="${y + i * 14}" font-size="10" font-family="monospace" fill="#374151">${s}</text>`).join('');
+        const statSvg = payload.stats.slice(0, 4).map((s, i) => `<text x="${pad}" y="${y + i * 14}" font-size="10" font-family="monospace" fill="#374151">${escapeXml(s)}</text>`).join('');
         y += Math.min(payload.stats.length, 4) * 14 + 12;
         const sw = (size - pad * 2) / Math.max(payload.matches.length || 1, 1);
         const matchSvg = payload.matches.map((m, i) => `<rect x="${pad + i * sw}" y="${y}" width="${sw - 4}" height="20" fill="${m.swatch}" />
-            <text x="${pad + i * sw}" y="${y + 32}" font-size="8" font-family="monospace" fill="#6b7280">${m.code.slice(0, 14)}</text>`).join('');
+            <text x="${pad + i * sw}" y="${y + 32}" font-size="8" font-family="monospace" fill="#6b7280">${escapeXml(m.code.slice(0, 14))}</text>`).join('');
         y += 44;
         let altSvg = '';
         if (payload.alternatives) {
@@ -573,8 +573,8 @@ const App: React.FC = () => {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${height}" viewBox="0 0 ${size} ${height}">
             <rect width="100%" height="100%" fill="#fff" />
             <rect x="0" y="0" width="${size}" height="${swatchH}" fill="${payload.hex}" />
-            <text x="${pad}" y="${swatchH - 40}" font-size="24" font-family="Arial" font-weight="800" fill="${tc}">${payload.name}</text>
-            <text x="${pad}" y="${swatchH - 18}" font-size="13" font-family="monospace" fill="${tc}" opacity="0.85">${payload.hex.toUpperCase()}</text>
+            <text x="${pad}" y="${swatchH - 40}" font-size="24" font-family="'BDO Grotesk', Arial, sans-serif" font-weight="800" fill="${tc}">${escapeXml(payload.name)}</text>
+            <text x="${pad}" y="${swatchH - 18}" font-size="13" font-family="monospace" fill="${tc}" opacity="0.85">${escapeXml(payload.hex.toUpperCase())}</text>
             ${statSvg}${matchSvg}${altSvg}
         </svg>`;
         return { svg, width: size, height };
@@ -590,7 +590,7 @@ const App: React.FC = () => {
         const tc = lum > 0.5 ? '#0f172a' : '#fff';
         const sw = (width - pad * 2) / Math.max(payload.matches.length || 1, 1);
         const matchSvg = payload.matches.map((m, i) => `<rect x="${pad + i * sw}" y="${y}" width="${sw - 4}" height="36" fill="${m.swatch}" />
-            <text x="${pad + i * sw + 4}" y="${y + 50}" font-size="8" font-family="monospace" fill="#6b7280">${m.code.slice(0, 14)}</text>`).join('');
+            <text x="${pad + i * sw + 4}" y="${y + 50}" font-size="8" font-family="monospace" fill="#6b7280">${escapeXml(m.code.slice(0, 14))}</text>`).join('');
         y += 60;
         let altSvg = '';
         if (payload.alternatives) {
@@ -602,8 +602,8 @@ const App: React.FC = () => {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
             <rect width="100%" height="100%" fill="#fff" />
             <rect x="${pad}" y="${pad}" width="${width - pad * 2}" height="${swatchH}" fill="${payload.hex}" />
-            <text x="${pad + 12}" y="${pad + 36}" font-size="18" font-family="Arial" font-weight="800" fill="${tc}">${payload.name}</text>
-            <text x="${pad + 12}" y="${pad + 60}" font-size="12" font-family="monospace" fill="${tc}" opacity="0.85">${payload.hex.toUpperCase()}</text>
+            <text x="${pad + 12}" y="${pad + 36}" font-size="18" font-family="'BDO Grotesk', Arial, sans-serif" font-weight="800" fill="${tc}">${escapeXml(payload.name)}</text>
+            <text x="${pad + 12}" y="${pad + 60}" font-size="12" font-family="monospace" fill="${tc}" opacity="0.85">${escapeXml(payload.hex.toUpperCase())}</text>
             ${matchSvg}${altSvg}
         </svg>`;
         return { svg, width, height };
@@ -614,13 +614,13 @@ const App: React.FC = () => {
         const pad = 24;
         const headerH = 160;
         let y = pad + headerH + 24;
-        const statSvg = payload.stats.map((s, i) => `<text x="${pad}" y="${y + i * 22}" font-size="13" font-family="monospace" fill="#d1d5db">${s}</text>`).join('');
+        const statSvg = payload.stats.map((s, i) => `<text x="${pad}" y="${y + i * 22}" font-size="13" font-family="monospace" fill="#d1d5db">${escapeXml(s)}</text>`).join('');
         y += payload.stats.length * 22 + 24;
         const matchSvg = payload.matches.map((m, i) => {
             const my = y + i * 60;
             return `<rect x="${pad}" y="${my}" width="${width - pad * 2}" height="48" rx="10" fill="#1a1a1a" stroke="#333" />
-                <text x="${pad + 16}" y="${my + 18}" font-size="9" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${m.label.toUpperCase()}</text>
-                <text x="${pad + 16}" y="${my + 36}" font-size="14" fill="#fff" font-weight="700">${m.code}</text>
+                <text x="${pad + 16}" y="${my + 18}" font-size="9" fill="#9ca3af" font-weight="700" letter-spacing="1.5">${escapeXml(m.label.toUpperCase())}</text>
+                <text x="${pad + 16}" y="${my + 36}" font-size="14" fill="#fff" font-weight="700">${escapeXml(m.code)}</text>
                 <rect x="${width - pad - 48}" y="${my + 6}" width="36" height="36" rx="8" fill="${m.swatch}" stroke="#444" />`;
         }).join('');
         y += payload.matches.length * 60 + 16;
@@ -633,7 +633,7 @@ const App: React.FC = () => {
             altSvg = payload.alternatives.map((a, i) => {
                 const ay = y + i * 26;
                 return `<rect x="${pad}" y="${ay}" width="20" height="20" fill="${a.hex}" stroke="#333" />
-                    <text x="${pad + 28}" y="${ay + 14}" font-size="10" fill="#fff" font-weight="700">${a.code || a.name}</text>
+                    <text x="${pad + 28}" y="${ay + 14}" font-size="10" fill="#fff" font-weight="700">${escapeXml(a.code || a.name)}</text>
                     <text x="${width - pad}" y="${ay + 14}" text-anchor="end" font-size="10" fill="#9ca3af">ΔE ${a.deltaE.toFixed(1)}</text>`;
             }).join('');
             y += payload.alternatives.length * 26;
@@ -642,9 +642,9 @@ const App: React.FC = () => {
         const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
             <rect width="100%" height="100%" fill="#0a0a0a" rx="20" />
             <rect x="${pad}" y="${pad}" width="${width - pad * 2}" height="${headerH}" rx="16" fill="${payload.hex}" stroke="#333" />
-            <text x="${pad + 16}" y="${pad + 32}" font-size="11" fill="#fff" opacity="0.85" font-weight="700" letter-spacing="2">${t.slotLabel.toUpperCase()} ${payload.index + 1}</text>
-            <text x="${pad + 16}" y="${pad + 76}" font-size="26" fill="#fff" font-weight="800">${payload.name}</text>
-            <text x="${pad + 16}" y="${pad + 104}" font-size="14" fill="#fff" opacity="0.85" font-family="monospace">${payload.hex.toUpperCase()}</text>
+            <text x="${pad + 16}" y="${pad + 32}" font-size="11" fill="#fff" opacity="0.85" font-weight="700" letter-spacing="2">${escapeXml(t.slotLabel.toUpperCase())} ${payload.index + 1}</text>
+            <text x="${pad + 16}" y="${pad + 76}" font-size="26" fill="#fff" font-weight="800">${escapeXml(payload.name)}</text>
+            <text x="${pad + 16}" y="${pad + 104}" font-size="14" fill="#fff" opacity="0.85" font-family="monospace">${escapeXml(payload.hex.toUpperCase())}</text>
             ${statSvg}${matchSvg}${stripSvg}${altSvg}
         </svg>`;
         return { svg, width, height };
@@ -661,14 +661,7 @@ const App: React.FC = () => {
         }
     };
 
-    const downloadFromUrl = (url: string, filename: string) => {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+    const downloadFromUrl = downloadUrl;
 
     const svgStringToPng = (svgString: string, width: number, height: number, filename: string) => {
         return new Promise<void>((resolve, reject) => {
@@ -691,13 +684,13 @@ const App: React.FC = () => {
                 ctx.drawImage(img, 0, 0, width, height);
                 const pngUrl = canvas.toDataURL('image/png');
                 downloadFromUrl(pngUrl, filename);
-                URL.revokeObjectURL(url);
+                revokeObjectUrlLater(url);
                 resolve();
             };
 
-            img.onerror = (e) => {
+            img.onerror = () => {
                 URL.revokeObjectURL(url);
-                reject(e);
+                reject(new Error('Could not render card image'));
             };
 
             img.src = url;
@@ -710,34 +703,30 @@ const App: React.FC = () => {
             .filter((card): card is CardExportPayload => Boolean(card));
 
         for (const card of payloads) {
-            const { svg, width, height } = generateCardSvg(card);
-            const fileBase = `slot-${card.index + 1}-${card.name.replace(/\s+/g, '-').toLowerCase()}`;
+            await downloadCardPayload(card, format);
+        }
+    };
 
-            if (format === 'svg') {
-                const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
-                const url = URL.createObjectURL(svgBlob);
-                downloadFromUrl(url, `${fileBase}.svg`);
-                URL.revokeObjectURL(url);
-            } else {
-                await svgStringToPng(svg, width, height, `${fileBase}.png`);
-            }
+    const downloadCardPayload = async (card: CardExportPayload, format: 'svg' | 'png') => {
+        const { svg, width, height } = generateCardSvg(card);
+        const fileBase = toSafeFileName(`slot-${card.index + 1}-${card.name}`, `slot-${card.index + 1}`);
+
+        if (format === 'svg') {
+            downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), `${fileBase}.svg`);
+            return;
+        }
+        try {
+            await svgStringToPng(svg, width, height, `${fileBase}.png`);
+        } catch (err) {
+            console.error(err);
+            showCopyFeedback(t.fail);
         }
     };
 
     const handleDownloadCard = async (format: 'svg' | 'png', index: number) => {
         const card = buildCardExportData(batchColors[index], index, showAlternatives.has(index));
         if (!card) return;
-        const { svg, width, height } = generateCardSvg(card);
-        const fileBase = `slot-${card.index + 1}-${card.name.replace(/\s+/g, '-').toLowerCase()}`;
-
-        if (format === 'svg') {
-            const svgBlob = new Blob([svg], { type: 'image/svg+xml' });
-            const url = URL.createObjectURL(svgBlob);
-            downloadFromUrl(url, `${fileBase}.svg`);
-            URL.revokeObjectURL(url);
-        } else {
-            await svgStringToPng(svg, width, height, `${fileBase}.png`);
-        }
+        await downloadCardPayload(card, format);
     };
 
     const handleCopyAll = () => {
@@ -763,18 +752,20 @@ const App: React.FC = () => {
                 if (settings.showHsb) output.push(`hsb(${s.h}, ${s.s}, ${s.v})`);
                 if (settings.showHsl) output.push(`hsl(${h.h}, ${h.s}%, ${h.l}%)`);
                 if (settings.showLab) output.push(`lab(${Math.round(l.l)}, ${Math.round(l.a)}, ${Math.round(l.b)})`);
-                if (settings.showPmsSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : `${t.outOfGamut} C`);
-                if (settings.showPmsSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : `${t.outOfGamut} U`);
-                if (settings.showPmsC) output.push(matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : `${t.outOfGamut} CP`);
-                if (settings.showPmsU) output.push(matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : `${t.outOfGamut} UP`);
+                if (settings.showRefSolidC) output.push(matchSolidC && matchSolidC.deltaE < 10 ? normalizeRefCode(matchSolidC.reference.code) : `${t.outOfGamut.toUpperCase()} C`);
+                if (settings.showRefSolidU) output.push(matchSolidU && matchSolidU.deltaE < 10 ? normalizeRefCode(matchSolidU.reference.code) : `${t.outOfGamut.toUpperCase()} U`);
+                if (settings.showRefBridgeC) output.push(matchC && matchC.deltaE < 10 ? normalizeRefCode(matchC.reference.code) : `${t.outOfGamut.toUpperCase()} CP`);
+                if (settings.showRefBridgeU) output.push(matchU && matchU.deltaE < 10 ? normalizeRefCode(matchU.reference.code) : `${t.outOfGamut.toUpperCase()} UP`);
 
                 return output.join('\n');
             })
             .join('\n\n');
 
-        navigator.clipboard.writeText(text);
-        setCopyFeedback(t.copyAllSlotsData);
-        setTimeout(() => setCopyFeedback(null), 2000);
+        void copyText(text).then((ok) => showCopyFeedback(ok ? t.copyAllSlotsData : t.copyFailed));
+    };
+
+    const copyValue = (value: string) => {
+        void copyText(value).then((ok) => showCopyFeedback(ok ? `${t.copiedToClipboard} ${value}` : t.copyFailed));
     };
 
     useEffect(() => {
@@ -789,202 +780,249 @@ const App: React.FC = () => {
         return findReferenceMatches(hex, library, 12);
     }, [hex, library]);
 
-    const computedStripColors = useMemo(() => {
-        return computedMatches.map((m) => ({
-            hex: m.reference.hex,
-            name: getClosestColorName(m.reference.hex),
-            refCode: normalizeRefCode(m.reference.code),
-            type: `ΔE ${m.deltaE.toFixed(2)}`
-        }));
-    }, [computedMatches]);
-
     // Keep state in sync for components that read from state
     useEffect(() => {
         setMatches(computedMatches);
-        setStripColors(computedStripColors);
         setAnalysis(null);
-    }, [computedMatches, computedStripColors]);
+    }, [computedMatches]);
 
-    const triggerAiAnalysis = async () => {
-        if (!matches[0]) return;
+    // Latest hex (for discarding stale analysis results) and the hex of the pending request.
+    const currentHexRef = useRef(hex);
+    currentHexRef.current = hex;
+    const analysisRequestRef = useRef<string | null>(null);
+
+    /** `referenceCode` is the code the Matcher is showing, so the notes match it. */
+    const triggerAiAnalysis = async (referenceCode?: string) => {
+        const code = referenceCode || (matches[0] ? matches[0].reference.code : '');
+        if (!code) return;
+        const requestHex = hex;
+        analysisRequestRef.current = requestHex;
         setLoadingAi(true);
         try {
-            const result = await analyzeColor(hex, matches[0].reference.code, language);
-            setAnalysis(result);
+            const result = await analyzeColor(requestHex, code, language);
+            if (analysisRequestRef.current === requestHex && currentHexRef.current === requestHex) {
+                setAnalysis(result);
+            }
+        } catch (err) {
+            console.error(err);
         } finally {
-            setLoadingAi(false);
+            if (analysisRequestRef.current === requestHex) {
+                analysisRequestRef.current = null;
+                setLoadingAi(false);
+            }
         }
     };
 
-    const getPmsC = () => findReferenceMatches(hex, bridgeCoatedLibrary, 1)[0];
-    const getPmsU = () => findReferenceMatches(hex, bridgeUncoatedLibrary, 1)[0];
-    const getPmsSolidC = () => findReferenceMatches(hex, solidCoatedLibrary, 1)[0];
-    const getPmsSolidU = () => findReferenceMatches(hex, solidUncoatedLibrary, 1)[0];
+    // The selected color changed: any in-flight analysis is stale.
+    useEffect(() => {
+        if (analysisRequestRef.current && analysisRequestRef.current !== hex) {
+            analysisRequestRef.current = null;
+            setLoadingAi(false);
+        }
+    }, [hex]);
+
+    const matcherValueRows: MatcherValueRow[] = [
+        { label: 'HEX', value: hex.toUpperCase() },
+        { label: 'RGB', value: formatRgbDisplay(rgb.r, rgb.g, rgb.b) },
+        { label: 'CMYK', value: `${cmyk.c}, ${cmyk.m}, ${cmyk.y}, ${cmyk.k}` },
+        { label: 'LAB', value: `${Math.round(lab.l)}, ${Math.round(lab.a)}, ${Math.round(lab.b)}` },
+        { label: 'HSL', value: `${hsl.h}, ${hsl.s}%, ${hsl.l}%` },
+        { label: 'HSB', value: `${hsv.h}, ${hsv.s}, ${hsv.v}` },
+        { label: 'OKLCH', value: formatOklch(hex) }
+    ];
+
+    /**
+     * The same value rows for any colour: the Matcher uses it to describe the
+     * reference finish it is showing. The reference codes are not repeated
+     * here — they are the finish chips on the match card.
+     */
+    const buildReferenceRows = (refHex: string): MatcherValueRow[] => {
+        if (!isValidHex(refHex)) return [];
+        const refRgb = hexToRgb(refHex);
+        return [
+            settings.showHex ? { label: 'HEX', value: refHex.toUpperCase() } : null,
+            settings.showRgb ? { label: 'RGB', value: formatRgbDisplay(refRgb.r, refRgb.g, refRgb.b) } : null,
+            settings.showCmyk ? (() => { const c = rgbToCmyk(refRgb); return { label: 'CMYK', value: `${c.c}, ${c.m}, ${c.y}, ${c.k}` }; })() : null,
+            settings.showLab ? (() => { const l = hexToLab(refHex); return { label: 'LAB', value: `${Math.round(l.l)}, ${Math.round(l.a)}, ${Math.round(l.b)}` }; })() : null,
+            settings.showHsl ? (() => { const h = rgbToHsl(refRgb); return { label: 'HSL', value: `${h.h}, ${h.s}%, ${h.l}%` }; })() : null,
+            settings.showHsb ? (() => { const h = rgbToHsv(refRgb); return { label: 'HSB', value: `${h.h}, ${h.s}, ${h.v}` }; })() : null
+        ].filter((row): row is MatcherValueRow => row !== null);
+    };
+
+    type TabId = typeof activeTab;
+    const sectionTabs: { value: TabId; label: string }[] = [
+        { value: 'matcher', label: t.matcher },
+        { value: 'generated', label: t.generatedPalettes },
+        { value: 'batch', label: t.multiSlotMatchAnalysis },
+        { value: 'palette', label: t.contrastPalette },
+        { value: 'magic', label: t.paletteMagic },
+        { value: 'guide', label: t.printGuide }
+    ];
+    const sectionTitle = sectionTabs.find((tab) => tab.value === activeTab)?.label ?? t.matcher;
+
+    const languageOptions: { code: Language; label: string }[] = [
+        { code: 'pt', label: t.portuguese },
+        { code: 'en', label: t.english },
+        { code: 'es', label: t.spanish }
+    ];
+
+    const modelToggles: { key: keyof SettingsState; label: string }[] = [
+        { key: 'showHex', label: t.hexadecimal },
+        { key: 'showRgb', label: t.rgbStandard },
+        { key: 'showHsl', label: t.hslWeb },
+        { key: 'showHsb', label: t.hsbHsv },
+        { key: 'showLab', label: t.cieLabHighPrec },
+        { key: 'showCmyk', label: t.cmykProcess }
+    ];
+    const referenceToggles: { key: keyof SettingsState; label: string }[] = [
+        { key: 'showRefSolidC', label: t.refSolidC },
+        { key: 'showRefSolidU', label: t.refSolidU },
+        { key: 'showRefBridgeC', label: t.refBridgeC },
+        { key: 'showRefBridgeU', label: t.refBridgeU }
+    ];
+
+    const renderSwitchRows = (items: { key: keyof SettingsState; label: string }[]) => (
+        <div className="flex flex-col">
+            {items.map((opt, index) => {
+                const on = Boolean(settings[opt.key]);
+                return (
+                    <button
+                        type="button"
+                        key={opt.key}
+                        role="switch"
+                        aria-checked={on}
+                        onClick={() => setSettings((s) => ({ ...s, [opt.key]: !s[opt.key] }))}
+                        className={`flex items-center justify-between gap-4 min-h-11 text-left ${index < items.length - 1 ? 'hairline-b' : ''}`}
+                    >
+                        <span className="text-[14px] text-foreground">{opt.label}</span>
+                        <span className={`w-10 h-[22px] p-0.5 rounded-pill flex items-center shrink-0 transition-colors duration-fast ease-out ${on ? 'bg-primary justify-end' : 'bg-fill-3 justify-start'}`} aria-hidden="true">
+                            <span className={`w-[18px] h-[18px] rounded-pill ${on ? 'bg-primary-foreground' : 'bg-card'}`} />
+                        </span>
+                    </button>
+                );
+            })}
+        </div>
+    );
 
     return (
         <div className="font-sans w-full h-full overflow-y-auto">
             {showSettings && (
                 <div className="fixed inset-0 z-[200] flex justify-end">
-                    <div className="absolute inset-0 bg-card/20 backdrop-blur-sm" onClick={() => setShowSettings(false)}></div>
-                    <div className="relative w-full max-w-[440px] border-l border-border bg-card p-12 shadow-[0_0_100px_rgba(0,0,0,0.05)] h-full animate-in slide-in-from-right duration-500 overflow-y-auto">
-                        <div className="flex justify-between items-center mb-16">
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-3xl font-normal tracking-tighter">{t.settings}</h2>
-                            </div>
-                            <button onClick={() => setShowSettings(false)} className="w-10 h-10 border border-border/60 rounded-full flex items-center justify-center hover:bg-foreground hover:text-background transition-all">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                            </button>
+                    <div className="absolute inset-0 bg-foreground/30" onClick={() => setShowSettings(false)}></div>
+                    <div role="dialog" aria-modal="true" aria-label={t.settings} className="relative w-full max-w-[440px] material-sheet rounded-r-none px-6 py-8 md:p-10 h-full animate-in slide-in-from-right duration-base ease-out overflow-y-auto">
+                        <div className="flex justify-between items-center gap-4 mb-10">
+                            <h2 className="text-[28px] font-normal leading-[1.2] tracking-[-0.01em] text-foreground">{t.settings}</h2>
+                            <IconButton label={t.close} variant="surface" onClick={() => setShowSettings(false)}>
+                                <X aria-hidden="true" />
+                            </IconButton>
                         </div>
 
-                        <div className="space-y-16">
-                            <div>
-                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/70 mb-8 border-b border-border/40 pb-2">{t.language}</h3>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {[
-                                        { code: 'en' as Language, label: t.english, flag: '🇺🇸' },
-                                        { code: 'pt' as Language, label: t.portuguese, flag: '🇧🇷' },
-                                        { code: 'es' as Language, label: t.spanish, flag: '🇪🇸' }
-                                    ].map((lang) => (
-                                        <button
+                        <div className="flex flex-col gap-10">
+                            <section className="flex flex-col gap-4">
+                                <h3 className="label">{t.language}</h3>
+                                <div role="radiogroup" aria-label={t.language} className="flex flex-wrap gap-x-6 gap-y-3">
+                                    {languageOptions.map((lang) => (
+                                        <LegendToggle
                                             key={lang.code}
+                                            role="radio"
+                                            label={lang.label}
+                                            on={language === lang.code}
                                             onClick={() => setLanguage(lang.code)}
-                                            className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${language === lang.code ? 'border-transparent' : 'border-border hover:shadow-sm'}`}
-                                            style={language === lang.code ? { backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--foreground))', borderColor: 'hsl(var(--accent))' } : { backgroundColor: 'hsl(var(--card) / 0.5)' }}
-                                        >
-                                            <span className="text-2xl">{lang.flag}</span>
-                                            <span className="text-[10px] font-bold uppercase tracking-wider">{lang.label}</span>
-                                        </button>
+                                        />
                                     ))}
                                 </div>
-                            </div>
+                            </section>
 
-                            <div>
-                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/70 mb-8 border-b border-border/40 pb-2">{t.visibleColorModels}</h3>
-                                <div className="grid grid-cols-1 gap-4 mb-6">
-                                    {[
-                                        { key: 'showHex', label: t.hexadecimal },
-                                        { key: 'showRgb', label: t.rgbStandard },
-                                        { key: 'showHsl', label: t.hslWeb },
-                                        { key: 'showHsb', label: t.hsbHsv },
-                                        { key: 'showLab', label: t.cieLabHighPrec },
-                                        { key: 'showCmyk', label: t.cmykProcess }
-                                    ].map((opt) => (
-                                        <div
-                                            key={opt.key}
-                                            className="flex items-center justify-between p-4 bg-secondary/40/50 rounded-2xl border border-border/60/50 cursor-pointer group hover:bg-card hover:shadow-sm transition-all"
-                                            onClick={() => setSettings((s) => ({ ...s, [opt.key]: !s[opt.key as keyof SettingsState] }))}
-                                        >
-                                            <span className="text-sm font-medium text-foreground/80">{opt.label}</span>
-                                             <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? '' : 'bg-muted'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: 'hsl(var(--accent))' } : {}}>
-                                                 <div className={`absolute top-1 w-3 h-3 rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1 bg-card'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: 'hsl(var(--foreground))' } : {}}></div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <section className="flex flex-col gap-2">
+                                <h3 className="label">{t.visibleColorModels}</h3>
+                                {renderSwitchRows(modelToggles)}
+                            </section>
 
-                                <div className="space-y-3">
-                                    <p className="text-[10px] font-mono uppercase tracking-[0.3em] text-muted-foreground">REFERENCE LIBRARIES</p>
-                                    {[
-                                        { key: 'showPmsSolidC', label: t.refSolidC },
-                                        { key: 'showPmsSolidU', label: t.refSolidU },
-                                        { key: 'showPmsC', label: t.refBridgeC },
-                                        { key: 'showPmsU', label: t.refBridgeU }
-                                    ].map((opt) => (
-                                        <div
-                                            key={opt.key}
-                                            className="flex items-center justify-between p-4 bg-card rounded-2xl border border-border/70 cursor-pointer group hover:shadow-sm transition-all"
-                                            onClick={() => setSettings((s) => ({ ...s, [opt.key]: !s[opt.key as keyof SettingsState] }))}
-                                        >
-                                            <span className="text-sm font-medium text-foreground/80">{opt.label}</span>
-                                             <div className={`w-10 h-5 rounded-full relative transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? '' : 'bg-muted'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: 'hsl(var(--accent))' } : {}}>
-                                                 <div className={`absolute top-1 w-3 h-3 rounded-full transition-all duration-300 ${settings[opt.key as keyof SettingsState] ? 'left-6' : 'left-1 bg-card'}`} style={settings[opt.key as keyof SettingsState] ? { backgroundColor: 'hsl(var(--foreground))' } : {}}></div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
+                            <section className="flex flex-col gap-2">
+                                <h3 className="label">{t.referenceLibraries}</h3>
+                                {renderSwitchRows(referenceToggles)}
+                            </section>
 
-                            <div>
-                                <h3 className="font-mono text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground/70 mb-8 border-b border-border/40 pb-2">{t.mixedFormatSyntax}</h3>
-                                <div className="space-y-3">
+                            <section className="flex flex-col gap-4">
+                                <h3 className="label">{t.mixedFormatSyntax}</h3>
+                                <div role="radiogroup" aria-label={t.mixedFormatSyntax} className="flex flex-col gap-3">
                                     {['R=80, G=184, B=72', 'RGB 80, 184, 72', 'rgb(80, 184, 72)'].map((fmt) => (
-                                        <label
+                                        <LegendToggle
                                             key={fmt}
-                                            className="flex items-center gap-4 cursor-pointer p-4 rounded-2xl hover:bg-secondary/40 transition-all border border-transparent hover:border-border/60"
-                                        >
-                                            <div className="relative flex items-center justify-center">
-                                                <input
-                                                    type="radio"
-                                                    name="mixFormat"
-                                                    className="sr-only"
-                                                    checked={settings.mixFormat === fmt}
-                                                    onChange={() => setSettings((s) => ({ ...s, mixFormat: fmt }))}
-                                                />
-                                                <div className={`w-6 h-6 rounded-full border-2 transition-all ${settings.mixFormat === fmt ? 'border-foreground bg-foreground' : 'border-border'}`}></div>
-                                                {settings.mixFormat === fmt && <div className="absolute w-2 h-2 bg-card rounded-full"></div>}
-                                            </div>
-                                            <span className={`text-sm font-mono transition-colors ${settings.mixFormat === fmt ? 'text-foreground font-bold' : 'text-muted-foreground'}`}>
-                                                {fmt}
-                                            </span>
-                                        </label>
+                                            role="radio"
+                                            label={<span className="tabular">{fmt}</span>}
+                                            on={settings.mixFormat === fmt}
+                                            onClick={() => setSettings((s) => ({ ...s, mixFormat: fmt }))}
+                                        />
                                     ))}
                                 </div>
-                            </div>
+                            </section>
                         </div>
 
-                        <div className="mt-24 pt-8 border-t border-border/60">
-                            <p className="text-[10px] font-mono text-muted-foreground leading-relaxed uppercase tracking-widest">{t.changesAppliedRealtime}</p>
-                        </div>
+                        <p className="mt-12 text-[12px] text-muted-foreground">{t.changesAppliedRealtime}</p>
                     </div>
                 </div>
             )}
 
             {copyFeedback && (
-                <div className="fixed top-4 right-4 bg-foreground text-background px-4 py-2 text-xs font-mono font-bold uppercase z-[250] shadow-2xl">
+                <div role="status" className="fixed top-4 right-4 material-popover materialize px-4 py-2.5 text-[13px] text-foreground z-[250]">
                     {copyFeedback}
                 </div>
             )}
 
-            <header className="tool-subheader">
-                <div className="max-w-[1600px] mx-auto w-full space-y-4">
-                    <div className="flex flex-wrap items-center justify-between gap-4 md:gap-6">
-                        <div className="flex items-center gap-4 md:gap-6">
-                            <nav className="flex items-center gap-5 md:gap-7">
-                                <button onClick={() => setActiveTab('matcher')} className={`nav-tab ${activeTab === 'matcher' ? 'is-active' : ''}`}>{t.matcher}</button>
-                                <button onClick={() => setActiveTab('batch')} className={`nav-tab ${activeTab === 'batch' ? 'is-active' : ''}`}>{t.multiSlotMatchAnalysis}</button>
-                                <button onClick={() => setActiveTab('palette')} className={`nav-tab ${activeTab === 'palette' ? 'is-active' : ''}`}>{t.contrastPalette}</button>
-                                <button onClick={() => setActiveTab('generated')} className={`nav-tab ${activeTab === 'generated' ? 'is-active' : ''}`}>{t.generatedPalettes}</button>
-                                <button onClick={() => setActiveTab('magic')} className={`nav-tab ${activeTab === 'magic' ? 'is-active' : ''}`}>{t.paletteMagic}</button>
-                                <button onClick={() => setActiveTab('guide')} className={`nav-tab ${activeTab === 'guide' ? 'is-active' : ''}`}>{t.printGuide}</button>
-                            </nav>
-                        </div>
+            {/* Title row: the section name is the page title, the text tabs switch it. */}
+            <div className="max-w-[1240px] mx-auto px-5 md:px-10 pt-6 md:pt-8 w-full">
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+                    <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 min-w-0">
+                        <h1 className="text-[30px] md:text-[40px] font-normal leading-[1.1] tracking-[-0.015em] text-foreground">
+                            {sectionTitle}
+                        </h1>
+                        <nav aria-label="Breadcrumb" className="flex items-center gap-2.5 text-[14px] text-muted-foreground">
+                            <span>UNBSCOLOR</span>
+                            <span className="text-separator-strong" aria-hidden="true">/</span>
+                            <span className="text-foreground/70">{sectionTitle}</span>
+                        </nav>
+                    </div>
 
-                        <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-end text-[10px] font-mono">
-                            <PaletteGenerator
-                                onColorSelect={handleHexChange}
-                                onPaletteDetected={(colors) => {
-                                    setBatchColors(colors);
-                                    handleHexChange(colors[0]);
-                                }}
-                            />
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                        <PaletteGenerator
+                            onColorSelect={handleHexChange}
+                            onPaletteDetected={(colors) => {
+                                if (!colors || colors.length === 0) return;
+                                setBatchColors(colors);
+                                handleHexChange(colors[0]);
+                            }}
+                        />
 
-                            <button
-                                onClick={() => setShowSettings(true)}
-                                className="h-7 w-7 border border-[#232323]/30 bg-white text-[#232323] flex items-center justify-center shrink-0 hover:bg-[#F7E043]/40"
-                                title={t.settings}
-                                aria-label={t.settings}
-                            >
-                                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.4 13.5a7.97 7.97 0 000-3l1.4-1.1a.9.9 0 00.2-1.2l-1.6-2.7a.9.9 0 00-1.1-.4l-1.6.6a8 8 0 00-2.6-1.5l-.2-1.7A.9.9 0 0013 2h-3a.9.9 0 00-.9.8l-.2 1.7a8 8 0 00-2.6 1.5l-1.6-.6a.9.9 0 00-1.1.4L2 8.2a.9.9 0 00.2 1.2l1.4 1.1a7.97 7.97 0 000 3L2.2 14.6a.9.9 0 00-.2 1.2l1.6 2.7a.9.9 0 001.1.4l1.6-.6a8 8 0 002.6 1.5l.2 1.7A.9.9 0 0010 22h3a.9.9 0 00.9-.8l.2-1.7a8 8 0 002.6-1.5l1.6.6a.9.9 0 001.1-.4l1.6-2.7a.9.9 0 00-.2-1.2l-1.4-1.1z" />
-                                </svg>
-                            </button>
-                        </div>
+                        {/* Language stays reachable from the title row, not buried in Settings. */}
+                        <select
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value as Language)}
+                            className="field w-auto shrink-0 h-10 pl-3.5 pr-8 text-[14px]"
+                            title={t.language}
+                            aria-label={t.language}
+                        >
+                            {languageOptions.map((lang) => (
+                                <option key={lang.code} value={lang.code}>{lang.label}</option>
+                            ))}
+                        </select>
+
+                        <IconButton label={t.settings} variant="surface" onClick={() => setShowSettings(true)}>
+                            <Settings2 aria-hidden="true" />
+                        </IconButton>
                     </div>
                 </div>
-            </header>
 
-            <main className="max-w-[1600px] mx-auto px-8 pb-20 pt-8 w-full flex-grow">
+                <TextTabs<TabId>
+                    className="mt-6 md:mt-8"
+                    ariaLabel={t.sections}
+                    items={sectionTabs}
+                    value={activeTab}
+                    onChange={setActiveTab}
+                />
+            </div>
+
+            <main className="max-w-[1240px] mx-auto px-5 md:px-10 pb-24 pt-8 md:pt-10 w-full flex-grow">
                 {activeTab === 'guide' ? (
                     <ColorGuide selectedHex={hex} batchColors={batchColors} />
                 ) : activeTab === 'magic' ? (
@@ -1019,202 +1057,35 @@ const App: React.FC = () => {
                         }}
                     />
                 ) : (
-                    <>
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 mt-4 mb-12">
-                            <div className="lg:col-span-5">
-                                <h2 className="font-mono text-sm font-medium mb-8">{t.color}</h2>
-                                <input
-                                    type="text"
-                                    value={hex}
-                                    onChange={(e) => handleHexChange(e.target.value)}
-                                    className="text-7xl md:text-8xl font-sans font-normal tracking-tighter outline-none w-full bg-transparent placeholder-gray-200"
-                                    maxLength={7}
-                                />
-                                <div className="mb-12 font-mono text-muted-foreground uppercase tracking-widest text-sm">{getClosestColorName(hex)}</div>
-
-                                <div className="space-y-6 max-w-md">
-                                    {['r', 'g', 'b'].map((channel) => (
-                                        <div key={channel} className="flex items-center gap-4">
-                                            <span className="font-mono text-xs font-bold uppercase w-4">{channel}</span>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="255"
-                                                value={rgb[channel as keyof RGB]}
-                                                onChange={(e) => handleRgbChange(channel as 'r' | 'g' | 'b', Number(e.target.value))}
-                                                className="w-full h-[2px] bg-muted appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-foreground [&::-webkit-slider-thumb]:rounded-full hover:[&::-webkit-slider-thumb]:scale-110 transition-transform"
-                                            />
-                                            <span className="font-mono text-xs w-8 text-right text-muted-foreground">{rgb[channel as keyof RGB]}</span>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="mt-10 grid grid-cols-2 gap-x-6 gap-y-3 text-sm font-mono text-foreground/80 uppercase tracking-tight">
-                                    <span className="text-muted-foreground">HEX</span>
-                                    <span className="text-left text-foreground">{hex.toUpperCase()}</span>
-                                    <span className="text-muted-foreground">RGB</span>
-                                    <span className="text-left text-foreground">{formatRgbDisplay(rgb.r, rgb.g, rgb.b)}</span>
-                                    <span className="text-muted-foreground">CMYK</span>
-                                    <span className="text-left text-foreground">{cmyk.c}, {cmyk.m}, {cmyk.y}, {cmyk.k}</span>
-                                    <span className="text-muted-foreground">LAB</span>
-                                    <span className="text-left text-foreground">{Math.round(lab.l)}, {Math.round(lab.a)}, {Math.round(lab.b)}</span>
-                                    <span className="text-muted-foreground">HSL</span>
-                                    <span className="text-left text-foreground">{hsl.h}, {hsl.s}%, {hsl.l}%</span>
-                                    <span className="text-muted-foreground">HSB</span>
-                                    <span className="text-left text-foreground">{hsv.h}, {hsv.s}, {hsv.v}</span>
-                                </div>
-                            </div>
-
-                            <div className="lg:col-span-7">
-                                <div className="flex items-center gap-3 mb-8 flex-wrap">
-                                    <h2 className="font-mono text-sm font-medium">{t.matchCie2000}</h2>
-                                    {!showRefMatch && matches[0] && (
-                                        <button
-                                            onClick={() => setShowRefMatch(true)}
-                                            className="px-3 py-2 text-[10px] font-mono font-bold uppercase tracking-widest border border-border bg-card rounded-lg hover:border-foreground hover:text-foreground transition-all"
-                                        >
-                                            {t.analyzeWithAi}
-                                        </button>
-                                    )}
-                                </div>
-                                <div className="flex flex-col md:flex-row gap-12 items-start">
-                                    <div className="flex flex-col items-center">
-                                        <div className="flex gap-8 items-center mb-6">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-inner" style={{ backgroundColor: hex }}></div>
-                                                <span className="font-mono text-xs text-muted-foreground">{getClosestColorName(hex)}</span>
-                                            </div>
-                                            {showRefMatch && matches[0] ? (
-                                                <>
-                                                    <span className="text-muted-foreground/70 text-2xl">→</span>
-                                                    <div className="flex flex-col items-center gap-3">
-                                                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full shadow-inner" style={{ backgroundColor: matches[0].reference.hex }}></div>
-                                                        <span className="font-mono text-xs text-muted-foreground">{normalizeRefCode(matches[0].reference.code)}</span>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="flex flex-col items-center gap-3 text-muted-foreground/70">
-                                                    <div className="w-24 h-24 md:w-32 md:h-32 rounded-full border border-dashed border-border flex items-center justify-center text-[10px] font-mono uppercase tracking-[0.2em]">
-                                                        Reference
-                                                    </div>
-                                                    <span className="font-mono text-[10px] uppercase tracking-[0.2em]">{t.analyzeWithAi}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex items-start gap-12 w-full mt-8">
-                                            <div className="flex flex-col">
-                                                <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4">DELTA E 00</span>
-                                                <span className="text-6xl font-light tracking-tighter">{showRefMatch && matches[0] ? matches[0].deltaE.toFixed(2) : '--'}</span>
-                                            </div>
-                                            {showRefMatch && matches[0] && (
-                                                <div className="flex flex-col gap-1 border-l border-border/60 pl-8">
-                                                    <span className="font-bold text-sm mb-1">{getClosestColorName(matches[0].reference.hex)}</span>
-                                                    <div className="font-mono text-[11px] text-muted-foreground space-y-1.5">
-                                                        {settings.showHex && <p className="text-muted-foreground mb-1">{matches[0].reference.hex}</p>}
-                                                        {settings.showRgb && <p>{formatRgbDisplay(matches[0].reference.rgb.r, matches[0].reference.rgb.g, matches[0].reference.rgb.b)}</p>}
-                                                        {settings.showCmyk && (
-                                                            <p className="uppercase">
-                                                                CMYK: {rgbToCmyk(matches[0].reference.rgb).c}, {rgbToCmyk(matches[0].reference.rgb).m}, {rgbToCmyk(matches[0].reference.rgb).y}, {rgbToCmyk(matches[0].reference.rgb).k}
-                                                            </p>
-                                                        )}
-                                                        {settings.showLab && <p>LAB: {Math.round(hexToLab(matches[0].reference.hex).l)}, {Math.round(hexToLab(matches[0].reference.hex).a)}, {Math.round(hexToLab(matches[0].reference.hex).b)}</p>}
-                                                        {settings.showHsl && <p>HSL: {rgbToHsl(matches[0].reference.rgb).h}, {rgbToHsl(matches[0].reference.rgb).s}, {rgbToHsl(matches[0].reference.rgb).l}</p>}
-                                                        {settings.showHsb && <p>HSB: {rgbToHsv(matches[0].reference.rgb).h}, {rgbToHsv(matches[0].reference.rgb).s}, {rgbToHsv(matches[0].reference.rgb).v}</p>}
-
-                                                        {settings.showPmsSolidC && (
-                                                            <div className="mt-4 pt-3 border-t border-border/40">
-                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refSolidC}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsSolidC()?.reference.code) || t.outOfGamut}</span>
-                                                            </div>
-                                                        )}
-                                                        {settings.showPmsSolidU && (
-                                                            <div className={`${!settings.showPmsSolidC ? 'mt-4 pt-3 border-t border-border/40' : 'mt-2'}`}>
-                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refSolidU}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsSolidU()?.reference.code) || t.outOfGamut}</span>
-                                                            </div>
-                                                        )}
-                                                        {settings.showPmsC && (
-                                                            <div className="mt-2 pt-3 border-t border-border/40">
-                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeC}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsC()?.reference.code) || t.outOfGamut}</span>
-                                                            </div>
-                                                        )}
-                                                        {settings.showPmsU && (
-                                                            <div className="mt-2 pt-3 border-t border-border/40">
-                                                                <span className="text-[9px] font-bold text-muted-foreground/70 uppercase block mb-1">{t.refBridgeU}</span>
-                                                                <span className="font-bold text-xs uppercase tracking-tight text-foreground">{normalizeRefCode(getPmsU()?.reference.code) || t.outOfGamut}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-2 w-full md:w-auto ml-auto">
-                                        <span className="font-mono text-xs text-muted-foreground uppercase mb-4 tracking-widest">{t.actions}</span>
-                                        <button
-                                            onClick={() => handleHexChange(rgbToHex((Math.random() * 255) | 0, (Math.random() * 255) | 0, (Math.random() * 255) | 0))}
-                                             className="px-6 py-4 text-left font-mono text-xs transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'; e.currentTarget.style.color = 'hsl(var(--foreground))'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}
-                                         >
-                                             {t.randomizeColor}
-                                         </button>
-                                         <button
-                                             onClick={triggerAiAnalysis}
-                                             disabled={loadingAi}
-                                             className="px-6 py-4 text-left font-mono text-xs transition-colors" style={{ backgroundColor: 'rgba(255,255,255,0.5)' }} onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'hsl(var(--accent))'; e.currentTarget.style.color = 'hsl(var(--foreground))'; }} onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.5)'; e.currentTarget.style.color = ''; }}
-                                        >
-                                            {loadingAi ? t.thinking : t.analyzeWithAi}
-                                        </button>
-                                        {analysis && (
-                                            <div className="mt-4 p-6 bg-secondary/40 border border-border/60 rounded-lg animate-in fade-in slide-in-from-top-2 duration-500 max-w-xs">
-                                                <h3 className="font-mono text-[10px] font-bold text-foreground mb-3 uppercase tracking-widest">{t.aiResult}</h3>
-                                                <p className="text-sm italic text-foreground/80 leading-relaxed mb-4">"{analysis.description}"</p>
-                                                <p className="text-[10px] font-bold text-muted-foreground uppercase mb-2">
-                                                    {t.mood}: {analysis.psychology}
-                                                </p>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {analysis.usageTips.map((tip, i) => (
-                                                        <span key={i} className="px-2 py-1 bg-card border border-border text-[9px] font-mono">
-                                                            {tip}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mb-12">
-                            <h3 className="font-mono text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">{t.nearbyRefs}</h3>
-                            <SwatchStrip colors={stripColors} selectedHex={hex} onSelect={handleHexChange} showRefMatch={showRefMatch} />
-                        </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-y-12 gap-x-8 border-t border-border/60 pt-12 mb-16">
-                            <InfoGrid
-                                rgb={rgb}
-                                cmyk={cmyk}
-                                hsl={hsl}
-                                analysis={analysis}
-                                onCmykChange={handleCmykChange}
-                                onHslChange={handleHslChange}
-                                onRgbChange={handleRgbChange}
-                            />
-                        </div>
-
-                        <SimilarityGrid matches={matches} selectedHex={hex} onSelect={handleHexChange} showRefMatch={showRefMatch} />
-                    </>
+                    <MatcherView
+                        t={t}
+                        hex={hex}
+                        rgb={rgb}
+                        cmyk={cmyk}
+                        hsl={hsl}
+                        valueRows={matcherValueRows}
+                        buildReferenceRows={buildReferenceRows}
+                        showRefMatch={showRefMatch}
+                        analysis={analysis}
+                        loadingAi={loadingAi}
+                        onSearchReference={(referenceCode) => { setShowRefMatch(true); void triggerAiAnalysis(referenceCode); }}
+                        onHexChange={handleHexChange}
+                        onRgbChange={handleRgbChange}
+                        onCmykChange={handleCmykChange}
+                        onHslChange={handleHslChange}
+                        onRandomize={() => handleHexChange(rgbToHex(Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)))}
+                        onCopy={copyValue}
+                        onFeedback={showCopyFeedback}
+                    />
                 )}
             </main>
 
-            <footer className="py-8 text-center border-t border-border mt-auto">
+            <footer className="pb-10 text-center mt-auto">
                 <a
                     href="https://www.instagram.com/unbserved/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-[10px] font-bold text-muted-foreground hover:text-foreground tracking-widest uppercase transition-colors"
+                    className="text-[12px] text-muted-foreground hover:text-foreground transition-colors duration-fast ease-out"
                 >
                     {t.poweredBy}
                 </a>

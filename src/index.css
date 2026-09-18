@@ -1,335 +1,824 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* BDO Grotesk, the design system's one family, vendored one file per weight.
+   Vite resolves the .otf urls inside this file and emits them as build assets,
+   so the app makes no webfont request at all. Monospace, used only for values,
+   is the platform stack the system names. */
+@import url('../design-system/tokens/fonts.css');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ========================================
-   PP FORMULA / FUJI / NEUEBIT — Custom fonts
-   TODO: drop the .otf/.ttf files in /public/fonts to enable.
-   Inter (Google Fonts) acts as fallback.
-   ========================================
-@font-face {
-  font-family: 'PP Formula Condensed';
-  src: url('/fonts/PPFormulaCondensed-Regular.otf') format('opentype');
-  font-weight: 400; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'PP Formula Condensed';
-  src: url('/fonts/PPFormulaCondensed-Bold.otf') format('opentype');
-  font-weight: 700; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'PP Fuji';
-  src: url('/fonts/PPFuji-Light.ttf') format('truetype');
-  font-weight: 300; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'PP NeueBit';
-  src: url('/fonts/PPNeueBit-Bold.ttf') format('truetype');
-  font-weight: 700; font-style: normal; font-display: swap;
-}
-*/
+/* ============================================================
+   UNBS SUITE — running on the UNBSTOOLS design system.
 
-/* ========================================
-   UNBSERVED — DESIGN SYSTEM v2
-   Sage / Lime. Brutally curated.
-   ======================================== */
+   The values below are the system, converted into the token names
+   this app already uses, so every shadcn and tool component picks it
+   up without being rewritten. The source of truth, with the hexes and
+   the reasoning, is design-system/ (see its README.md).
+
+   The rules that matter, restated where they are enforced:
+   - Yellow is a pointer, not paint: the committing button, the positive
+     delta, the highlighted bar. Selection is black fill, white glyph.
+   - One family, BDO Grotesk. One tracked style, the micro label.
+   - Corners are symmetric: 6 / 10 / 12 / 16 / 20 / pill.
+   - Motion is 90-320ms, flat, no bounce.
+   ============================================================ */
 
 @layer base {
   :root {
-    /* Sage / Olive */
-    --background: 60 10% 90%;
-    --foreground: 0 0% 13.7%;
+    /* ---- Color — UNBSTOOLS ramp, converted to the HSL triplets Tailwind reads.
+       Hex values and their names live in design-system/tokens/colors.css. ---- */
+    --background: 240 6.7% 94.1%;     /* canvas-100 #EFEFF1 — the page is off-white so white cards read as raised */
+    --foreground: 0 0% 0%;            /* ink-900 */
 
-    --card: 60 10% 95%;
-    --card-foreground: 0 0% 13.7%;
+    --card: 0 0% 100%;                /* surface-000 */
+    --card-foreground: 0 0% 0%;
 
-    --popover: 60 10% 95%;
-    --popover-foreground: 0 0% 13.7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
 
-    --primary: 0 0% 13.7%;
-    --primary-foreground: 60 10% 95%;
+    --primary: 0 0% 0%;               /* black fill, white glyph = the system's selected/committing state */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 60 8% 85%;
-    --secondary-foreground: 0 0% 13.7%;
+    --secondary: 240 4% 95.1%;        /* surface-100 #F2F2F3 — field / chip */
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 60 8% 80%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 240 6.7% 97.1%;          /* surface-050 #F7F7F8 — quiet card */
+    --muted-foreground: 260 1.4% 43.3%; /* ink-500 #6E6D70 */
 
-    --accent: 66 100% 50%;
-    --accent-foreground: 0 0% 13.7%;
+    /* The one saturated colour. Used as a pointer, never as paint: the
+       committing button, the positive delta, the highlighted bar. */
+    --accent: 63.5 100% 50%;           /* yellow-400 #F0FF00, the Unserved yellow */
+    --accent-foreground: 0 0% 0%;     /* black on the yellow is 19:1 */
+    --accent-lime: 63.5 100% 50%;      /* kept as an alias: older markup still names it */
+    --accent-hover: 63.2 100% 43.9%;   /* yellow-500 #D4E000 — hover is one step darker */
+    --accent-quiet: 64.6 100% 94.9%;  /* yellow-050 #FDFFE5 */
+    --accent-ink: 64.1 100% 20%;      /* yellow-600 #5F6600 — the only step that may carry text */
 
-    --destructive: 0 84% 60%;
+    /* Interactive text is ink, not the signal colour (yellow on white is 1.1:1). */
+    --tint: 0 0% 0%;
+    --tint-foreground: 0 0% 100%;
+
+    /* The system defines no red, amber or blue. Destructive is kept anyway:
+       an interface that deletes files needs a colour for it. */
+    --destructive: 4 82% 56%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 160 60% 45%;
-    --warning: 38 92% 50%;
-    --info: 217 91% 60%;
+    --success: 64.1 100% 20%;         /* positive = the yellow ink step, per the system */
+    --warning: 36 92% 50%;
+    --info: 260 1.4% 43.3%;           /* informational text stays neutral ink */
 
-    --border: 60 5% 75%;
-    --input: 60 5% 75%;
-    --ring: 0 0% 13.7%;
+    /* Separators & fills — alpha ramps on ink */
+    --separator: 260 4.2% 86.1% / 1;      /* hairline #DBDADD */
+    --separator-strong: 270 1.2% 66.7% / 1; /* ink-300 */
+    --fill: 0 0% 0% / 0.04;
+    --fill-2: 0 0% 0% / 0.06;
+    --fill-3: 0 0% 0% / 0.10;
 
-    --radius: 0.75rem;
+    --border: 260 6.7% 91.2%;         /* hairline-soft #E8E7EA */
+    --input: 260 4.2% 86.1%;          /* hairline */
+    --ring: 63.5 100% 50%;             /* yellow-400 — the 3px focus ring */
 
-    --accent-lime: 66 100% 50%;
+    /* ---- Radii: 6 / 10 / 12 / 16 / 20, always symmetric ---- */
+    --radius-xs: 6px;
+    --radius-sm: 10px;
+    --radius: 12px;            /* controls, icon buttons, fields */
+    --radius-lg: 16px;         /* cards */
+    --radius-xl: 20px;         /* panels, sheets */
+    --radius-pill: 999px;
 
-    --surface-primary: 60 10% 95%;
-    --surface-secondary: 60 8% 88%;
-    --surface-tertiary: 60 6% 82%;
+    /* ---- Materials: blur only for things floating over content ---- */
+    --material-chrome: 0 0% 100% / 0.78;
+    --material-sidebar: 240 6.7% 97.1% / 0.88;
+    --material-card: 0 0% 100%;
+    --material-blur: 14px;
 
-    --shadow-floating: 0 4px 18px -4px hsl(0 0% 0% / 0.10);
+    /* Four steps, neutral and low-opacity: separation is usually a hairline. */
+    --shadow-card: none;              /* cards sit flat: white on off-white plus one hairline, no drop shadow */
+    --shadow-floating: 0 8px 24px rgb(0 0 0 / 0.06);
+    --shadow-sheet: 0 18px 48px rgb(0 0 0 / 0.09);
+    --shadow-inset-top: inset 0 1px 0 hsl(0 0% 100% / 0.5);
 
-    --canvas: 60 10% 88%;
-    --surface: 60 10% 95%;
-    --surface-hover: 60 8% 90%;
+    /* ---- Motion: short, flat, no bounce ---- */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1); /* alias: the system has no spring */
+    --dur-instant: 90ms;
+    --dur-fast: 140ms;
+    --dur-base: 200ms;
+    --dur-slow: 320ms;
 
-    --sidebar-background: 60 10% 95%;
-    --sidebar-foreground: 0 0% 13.7%;
-    --sidebar-primary: 0 0% 13.7%;
-    --sidebar-primary-foreground: 60 10% 95%;
-    --sidebar-accent: 60 8% 85%;
-    --sidebar-accent-foreground: 0 0% 13.7%;
-    --sidebar-border: 60 5% 75%;
-    --sidebar-ring: 0 0% 13.7%;
-
-    /* Layout */
-    --content-max: 1400px;
-    --page-gutter: clamp(16px, 4vw, 48px);
-    --edge-gutter: clamp(24px, 4vw, 64px);
-
-    /* Card sizes */
+    /* ---- Layout: 4px grid, 1240 max, 40px gutter (20 on mobile) ---- */
+    --content-max: 1240px;
+    --page-gutter: clamp(20px, 4vw, 40px);
+    --edge-gutter: clamp(20px, 4vw, 40px);
     --card-min: 280px;
     --card-max: 320px;
     --card-project-min: 300px;
     --card-project-max: 360px;
+    --grid-gap: 20px;          /* gap-card */
 
-    --grid-gap: clamp(16px, 2vw, 24px);
+    /* The measurements the system states outright */
+    --pad-card: 24px;
+    --pad-card-tight: 16px;
+    --rhythm-section: 64px;
+    --rhythm-section-lg: 96px;
+    --control-h-sm: 32px;
+    --control-h: 40px;
+    --control-h-lg: 48px;
+    --control-square: 52px;    /* nav / toolbar square, with an 18px glyph */
+    --icon-sm: 14px;
+    --icon: 18px;
+    --icon-lg: 24px;
+
+    --canvas: 240 4.2% 90.6%;  /* canvas-200 #E6E6E8 — recessed frame around a mock or canvas */
+    --surface: 0 0% 100%;
+    --surface-hover: 240 4% 95.1%;
+    --surface-primary: 0 0% 100%;
+    --surface-secondary: 240 6.7% 97.1%;
+    --surface-tertiary: 240 4% 95.1%;
+
+    --sidebar-background: 240 6.7% 97.1%;
+    --sidebar-foreground: 0 0% 0%;
+    --sidebar-primary: 0 0% 0%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 95.1%;
+    --sidebar-accent-foreground: 0 0% 0%;
+    --sidebar-border: 260 6.7% 91.2%;
+    --sidebar-ring: 63.5 100% 50%;
+
+    color-scheme: light;
   }
 
   .dark {
-    --background: 60 3% 8%;
-    --foreground: 60 10% 95%;
+    --background: 240 4% 7%;
+    --foreground: 60 6% 95%;
 
-    --card: 60 3% 12%;
-    --card-foreground: 60 10% 95%;
+    --card: 240 4% 11%;
+    --card-foreground: 60 6% 95%;
 
-    --popover: 60 3% 12%;
-    --popover-foreground: 60 10% 95%;
+    --popover: 240 4% 12%;
+    --popover-foreground: 60 6% 95%;
 
-    --primary: 60 10% 95%;
-    --primary-foreground: 60 3% 8%;
+    --primary: 60 6% 95%;
+    --primary-foreground: 240 4% 7%;
 
-    --secondary: 60 3% 18%;
-    --secondary-foreground: 60 10% 95%;
+    --secondary: 240 4% 16%;
+    --secondary-foreground: 60 6% 95%;
 
-    --muted: 60 3% 22%;
-    --muted-foreground: 60 5% 60%;
+    --muted: 240 4% 15%;
+    --muted-foreground: 240 4% 62%;
 
-    --accent: 66 100% 50%;
-    --accent-foreground: 0 0% 10%;
+    /* The system ships no dark theme; this one keeps its rules — one signal
+       colour, ink for everything else — with the ramp inverted. On dark the
+       yellow reads well as text, so no darker step is needed. */
+    --accent: 63.5 100% 50%;
+    --accent-foreground: 0 0% 0%;
+    --accent-lime: 63.5 100% 50%;
+    --accent-hover: 64.1 100% 80%; /* on dark, hover goes one step lighter */
+    --accent-quiet: 64.1 100% 20%;
+    --accent-ink: 64.1 100% 80%;
 
-    --destructive: 0 62% 30%;
-    --destructive-foreground: 60 10% 95%;
+    --tint: 60 6% 95%;
+    --tint-foreground: 240 6% 8%;
+    --success: 64.1 100% 80%;
 
-    --border: 60 3% 25%;
-    --input: 60 3% 25%;
-    --ring: 60 10% 95%;
+    --destructive: 4 78% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --accent-lime: 66 100% 50%;
+    --separator: 60 6% 95% / 0.12;
+    --separator-strong: 60 6% 95% / 0.22;
+    --fill: 60 6% 95% / 0.06;
+    --fill-2: 60 6% 95% / 0.10;
+    --fill-3: 60 6% 95% / 0.15;
 
-    --surface-primary: 60 3% 8%;
-    --surface-secondary: 60 3% 12%;
-    --surface-tertiary: 60 3% 16%;
+    --border: 240 4% 20%;
+    --input: 240 4% 22%;
+    --ring: 63.5 100% 50%;
 
-    --shadow-floating: 0 4px 24px -4px hsl(0 0% 0% / 0.6);
+    --material-chrome: 240 4% 9% / 0.72;
+    --material-sidebar: 240 4% 10% / 0.88;
+    --material-card: 240 4% 11%;
 
-    --canvas: 60 3% 10%;
-    --surface: 60 3% 14%;
-    --surface-hover: 60 3% 18%;
+    --shadow-card: none;
+    --shadow-floating: 0 2px 6px hsl(0 0% 0% / 0.4), 0 18px 40px -16px hsl(0 0% 0% / 0.7);
+    --shadow-sheet: 0 24px 64px -20px hsl(0 0% 0% / 0.8);
+    --shadow-inset-top: inset 0 1px 0 hsl(0 0% 100% / 0.08);
 
-    --sidebar-background: 60 3% 8%;
-    --sidebar-foreground: 60 10% 95%;
-    --sidebar-primary: 60 10% 95%;
-    --sidebar-primary-foreground: 60 3% 8%;
-    --sidebar-accent: 60 3% 16%;
-    --sidebar-accent-foreground: 60 10% 95%;
-    --sidebar-border: 60 3% 22%;
-    --sidebar-ring: 60 10% 95%;
+    --canvas: 240 4% 9%;
+    --surface: 240 4% 11%;
+    --surface-hover: 240 4% 14%;
+    --surface-primary: 240 4% 11%;
+    --surface-secondary: 240 4% 13%;
+    --surface-tertiary: 240 4% 16%;
+
+    --sidebar-background: 240 4% 10%;
+    --sidebar-foreground: 60 6% 95%;
+    --sidebar-primary: 60 6% 95%;
+    --sidebar-primary-foreground: 240 4% 7%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 60 6% 95%;
+    --sidebar-border: 240 4% 20%;
+    --sidebar-ring: 63.5 100% 50%;
+
+    color-scheme: dark;
   }
 }
 
+/* ============================================================
+   BASE
+   ============================================================ */
 @layer base {
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: hsl(var(--foreground) / 0.15); border-radius: 999px; }
-  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--foreground) / 0.28); }
-  html { scrollbar-width: thin; scrollbar-color: hsl(var(--foreground) / 0.15) transparent; }
-
-  * {
-    @apply border-border;
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--foreground) / 0.18);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
+  ::-webkit-scrollbar-thumb:hover { background-color: hsl(var(--foreground) / 0.32); }
+  html { scrollbar-width: thin; scrollbar-color: hsl(var(--foreground) / 0.18) transparent; }
 
-  html.no-transition,
-  html.no-transition * {
-    transition: none !important;
-  }
+  * { @apply border-border; }
+
+  html.no-transition, html.no-transition * { transition: none !important; }
 
   html {
-    scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    text-rendering: optimizeLegibility;
+    font-optical-sizing: auto;
     overflow-x: hidden;
     max-width: 100vw;
+    transition: background-color var(--dur-slow) var(--ease-out), color var(--dur-slow) var(--ease-out);
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 13px;
-    line-height: 1.55;
+    @apply bg-background text-foreground;
+    /* One family, BDO Grotesk, for every piece of interface text. */
+    font-family: "BDO Grotesk", system-ui, sans-serif;
+    /* The system's body is 16px; these tools are dense (sidebars, tables,
+       legends), which is exactly what its 14px body-s step is for. */
+    font-size: 14px;
+    line-height: 1.35;
     letter-spacing: 0;
+    font-feature-settings: "kern";
     overflow-x: hidden;
     width: 100%;
     max-width: 100vw;
   }
 
+  /* Type scale: 36 / 28 / 24 / 16, tracking only ever negative on headlines */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-weight: 600;
-    letter-spacing: 0;
-    line-height: 1.15;
-    text-transform: uppercase;
+    text-transform: none;
+    line-height: 1.14;
+    letter-spacing: -0.01em;
+  }
+  h1 { font-size: 36px; }
+  h2 { font-size: 28px; font-weight: 400; line-height: 1.2; }
+  h3 { font-size: 24px; font-weight: 400; line-height: 1.35; }
+  h4 { font-size: 16px; }
+  h5, h6 { font-size: 14px; letter-spacing: 0; }
+
+  small, .text-caption { letter-spacing: 0.01em; }
+
+  code, kbd, samp, pre, .font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-feature-settings: "tnum", "zero";
   }
 
-  :focus-visible:not(input):not(textarea):not([data-radix-collection-item]):not([role="menuitem"]):not([role="menuitemcheckbox"]):not([role="menuitemradio"]):not([data-state]) {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  button, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
+  /* Focus: a soft tinted halo, never a hard outline */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px hsl(var(--ring));
+  }
   [data-radix-collection-item]:focus-visible,
   [role="menuitem"]:focus-visible,
   [role="menuitemcheckbox"]:focus-visible,
   [role="menuitemradio"]:focus-visible {
-    @apply outline-none ring-0;
+    box-shadow: none;
   }
 
-  input:focus-visible, textarea:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-1 ring-offset-background;
-  }
+  ::selection { background: hsl(var(--accent) / 0.55); color: hsl(var(--accent-foreground)); }
 
-  ::selection {
-    @apply bg-accent text-accent-foreground;
+  input, textarea, select { font: inherit; }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 0;
+    border: 1px solid hsl(var(--separator));
+    border-radius: var(--radius-sm);
+    background: transparent;
+    cursor: pointer;
+    overflow: hidden;
   }
+  input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type="color"]::-webkit-color-swatch { border: none; border-radius: calc(var(--radius-sm) - 1px); }
+  input[type="color"]::-moz-color-swatch { border: none; border-radius: calc(var(--radius-sm) - 1px); }
 }
 
+/* ============================================================
+   COMPONENTS
+   ============================================================ */
 @layer components {
-  /* Buttons — Pinterest-style pills */
-  .btn-pinterest {
-    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full font-semibold text-sm transition-all duration-200;
+  /* ---------- Materials ---------- */
+  .material-chrome {
+    background: hsl(var(--material-chrome));
+    -webkit-backdrop-filter: blur(var(--material-blur)) saturate(180%);
+    backdrop-filter: blur(var(--material-blur)) saturate(180%);
+    box-shadow: 0 1px 0 hsl(var(--separator));
   }
-  .btn-primary {
-    @apply btn-pinterest bg-primary text-primary-foreground hover:opacity-90 active:scale-[0.98];
+  .material-sidebar {
+    background: hsl(var(--material-sidebar));
+    -webkit-backdrop-filter: blur(var(--material-blur)) saturate(160%);
+    backdrop-filter: blur(var(--material-blur)) saturate(160%);
   }
-  .btn-secondary {
-    @apply btn-pinterest bg-secondary text-secondary-foreground hover:bg-secondary/80 active:scale-[0.98];
+  .material-card {
+    background: hsl(var(--material-card));
+    border-radius: var(--radius-lg);
+    /* Card = white, 16px radius, 24px padding, one hairline, no drop shadow.
+       A utility class (p-4, p-5) still overrides the padding. */
+    padding: var(--pad-card);
+    box-shadow: inset 0 0 0 1px hsl(var(--border));
   }
-  .btn-ghost {
-    @apply btn-pinterest bg-transparent text-foreground hover:bg-secondary active:scale-[0.98];
+  .material-sheet {
+    background: hsl(var(--popover));
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sheet), 0 0 0 1px hsl(var(--separator));
   }
-  .btn-lime {
-    @apply btn-pinterest bg-accent text-accent-foreground hover:opacity-90 active:scale-[0.98];
+  .material-popover {
+    background: hsl(var(--popover));
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-floating), 0 0 0 1px hsl(var(--separator));
+  }
+  .hairline-b { box-shadow: 0 1px 0 hsl(var(--separator)); }
+  .hairline-t { box-shadow: 0 -1px 0 hsl(var(--separator)); }
+  .hairline-r { box-shadow: 1px 0 0 hsl(var(--separator)); }
+  .hairline-l { box-shadow: -1px 0 0 hsl(var(--separator)); }
+
+  /* ---------- Typography roles — the system's ramp ----------
+     Display XL 88 · Display M 44 · A1 36 · H2 28 · B1 24 · C1 16 ·
+     body-s 14 · caption 12 · micro 11. Headlines carry negative tracking;
+     the micro label is the only style that is ever tracked positive. */
+  .text-display {
+    font-size: clamp(44px, 6vw, 88px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    font-weight: 400;   /* weight-mixing inside the sentence does the emphasis */
+  }
+  .text-title-1 { font-size: 36px; line-height: 1.14; letter-spacing: -0.01em; font-weight: 600; }
+  .text-title-2 { font-size: 28px; line-height: 1.2; letter-spacing: -0.01em; font-weight: 400; }
+  .text-title-3 { font-size: 24px; line-height: 1.35; letter-spacing: -0.01em; font-weight: 400; }
+  .text-headline { font-size: 16px; line-height: 1.35; letter-spacing: -0.005em; font-weight: 600; }
+  .text-body { font-size: 16px; line-height: 1.5; letter-spacing: 0; }
+  .text-callout { font-size: 14px; line-height: 1.5; }
+  .text-subhead { font-size: 14px; line-height: 1.35; }
+  .text-footnote { font-size: 12px; line-height: 1.4; }
+  .text-caption { font-size: 12px; line-height: 1.35; letter-spacing: 0.04em; }
+  .text-value { font-variant-numeric: tabular-nums; font-size: 14px; letter-spacing: 0; }
+
+  /* Micro label: written sentence case in source, rendered uppercase with
+     0.08em tracking. The one tracked style in the system. */
+  .label {
+    @apply text-muted-foreground;
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .label-strong { @apply label text-foreground; }
+  .eyebrow { @apply label; }
+  .eyebrow-strong { @apply label-strong; }
+
+  /* ---------- Controls ---------- */
+  .ctl {
+    @apply inline-flex items-center justify-center gap-1.5 select-none whitespace-nowrap;
+    height: var(--control-h-sm);   /* 32 — the smallest of the system's three control heights */
+    padding-inline: 0.75rem;
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: -0.003em;
+    color: hsl(var(--foreground));
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out),
+      box-shadow var(--dur-fast) var(--ease-out),
+      transform var(--dur-instant) var(--ease-out),
+      opacity var(--dur-fast) var(--ease-out);
+  }
+  /* Press is a 985 scale over 90ms, with no colour change beyond hover. */
+  .ctl:active { transform: scale(0.985); }
+  .ctl:disabled, .ctl[aria-disabled="true"] { opacity: 0.38; pointer-events: none; }
+  /* There is no 28px step in the system: sm is the same 32, tighter inside. */
+  .ctl-sm { height: var(--control-h-sm); padding-inline: 0.5rem; font-size: 12px; border-radius: var(--radius-sm); }
+  .ctl-lg { height: var(--control-h); padding-inline: 1.25rem; font-size: 16px; border-radius: var(--radius); }
+  .ctl-xl { height: var(--control-h-lg); padding-inline: 1.5rem; font-size: 16px; border-radius: var(--radius); }
+  .ctl-icon { width: var(--control-h-sm); padding-inline: 0; }
+  .ctl-icon.ctl-sm { width: var(--control-h-sm); }
+  .ctl-icon.ctl-lg { width: var(--control-h); }
+  .ctl-icon.ctl-xl { width: var(--control-h-lg); }
+
+  /* Ink button — the neutral committing control and the selected state. */
+  .ctl-filled {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+  .ctl-filled:hover { background: hsl(var(--surface-invert-soft, 240 2.3% 16.9%)); }
+
+  /* The signal control. Yellow is a pointer: at most one of these per view. */
+  .ctl-tinted {
+    background: hsl(var(--accent));
+    color: hsl(var(--accent-foreground));
+  }
+  .ctl-tinted:hover { background: hsl(var(--accent-hover)); }
+
+  .ctl-gray {
+    background: hsl(var(--fill-2));
+    color: hsl(var(--foreground));
+  }
+  .ctl-gray:hover { background: hsl(var(--fill-3)); }
+
+  .ctl-plain { background: transparent; color: hsl(var(--foreground)); }
+  .ctl-plain:hover { background: hsl(var(--fill)); }
+
+  .ctl-outline {
+    background: hsl(var(--card));
+    box-shadow: inset 0 0 0 1px hsl(var(--input));
+  }
+  .ctl-outline:hover { background: hsl(var(--surface-hover)); }
+
+  .ctl-danger { background: transparent; color: hsl(var(--destructive)); }
+  .ctl-danger:hover { background: hsl(var(--destructive) / 0.10); }
+
+  /* Selected is black fill with a white glyph, everywhere: nav, pill tabs,
+     active icon buttons. Yellow marks the one committing action, not choice. */
+  .ctl-active,
+  .ctl[aria-pressed="true"],
+  .ctl[data-state="on"],
+  .ctl[data-active="true"] {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: none;
+  }
+  .ctl-active:hover,
+  .ctl[aria-pressed="true"]:hover,
+  .ctl[data-state="on"]:hover,
+  .ctl[data-active="true"]:hover { background: hsl(var(--surface-invert-soft, 240 2.3% 16.9%)); }
+
+  /* Segmented control (tabs) */
+  .segmented {
+    @apply inline-flex items-center;
+    padding: 2px;
+    gap: 2px;
+    border-radius: var(--radius);
+    background: hsl(var(--fill-2));
+  }
+  .segmented-item {
+    @apply inline-flex items-center justify-center whitespace-nowrap select-none;
+    height: 1.75rem;
+    padding-inline: 0.75rem;
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-instant) var(--ease-out);
+  }
+  .segmented-item:hover { color: hsl(var(--foreground)); }
+  .segmented-item:active { transform: scale(0.985); }
+  /* Pill tabs select the same way as everything else: black fill, white text. */
+  .segmented-item.is-active,
+  .segmented-item[aria-selected="true"],
+  .segmented-item[data-state="active"] {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    box-shadow: none;
   }
 
-  /* Card */
-  .card-pinterest {
-    @apply bg-card rounded-2xl overflow-hidden transition-all duration-200;
+  /* Text field */
+  .field {
+    @apply w-full;
+    height: 2rem;
+    padding-inline: 0.625rem;
+    border-radius: var(--radius);
+    background: hsl(var(--card));
+    color: hsl(var(--foreground));
+    font-size: 14px;
+    /* Fields use a 1px inset ring, not a shadow; on focus the ring turns black. */
+    box-shadow: inset 0 0 0 1px hsl(var(--input));
+    transition: box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .field::placeholder { color: hsl(var(--muted-foreground) / 0.8); }
+  .field:hover { box-shadow: inset 0 0 0 1px hsl(var(--separator-strong)); }
+  .field:focus, .field:focus-visible {
+    box-shadow: inset 0 0 0 1px hsl(var(--foreground));
+  }
+  .field-sm { height: 1.75rem; padding-inline: 0.5rem; font-size: 12px; border-radius: var(--radius-sm); }
+  .field-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  textarea.field { height: auto; padding-block: 0.5rem; line-height: 1.45; }
+  select.field {
+    appearance: none;
+    padding-right: 1.75rem;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23707078' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
   }
 
-  /* Eyebrow / mono caps label — usado em todas as ferramentas */
-  .eyebrow {
-    @apply font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground;
+  /* Chip / tag */
+  .chip {
+    @apply inline-flex items-center gap-1 whitespace-nowrap;
+    height: 1.375rem;
+    padding-inline: 0.5rem;
+    border-radius: var(--radius-pill);
+    background: hsl(var(--secondary));
+    color: hsl(var(--muted-foreground));
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
   }
-  .eyebrow-strong {
-    @apply font-mono text-[10px] uppercase tracking-[0.2em] text-foreground;
+  .chip-accent { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+  .chip-outline { background: transparent; box-shadow: inset 0 0 0 1px hsl(var(--input)); }
+  /* Selected chip: black fill, white text, like every other selected thing. */
+  .chip-invert { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+
+  /* Status pill (was SYS.ACTIVE etc.) */
+  .pill-status { @apply chip chip-outline; }
+
+  /* Row (list item) */
+  .row {
+    @apply flex items-center gap-2 w-full text-left;
+    min-height: 2rem;
+    padding-inline: 0.625rem;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    color: hsl(var(--foreground));
+    transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), transform var(--dur-instant) var(--ease-out);
+  }
+  .row:hover { background: hsl(var(--fill)); }
+  .row:active { transform: scale(0.99); }
+  .row.is-active, .row[aria-selected="true"], .row[data-active="true"] {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
   }
 
-  /* Status pill — SYS.ACTIVE etc. */
-  .pill-status {
-    @apply inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground;
+  /* Card surfaces */
+  .card-pinterest { @apply material-card overflow-hidden; }
+  .surface-inset {
+    background: hsl(var(--fill));
+    border-radius: var(--radius-lg);
   }
 
-  /* ===== Tool sub-header / nav tab — STANDARD across all tools =====
-     Wrapper: .tool-subheader  → sticky bar below the global Header.
-     Item:    .nav-tab         → underline grows on hover, full lime when active.
-  */
+  /* ---------- Card anatomy ----------
+     24px padding, 16px internal gap, micro label on the left of the header
+     and at most two 32px quiet icon buttons on the right. A value sits above
+     its caption with 4px between them — the only 4px in the system. */
+  .card-head {
+    @apply flex items-center justify-between gap-2;
+    min-height: 1.75rem;
+  }
+  .card-head > .card-actions {
+    @apply flex items-center gap-1.5;
+  }
+  .card-body {
+    @apply flex flex-col;
+    gap: 16px;
+  }
+
+  /* Value over caption. `.metric-lg` is the one hero number per view. */
+  .metric { @apply flex flex-col; }
+  .metric-value {
+    font-size: 28px;
+    line-height: 1.14;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: hsl(var(--foreground));
+  }
+  .metric-lg .metric-value { font-size: 44px; line-height: 1.02; letter-spacing: -0.02em; }
+  .metric-sm .metric-value { font-size: 16px; line-height: 1.35; }
+  .metric-caption {
+    margin-top: 4px;
+    font-size: 12px;
+    color: hsl(var(--muted-foreground));
+  }
+  /* Delta pill: sign and percent, always. Positive is the signal colour. */
+  .metric-delta { @apply chip tabular; }
+  .metric-delta-up { background: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+
+  /* Exactly one inverted card per view, maximum. */
+  .card-invert {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: var(--radius-lg);
+    padding: var(--pad-card);
+  }
+  .card-invert .metric-value { color: hsl(var(--primary-foreground)); }
+  .card-invert .metric-caption,
+  .card-invert .label { color: hsl(var(--primary-foreground) / 0.62); }
+
+  /* A card on white uses the quiet tone and drops the shadow entirely. */
+  .card-quiet {
+    background: hsl(var(--muted));
+    border-radius: var(--radius-lg);
+    padding: var(--pad-card);
+    box-shadow: none;
+  }
+
+  /* The 52px nav / toolbar square with an 18px glyph — the one hard number
+     the source spec states outright. */
+  .ctl-square {
+    height: var(--control-square);
+    width: var(--control-square);
+    padding: 0;
+    border-radius: var(--radius);
+  }
+  .ctl-square svg { width: var(--icon); height: var(--icon); }
+  .ctl-sm svg { width: var(--icon-sm); height: var(--icon-sm); }
+
+  /* Glass: only for things that float over content. Three places, one recipe. */
+  .glass {
+    background: hsl(var(--material-chrome));
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    backdrop-filter: blur(14px) saturate(120%);
+  }
+  .glass-invert {
+    background: rgb(20 20 22 / 0.72);
+    color: hsl(var(--primary-foreground));
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    backdrop-filter: blur(14px) saturate(120%);
+  }
+
+  /* Section rhythm: marker on the left, content on the right, hairline above. */
+  .section-rhythm { padding-top: var(--rhythm-section); }
+  .section-split {
+    @apply grid gap-8;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 768px) {
+    .section-split { grid-template-columns: 180px 1fr; }
+  }
+
+  /* Legacy button aliases (keep old class names working) */
+  .btn-pinterest { @apply ctl ctl-lg; border-radius: var(--radius-pill); font-weight: 600; }
+  .btn-primary { @apply btn-pinterest ctl-filled; }
+  .btn-secondary { @apply btn-pinterest ctl-gray; }
+  .btn-ghost { @apply btn-pinterest ctl-plain; }
+  .btn-lime { @apply btn-pinterest ctl-tinted; }
+
+  /* ---------- Tool chrome ---------- */
+  /* Sticky sub-header under the global header (tool tabs) */
   .tool-subheader {
-    @apply sticky top-0 z-30 border-b border-[#232323]/15 bg-white px-6 md:px-8 py-2;
+    @apply sticky top-0 z-30 material-chrome;
+    padding-inline: clamp(12px, 2vw, 24px);
+    padding-block: 0.5rem;
   }
   .nav-tab {
-    @apply relative pb-1 font-mono text-[10px] uppercase tracking-[0.05em] font-semibold
-           text-[#232323]/55 transition-colors duration-150;
+    @apply relative inline-flex items-center whitespace-nowrap select-none;
+    height: 1.75rem;
+    padding-inline: 0.625rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: -0.003em;
+    text-transform: none;
+    color: hsl(var(--muted-foreground));
+    transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), transform var(--dur-instant) var(--ease-out);
   }
-  .nav-tab::after {
+  .nav-tab::after { content: none; }
+  .nav-tab:hover { color: hsl(var(--foreground)); background: hsl(var(--fill)); }
+  .nav-tab:active { transform: scale(0.97); }
+  .nav-tab.is-active { color: hsl(var(--foreground)); background: hsl(var(--fill-2)); }
+
+  /* Panel section header (collapsible) */
+  .panel-section-head {
+    @apply flex w-full items-center justify-between text-left select-none;
+    height: 2.25rem;
+    padding-inline: 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: -0.006em;
+    color: hsl(var(--foreground));
+    border-radius: var(--radius-sm);
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .panel-section-head:hover { background: hsl(var(--fill)); }
+
+  /* Tool slider: native range, 4px track, 18px thumb with soft shadow */
+  .tool-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    height: 20px;
+    cursor: pointer;
+  }
+  .tool-slider::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: hsl(var(--fill-3));
+  }
+  .tool-slider::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: hsl(var(--fill-3));
+  }
+  .tool-slider::-moz-range-progress { height: 4px; border-radius: 999px; background: hsl(var(--foreground)); }
+  .tool-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    border-radius: 50%;
+    background: hsl(0 0% 100%);
+    border: 0.5px solid hsl(240 6% 11% / 0.12);
+    box-shadow: 0 1px 3px hsl(240 6% 11% / 0.18), 0 3px 8px hsl(240 6% 11% / 0.10);
+    transition: transform var(--dur-instant) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .tool-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: hsl(0 0% 100%);
+    border: 0.5px solid hsl(240 6% 11% / 0.12);
+    box-shadow: 0 1px 3px hsl(240 6% 11% / 0.18), 0 3px 8px hsl(240 6% 11% / 0.10);
+  }
+  .tool-slider:active::-webkit-slider-thumb { transform: scale(1.12); }
+  .tool-slider:focus-visible { box-shadow: none; }
+  .tool-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px hsl(var(--ring) / 0.25), 0 1px 3px hsl(240 6% 11% / 0.18); }
+  .tool-slider:disabled { opacity: 0.4; cursor: not-allowed; }
+  .dark .tool-slider::-webkit-slider-thumb, .dark .tool-slider::-moz-range-thumb { background: hsl(240 4% 80%); border-color: hsl(0 0% 0% / 0.3); }
+
+  /* Native checkbox / radio: tinted, rounded */
+  input[type="checkbox"].ctl-check, input[type="radio"].ctl-check {
+    appearance: none;
+    width: 1rem; height: 1rem;
+    border-radius: 0.3125rem;
+    background: hsl(var(--card));
+    box-shadow: 0 0 0 1px hsl(var(--separator-strong));
+    display: inline-grid; place-content: center;
+    transition: background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  }
+  input[type="radio"].ctl-check { border-radius: 50%; }
+  input.ctl-check:checked { background: hsl(var(--primary)); box-shadow: none; }
+  input.ctl-check:checked::before {
     content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -1px;
-    height: 1px;
-    background: #232323;
-    transform: scaleX(0);
-    transform-origin: left center;
-    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    width: 0.5rem; height: 0.5rem;
+    background: hsl(var(--primary-foreground));
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
   }
-  .nav-tab:hover {
-    @apply text-[#232323];
-  }
-  .nav-tab:hover::after {
-    transform: scaleX(0.5);
-  }
-  .nav-tab.is-active {
-    @apply text-[#232323];
-  }
-  .nav-tab.is-active::after {
-    transform: scaleX(1);
-  }
+  input[type="radio"].ctl-check:checked::before { clip-path: none; border-radius: 50%; width: 0.375rem; height: 0.375rem; }
 }
 
+/* ============================================================
+   UTILITIES
+   ============================================================ */
 @layer utilities {
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
 
   .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+  .tabular { font-variant-numeric: tabular-nums; }
 
-  /* Hover micro-interactions */
-  .hover-lift { @apply transition-all duration-200; }
-  .hover-lift:hover { @apply -translate-y-1 shadow-[var(--shadow-floating)]; }
+  .ease-out-spring { transition-timing-function: var(--ease-out); }
+  .press { transition: transform var(--dur-instant) var(--ease-out); }
+  .press:active { transform: scale(0.97); }
+  .press-scale { @apply press; }
 
-  .press-scale { @apply transition-transform duration-100 active:scale-[0.97]; }
+  .hover-lift { transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
+  .hover-lift:hover { transform: translateY(-2px); }
+  .hover-card { transition: transform var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out); }
+  .hover-card:hover { transform: translateY(-1px); box-shadow: inset 0 0 0 1px hsl(var(--separator-strong)); }
 
-  .hover-card { @apply transition-all duration-200; }
-  .hover-card:hover { @apply scale-[1.02] shadow-[var(--shadow-floating)]; }
-
-  .fade-in-up { animation: fadeInUp 0.3s ease-out forwards; }
+  .fade-in-up { animation: fadeInUp var(--dur-base) var(--ease-out) both; }
   @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-
-  .pulse-dot {
-    animation: pulseDot 1.6s ease-in-out infinite;
+  .materialize { animation: materialize var(--dur-base) var(--ease-out) both; transform-origin: var(--origin, top center); }
+  @keyframes materialize {
+    from { opacity: 0; transform: scale(0.96) translateY(-4px); filter: blur(6px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
   }
+
+  .pulse-dot { animation: pulseDot 2.4s var(--ease-in-out) infinite; }
   @keyframes pulseDot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%      { opacity: 0.5; transform: scale(0.85); }
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.45; }
   }
 
-  /* Skeleton shimmer */
   .skeleton-shimmer {
     background: linear-gradient(90deg, transparent 0%, hsl(var(--foreground) / 0.06) 50%, transparent 100%);
     background-size: 200% 100%;
@@ -338,15 +827,6 @@
   @keyframes shimmer {
     0%   { background-position: 200% 0; }
     100% { background-position: -200% 0; }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton-shimmer, .pulse-dot { animation: none; }
-    * {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
   }
 
   .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -360,64 +840,57 @@
   .cursor-grab { cursor: grab; }
   .cursor-grabbing { cursor: grabbing; }
 
-  /* ========================================
-     LAYOUT SYSTEM
-     ======================================== */
-  .container-centered {
-    width: 100%;
-    max-width: var(--content-max);
-    margin-inline: auto;
-    padding-inline: var(--page-gutter);
-  }
-  .container-fluid {
-    width: 100%;
-    padding-inline: var(--edge-gutter);
-    max-width: 100vw;
-    overflow-x: hidden;
-  }
+  /* Scroll edge: fade content under floating chrome */
+  .scroll-edge-top { mask-image: linear-gradient(to bottom, transparent 0, black 16px); }
 
-  .grid-gallery {
-    display: grid;
-    gap: var(--grid-gap);
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    justify-content: center;
-  }
-  .grid-fixed-projects {
-    display: grid;
-    gap: var(--grid-gap);
-    grid-template-columns: repeat(auto-fill, minmax(300px, 360px));
-    justify-content: center;
-  }
-  .grid-fixed-cards {
-    display: grid;
-    gap: var(--grid-gap);
-    grid-template-columns: repeat(auto-fill, minmax(280px, 340px));
-    justify-content: center;
-  }
+  /* Layout system */
+  .container-centered { width: 100%; max-width: var(--content-max); margin-inline: auto; padding-inline: var(--page-gutter); }
+  .container-fluid { width: 100%; padding-inline: var(--edge-gutter); max-width: 100vw; overflow-x: hidden; }
 
-  .pills-scroll {
-    display: flex;
-    gap: 0.375rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
+  .grid-gallery { display: grid; gap: var(--grid-gap); grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); justify-content: center; }
+  .grid-fixed-projects { display: grid; gap: var(--grid-gap); grid-template-columns: repeat(auto-fill, minmax(300px, 360px)); justify-content: center; }
+  .grid-fixed-cards { display: grid; gap: var(--grid-gap); grid-template-columns: repeat(auto-fill, minmax(280px, 340px)); justify-content: center; }
+
+  .pills-scroll { display: flex; gap: 0.375rem; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
   .pills-scroll::-webkit-scrollbar { display: none; }
 }
 
-/* Responsivo */
+/* ============================================================
+   RESPONSIVE + PREFERENCES
+   ============================================================ */
 @media (max-width: 720px) {
-  .grid-fixed-projects {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  }
+  .grid-fixed-projects { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
 }
 @media (max-width: 640px) {
-  .grid-fixed-cards {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  }
+  .grid-fixed-cards { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 }
 @media (min-width: 1920px) {
   :root { --content-max: 1600px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .skeleton-shimmer, .pulse-dot { animation: none; }
+  .fade-in-up, .materialize { animation: none; opacity: 1; transform: none; filter: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material-chrome, .material-sidebar, .tool-subheader {
+    background: hsl(var(--card));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root { --separator: 240 6% 11% / 0.35; --separator-strong: 240 6% 11% / 0.6; }
+  .dark { --separator: 60 6% 95% / 0.4; --separator-strong: 60 6% 95% / 0.7; }
+  .material-chrome, .material-sidebar { background: hsl(var(--card)); backdrop-filter: none; -webkit-backdrop-filter: none; }
 }
 
 @keyframes marquee {
@@ -425,40 +898,26 @@
   100% { transform: translateX(-50%); }
 }
 
-/* ====== Shared tool slider (UNBSCOLOR/GRID/FORMAT/FONT) ====== */
-.tool-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  background: transparent;
-  height: 16px;
+/* ============================================================
+   SIGNAL COLOUR NOTES
+   Yellow is a fill, never a text colour on light surfaces (1.1:1 on white).
+   Anything written in the signal colour uses the darker ink step.
+   The  prefix raises specificity above Tailwind utilities.
+   ============================================================ */
+html .text-success { color: hsl(var(--accent-ink)); }
+html .dark .text-success, html.dark .text-success { color: hsl(var(--success)); }
+
+/* Interactive text is ink; the underline appears on hover only. */
+html a.text-tint, html button.text-tint { text-decoration-line: none; }
+html a.text-tint:hover, html button.text-tint:hover {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
-.tool-slider::-webkit-slider-runnable-track {
-  height: 2px;
-  background: #232323;
-  border: none;
-}
-.tool-slider::-moz-range-track {
-  height: 2px;
-  background: #232323;
-  border: none;
-}
-.tool-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  background: #F0FF00;
-  border: 1px solid #232323;
-  border-radius: 0;
-  margin-top: -7px;
-  cursor: pointer;
-}
-.tool-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  background: #F0FF00;
-  border: 1px solid #232323;
-  border-radius: 0;
-  cursor: pointer;
-}
-.tool-slider:disabled { opacity: 0.4; cursor: not-allowed; }
+html .ctl.text-tint:hover, html .ctl-icon.text-tint:hover { text-decoration-line: none; }
+
+/* A yellow fill always carries ink text, even where markup asks for white. */
+html .bg-accent, html .bg-accent.text-white { color: hsl(var(--accent-foreground)); }
+
+/* A yellow dot on white needs a hairline to hold its edge. */
+html .bg-success.rounded-full, html .bg-accent.rounded-full { box-shadow: 0 0 0 1px hsl(var(--foreground) / 0.18); }

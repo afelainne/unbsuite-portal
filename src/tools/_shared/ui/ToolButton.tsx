@@ -1,42 +1,46 @@
 import React from "react";
 
-type Variant = "primary" | "ghost" | "icon" | "danger";
+type Variant = "primary" | "ghost" | "icon" | "danger" | "tinted" | "gray" | "plain";
 
 interface Props extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   active?: boolean;
+  size?: "sm" | "md" | "lg";
 }
 
-const base =
-  "inline-flex items-center justify-center gap-1.5 font-mono uppercase tracking-[0.18em] text-[10px] font-semibold rounded-none border transition-colors disabled:opacity-40 disabled:cursor-not-allowed select-none whitespace-nowrap";
-
 const variants: Record<Variant, string> = {
-  primary:
-    "h-7 px-3 bg-[#F0FF00] text-[#232323] border-[#232323] hover:bg-[#F7E043]",
-  ghost:
-    "h-7 px-3 bg-transparent text-[#232323] border-[#232323]/30 hover:bg-[#F7E043]/30",
-  icon:
-    "h-7 w-7 p-0 bg-transparent text-[#232323] border-[#232323]/30 hover:bg-[#F7E043]/30",
-  danger:
-    "h-7 px-3 bg-transparent text-[#232323] border-[#232323]/30 hover:bg-red-500 hover:text-white hover:border-red-500",
+  primary: "ctl-filled",
+  tinted: "ctl-tinted",
+  gray: "ctl-gray",
+  ghost: "ctl-outline",
+  plain: "ctl-plain",
+  icon: "ctl-outline ctl-icon",
+  danger: "ctl-danger",
 };
 
+const sizes = { sm: "ctl-sm", md: "", lg: "ctl-lg" } as const;
+
+/**
+ * Tool control. Feedback lands on pointer-down (scale 0.97) and the active
+ * state is the lime accent fill. Text is sentence case, system sans.
+ */
 const ToolButton: React.FC<Props> = ({
   variant = "ghost",
   active = false,
+  size = "md",
   className = "",
   children,
+  type = "button",
   ...rest
-}) => {
-  const activeCls = active ? "bg-[#F0FF00] text-[#232323] border-[#232323]" : "";
-  return (
-    <button
-      {...rest}
-      className={`${base} ${variants[variant]} ${activeCls} ${className}`}
-    >
-      {children}
-    </button>
-  );
-};
+}) => (
+  <button
+    type={type}
+    {...rest}
+    data-active={active ? "true" : undefined}
+    className={`ctl ${variants[variant]} ${sizes[size]} ${active ? "ctl-active" : ""} ${className}`}
+  >
+    {children}
+  </button>
+);
 
 export default ToolButton;

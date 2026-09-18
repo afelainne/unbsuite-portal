@@ -1,0 +1,12 @@
+/* Motion is short, flat and confident. No bounce, no spring overshoot. */
+:root{
+  --dur-instant:90ms; /* @kind other */
+  --dur-fast:140ms; /* @kind other */
+  --dur-base:200ms; /* @kind other */
+  --dur-slow:320ms; /* @kind other */
+  --dur-reveal:520ms; /* @kind other */
+  --ease-standard:cubic-bezier(.2,0,.2,1); /* @kind other */
+  --ease-out:cubic-bezier(.16,1,.3,1); /* @kind other */
+  --ease-in-out:cubic-bezier(.4,0,.2,1); /* @kind other */
+    --transition-control:background-color var(--dur-fast) var(--ease-in-out),color var(--dur-fast) var(--ease-in-out),border-color var(--dur-fast) var(--ease-in-out),box-shadow var(--dur-fast) var(--ease-in-out),opacity var(--dur-fast) linear;
+}

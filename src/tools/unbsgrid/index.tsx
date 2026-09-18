@@ -1,7 +1,12 @@
 import Index from './pages/Index';
+import { LanguageProvider } from './i18n';
 
 const UnbsGridApp = () => {
-  return <Index />;
+  return (
+    <LanguageProvider>
+      <Index />
+    </LanguageProvider>
+  );
 };
 
 export default UnbsGridApp;

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 interface PanelProps {
   side?: "left" | "right";
@@ -7,11 +7,15 @@ interface PanelProps {
   className?: string;
 }
 
+/**
+ * Sidebar panel: a heavier translucent material than the toolbar, so it
+ * reads as structure. Separated by a hairline, never a hard border.
+ */
 export const ToolPanel: React.FC<PanelProps> = ({ side = "left", children, className = "" }) => (
   <aside
-    className={`w-[280px] flex-shrink-0 bg-white overflow-y-auto ${
-      side === "left" ? "border-r" : "border-l"
-    } border-[#232323]/15 ${className}`}
+    className={`w-[280px] flex-shrink-0 material-sidebar overflow-y-auto ${
+      side === "left" ? "hairline-r" : "hairline-l"
+    } ${className}`}
   >
     {children}
   </aside>
@@ -32,28 +36,31 @@ export const ToolPanelSection: React.FC<SectionProps> = ({
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <section className="border-b border-[#232323]/10">
+    <section className="px-2 pt-1 pb-1">
       <button
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-3 h-9 hover:bg-[#F7E043]/20"
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="panel-section-head"
+        aria-expanded={open}
       >
-        <span className="font-mono text-[10px] uppercase tracking-[0.2em] font-bold text-[#232323]">
-          {title}
-        </span>
+        <span>{title}</span>
         <span className="flex items-center gap-2">
-          {meta && (
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#232323]/50">
-              {meta}
-            </span>
-          )}
-          {open ? (
-            <ChevronDown className="h-3 w-3 text-[#232323]/60" />
-          ) : (
-            <ChevronRight className="h-3 w-3 text-[#232323]/60" />
-          )}
+          {meta && <span className="text-[11px] font-normal text-muted-foreground tabular-nums">{meta}</span>}
+          <ChevronRight
+            className="h-3.5 w-3.5 text-muted-foreground transition-transform duration-base ease-out"
+            style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+            strokeWidth={2.25}
+          />
         </span>
       </button>
-      {open && <div className="px-3 pb-3 pt-1 space-y-2">{children}</div>}
+      <div
+        className="grid transition-[grid-template-rows] duration-base ease-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <div className="overflow-hidden">
+          <div className="px-2 pb-3 pt-1 space-y-2.5">{children}</div>
+        </div>
+      </div>
     </section>
   );
 };
